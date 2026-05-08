@@ -1,0 +1,9 @@
+.claude/
+base44/
+
+node_modules/
+
+dist
+build
+coverage
+package-lock.json
