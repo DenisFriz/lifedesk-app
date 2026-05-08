@@ -20,7 +20,6 @@ import {
   AlertTriangle,
   ShieldOff
 } from 'lucide-react'
-import StorageWarning from '@/components/storage/StorageWarning'
 import DeleteAccountDialog from '@/components/account/DeleteAccountDialog'
 import { format } from 'date-fns'
 import { Link, useSearchParams } from 'react-router-dom'

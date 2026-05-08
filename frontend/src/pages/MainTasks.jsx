@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery } from '@tanstack/react-query'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 import TaskTable from '@/components/sections/TaskTable'
 import { useLayout } from '@/Layout'
 import { Button } from '@/components/ui/button'
@@ -24,7 +24,7 @@ export default function MainTasks() {
   const [isScrolled, setIsScrolled] = useState(false)
   const tabsRef = useRef(null)
   const headerRef = useRef(null)
-  const [tabsKey, setTabsKey] = useState(0)
+  /*   const [tabsKey, setTabsKey] = useState(0) */
 
   const { data: businesses = [] } = useQuery({
     queryKey: ['businesses'],

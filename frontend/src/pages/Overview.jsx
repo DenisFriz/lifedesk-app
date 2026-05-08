@@ -480,7 +480,7 @@ export default function Overview() {
                 Top Assets
               </h4>
               <div className="space-y-2">
-                {topAssets.map((asset, index) => {
+                {topAssets.map(asset => {
                   const gain = (asset.current_value || 0) - (asset.purchase_price || 0)
                   return (
                     <div

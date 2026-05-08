@@ -26,10 +26,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import BankBalanceChart, {
-  TIME_PERIOD_OPTIONS,
-  resolveRange
-} from '@/components/finances/BankBalanceChart'
+import BankBalanceChart, { resolveRange } from '@/components/finances/BankBalanceChart'
 import BankConnectionManager from '@/components/finances/BankConnectionManager'
 import OfflineAccountMonthlyTable from '@/components/finances/OfflineAccountMonthlyTable'
 import OnlineAccountMonthlyTable from '@/components/finances/OnlineAccountMonthlyTable'

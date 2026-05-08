@@ -213,7 +213,7 @@ export default function Workouts() {
               </CardContent>
             </Card>
           ) : (
-            filteredWorkouts.map((workout, idx) => {
+            filteredWorkouts.map(workout => {
               const workoutIdx = workouts.indexOf(workout)
               const overLimit = isOverLimit(workoutIdx)
               const card = (

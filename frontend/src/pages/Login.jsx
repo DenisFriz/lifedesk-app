@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { apiFetch, setToken } from '@/api/apiClient'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,7 +8,7 @@ import { Helmet } from 'react-helmet-async'
 
 export default function Login() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  /*  const [searchParams] = useSearchParams() */
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')

@@ -19,7 +19,7 @@ import AddToBudgetModal from '@/components/finances/AddToBudgetModal'
 import { Input } from '@/components/ui/input'
 import { Calendar as CalendarComponent } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { format, parseISO, subDays, subMonths, subYears, startOfDay, endOfDay } from 'date-fns'
+import { format, subDays, subMonths, subYears, startOfDay, endOfDay } from 'date-fns'
 import CashFlowKPIs from '@/components/finances/CashFlowKPIs'
 
 import { cn } from '@/lib/utils'
@@ -233,7 +233,7 @@ export default function Transactions() {
 
   const totalPages = Math.ceil(filteredTransactions.length / perPage)
 
-  const chartData = useMemo(() => {
+  /*  const chartData = useMemo(() => {
     const dateRange = getDateRange()
     let filteredTransactions = [
       ...income.map(i => ({ ...i, type: 'income' })),
@@ -274,7 +274,7 @@ export default function Transactions() {
         date: item.label,
         cashFlow: item.income - item.expenses
       }))
-  }, [income, expenses, timePeriod, customStartDate, customEndDate])
+  }, [income, expenses, timePeriod, customStartDate, customEndDate]) */
 
   const handleSort = field => {
     if (sortBy === field) {

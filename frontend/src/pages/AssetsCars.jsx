@@ -18,7 +18,7 @@ export default function AssetsCars() {
     queryFn: () => backend.entities.TangibleAsset.list('-created_date')
   })
 
-  const { limit: getLimit, planName } = useSubscription()
+  const { limit: getLimit } = useSubscription()
   const vehicleLimit = getLimit('assets_vehicles_limit')
 
   const cars = assets.filter(a => a.category === 'vehicle')

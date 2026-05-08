@@ -7,11 +7,8 @@ import {
   Plus,
   TrendingUp,
   TrendingDown,
-  DollarSign,
-  Repeat,
   Search,
   ArrowUpDown,
-  Pencil,
   Trash2,
   Coins,
   ChevronDown,
@@ -26,10 +23,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { format } from 'date-fns'
 import {
   PERSONAL_INCOME_CATEGORIES,
   BUSINESS_INCOME_CATEGORIES,
@@ -37,19 +31,7 @@ import {
   BUSINESS_EXPENSE_CATEGORIES
 } from '@/components/finances/categories'
 
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts'
+import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 import { cn } from '@/lib/utils'
 import { useSubscription } from '@/hooks/useSubscription'
@@ -233,23 +215,23 @@ export default function Budget() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recurring-expenses'] })
   })
 
-  const deleteAllRecurringIncomeMutation = useMutation({
+  /*   const deleteAllRecurringIncomeMutation = useMutation({
     mutationFn: async () => {
       await Promise.all(
         recurringIncome.map(item => backend.entities.RecurringIncome.delete(item.id))
       )
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recurring-income'] })
-  })
+  }) */
 
-  const deleteAllRecurringExpensesMutation = useMutation({
+  /*   const deleteAllRecurringExpensesMutation = useMutation({
     mutationFn: async () => {
       await Promise.all(
         recurringExpenses.map(item => backend.entities.RecurringExpense.delete(item.id))
       )
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recurring-expenses'] })
-  })
+  }) */
 
   const handleIncomeSubmit = data => {
     console.log('Income submit handler received:', data)
@@ -375,7 +357,7 @@ export default function Budget() {
     '#3b82f6'
   ]
 
-  const yearlyForecast = useMemo(() => {
+  /*   const yearlyForecast = useMemo(() => {
     const months = []
     for (let i = 0; i < 12; i++) {
       months.push({
@@ -386,7 +368,7 @@ export default function Budget() {
       })
     }
     return months
-  }, [monthlyBudget])
+  }, [monthlyBudget]) */
 
   const filteredRecurringIncome = useMemo(() => {
     let filtered = [...recurringIncome]
@@ -559,7 +541,7 @@ export default function Budget() {
     }
   }
 
-  const handleDeleteAllIncome = () => {
+  /*   const handleDeleteAllIncome = () => {
     if (
       window.confirm(
         'Are you sure you want to delete all recurring income entries? This action cannot be undone.'
@@ -567,9 +549,9 @@ export default function Budget() {
     ) {
       deleteAllRecurringIncomeMutation.mutate()
     }
-  }
+  } */
 
-  const handleDeleteAllExpenses = () => {
+  /*   const handleDeleteAllExpenses = () => {
     if (
       window.confirm(
         'Are you sure you want to delete all recurring expense entries? This action cannot be undone.'
@@ -577,7 +559,7 @@ export default function Budget() {
     ) {
       deleteAllRecurringExpensesMutation.mutate()
     }
-  }
+  } */
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>

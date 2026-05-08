@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { backend } from '@/api/backend'
 import { Button } from '@/components/ui/button'
-import { Plus, Trash2, FileText, Archive, Download, X, Lock } from 'lucide-react'
+import { Plus, Trash2, FileText, Archive, Download, Lock } from 'lucide-react'
 import { useSubscription } from '@/hooks/useSubscription'
 import { Link } from 'react-router-dom'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -360,6 +360,7 @@ function MedicalDocumentUploadDialog({ open, onOpenChange }) {
       setSelectedFile({ file, url: file_url })
     } catch (error) {
       setValidationError('Failed to upload file. Please try again.')
+      console.error('File upload error:', error)
     }
     setUploading(false)
   }

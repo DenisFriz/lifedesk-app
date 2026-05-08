@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch, setToken } from '@/api/apiClient'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Mail, Lock } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { Helmet } from 'react-helmet-async'
@@ -102,7 +100,7 @@ export default function Register() {
                 <div className="space-y-1.5 flex flex-col items-center">
                   <label
                     className="peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-sm font-medium text-slate-700"
-                    for="email"
+                    htmlFor="email"
                   >
                     Email
                   </label>
@@ -124,7 +122,7 @@ export default function Register() {
                 <div className="space-y-1.5 flex flex-col items-center">
                   <label
                     className="peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-sm font-medium text-slate-700"
-                    for="password"
+                    htmlFor="password"
                   >
                     Password
                   </label>
@@ -146,7 +144,7 @@ export default function Register() {
                 <div className="space-y-1.5 flex flex-col items-center">
                   <label
                     className="peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-sm font-medium text-slate-700"
-                    for="confirmPassword"
+                    htmlFor="confirmPassword"
                   >
                     Confirm Password
                   </label>

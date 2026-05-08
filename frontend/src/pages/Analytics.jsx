@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatCurrency } from '@/components/utils/formatters'
 import { subMonths, subYears, startOfDay, endOfDay } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -192,7 +192,7 @@ export default function Analytics() {
   const incomeData = incomeGroupBy === 'categories' ? incomeByCategory : incomeByLifeArea
   const expenseData = expenseGroupBy === 'categories' ? expenseByCategory : expenseByLifeArea
 
-  const PiePanel = ({ data, title, icon, groupBy, setGroupBy, accentColor }) => (
+  const PiePanel = ({ data, title, icon, groupBy, setGroupBy }) => (
     <div className="bg-white rounded-lg border border-slate-200 p-6">
       <div className="flex items-center gap-2 mb-2">
         {icon}

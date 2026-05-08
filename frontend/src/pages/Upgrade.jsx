@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
@@ -12,12 +12,10 @@ import {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
-  X,
-  ArrowDown
+  X
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSubscription } from '@/hooks/useSubscription'
-import { cn } from '@/lib/utils'
 
 const FREE_FEATURES = [
   '10 Goals / 20 Tasks',
@@ -88,11 +86,7 @@ export default function Upgrade() {
       return next
     })
 
-  const {
-    data: user,
-    isLoading: userLoading,
-    error: userError
-  } = useQuery({
+  const { data: user, error: userError } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => backend.auth.me(),
     retry: 1

@@ -530,6 +530,7 @@ function ProgressPhotoUploadDialog({ open, onOpenChange }) {
       setSelectedFile({ file, url: file_url })
     } catch (error) {
       toast.error('Failed to upload file')
+      console.error('File upload error:', error)
     }
     setUploading(false)
   }

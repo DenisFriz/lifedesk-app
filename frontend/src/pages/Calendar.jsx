@@ -31,7 +31,6 @@ import {
 } from '@/components/ui/context-menu'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -147,10 +146,10 @@ export default function Calendar() {
   })
   const weekViewRef = React.useRef(null)
 
-  const { data: currentUser } = useQuery({
+  /*   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => backend.auth.me()
-  })
+  }) */
   const { can } = useSubscription()
 
   const { data: tasks = [] } = useQuery({
@@ -221,7 +220,7 @@ export default function Calendar() {
   })
 
   const handleDuplicate = (item, itemType) => {
-    const { id, created_date, updated_date, created_by, ...itemData } = item
+    /* const { id, created_date, updated_date, ...itemData } = item */
 
     if (itemType === 'task') {
       setDuplicateTask(itemData)
@@ -786,10 +785,10 @@ export default function Calendar() {
     return { tasks: dayTasks, goals: dayGoals, events: dayEvents, workouts: dayWorkouts }
   }
 
-  const getBusinessName = businessId => {
+  /*   const getBusinessName = businessId => {
     const business = businesses.find(b => b.id === businessId)
     return business ? business.name : 'Business'
-  }
+  } */
 
   const getCategoryColors = category => {
     const colorMap = {
@@ -1282,7 +1281,7 @@ export default function Calendar() {
                     ...events.workouts.map(w => ({ ...w, itemType: 'workout', title: w.name }))
                   ]
 
-                  const totalEvents = allDayItems.length
+                  /*    const totalEvents = allDayItems.length */
                   const dayKey = day.toISOString()
                   const isExpanded = expandedDays.has(dayKey)
                   const maxVisible = 3
@@ -1601,7 +1600,7 @@ export default function Calendar() {
                     style={{ minHeight: '2160px' }}
                   >
                     {calendarDays.map((day, idx) => {
-                      const isToday = isSameDay(day, new Date())
+                      /*  const isToday = isSameDay(day, new Date()) */
                       const events = getEventsForDay(day)
                       return (
                         <div key={idx} className="border-r border-slate-200">
@@ -1640,7 +1639,7 @@ export default function Calendar() {
                               >
                                 <div
                                   className="h-[90px] border-b border-slate-200 p-2 cursor-pointer hover:bg-indigo-50/30 transition-colors"
-                                  onDoubleClick={e => {
+                                  onDoubleClick={() => {
                                     const time = `${String(hour).padStart(2, '0')}:00`
                                     setCreatingDate(day)
                                     setCreatingTime(time)

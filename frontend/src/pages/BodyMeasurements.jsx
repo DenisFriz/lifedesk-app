@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { backend } from '@/api/backend'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import {
   Plus,
   Trash2,
@@ -11,13 +11,7 @@ import {
   Calendar,
   Heart,
   Activity,
-  Wind,
-  Thermometer,
-  Moon,
-  Footprints,
-  Brain,
-  Dumbbell,
-  Lock
+  Dumbbell
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useSubscription } from '@/hooks/useSubscription'

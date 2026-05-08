@@ -1,13 +1,13 @@
-import React, { useState } from 'react'
+import React from 'react'
 import ProblemSection from '@/components/sections/ProblemSection'
 
 export default function FinancesProblems() {
-  const [initialTaskData, setInitialTaskData] = useState(null)
+  /*   const [initialTaskData, setInitialTaskData] = useState(null)
 
   const handleCreateTask = taskData => {
     setInitialTaskData(taskData)
     setTimeout(() => setInitialTaskData(null), 100)
-  }
+  } */
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
