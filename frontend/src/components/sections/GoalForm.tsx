@@ -70,7 +70,9 @@ export default function GoalForm({ open, onClose, onSubmit, goal, isLoading }: G
             <Input
               id="title"
               value={formData.title}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, title: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
               placeholder="What do you want to achieve?"
               maxLength={200}
               required
@@ -81,7 +83,9 @@ export default function GoalForm({ open, onClose, onSubmit, goal, isLoading }: G
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               placeholder="Describe your goal..."
               maxLength={5000}
               className="min-h-[80px]"

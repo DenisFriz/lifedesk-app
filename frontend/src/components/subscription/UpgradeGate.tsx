@@ -3,14 +3,20 @@ import { cn } from '@/lib/utils'
 import { Lock, Zap } from 'lucide-react'
 
 interface Props {
-  enabled: boolean;
-  message?: string;
-  children: React.ReactNode;
-  className?: string;
-  inline?: boolean;
+  enabled: boolean
+  message?: string
+  children: React.ReactNode
+  className?: string
+  inline?: boolean
 }
 
-export default function UpgradeGate({ enabled, message, children, className, inline = false }: Props) {
+export default function UpgradeGate({
+  enabled,
+  message,
+  children,
+  className,
+  inline = false
+}: Props) {
   if (enabled) return <>{children}</>
 
   const tooltipText = message ?? 'Upgrade your plan to unlock this feature.'

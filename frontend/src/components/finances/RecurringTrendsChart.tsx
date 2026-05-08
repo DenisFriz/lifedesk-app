@@ -11,7 +11,13 @@ import {
 } from 'recharts'
 import { format, addMonths, startOfMonth } from 'date-fns'
 
-export default function RecurringTrendsChart({ recurringIncome, recurringExpenses }: { recurringIncome: any[]; recurringExpenses: any[] }) {
+export default function RecurringTrendsChart({
+  recurringIncome,
+  recurringExpenses
+}: {
+  recurringIncome: any[]
+  recurringExpenses: any[]
+}) {
   const months = Array.from({ length: 6 }, (_, i) => addMonths(startOfMonth(new Date()), i))
 
   const frequencyMultipliers = {

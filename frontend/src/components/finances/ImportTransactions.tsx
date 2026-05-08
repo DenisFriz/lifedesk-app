@@ -15,7 +15,13 @@ import { Upload, FileText, CheckCircle, AlertCircle, Briefcase, Lock } from 'luc
 import { categorizeTransaction, saveTransactionRule } from './transactionCategorizer'
 import { Link } from 'react-router-dom'
 
-export default function ImportTransactions({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function ImportTransactions({
+  open,
+  onClose
+}: {
+  open: boolean
+  onClose: () => void
+}) {
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => backend.auth.me()
@@ -23,7 +29,12 @@ export default function ImportTransactions({ open, onClose }: { open: boolean; o
   const isFree = !currentUser?.subscription_tier || currentUser.subscription_tier === 'free'
   const [file, setFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
-  const [result, setResult] = useState<{ success: boolean; incomeCount?: number; expenseCount?: number; error?: string } | null>(null)
+  const [result, setResult] = useState<{
+    success: boolean
+    incomeCount?: number
+    expenseCount?: number
+    error?: string
+  } | null>(null)
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null)
   const [saveRules, setSaveRules] = useState(true)
   const queryClient = useQueryClient()

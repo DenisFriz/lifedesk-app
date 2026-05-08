@@ -28,7 +28,13 @@ import {
 import { backend } from '@/api/backend'
 import { useQuery } from '@tanstack/react-query'
 
-export default function RecurringIncomeForm({ open, onClose, onSubmit, income, isLoading }: {
+export default function RecurringIncomeForm({
+  open,
+  onClose,
+  onSubmit,
+  income,
+  isLoading
+}: {
   open: boolean
   onClose: () => void
   onSubmit: (data: any) => void

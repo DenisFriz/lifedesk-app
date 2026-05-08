@@ -34,7 +34,13 @@ interface ContentFormDialogProps {
   onSave: (form: ContentFormData) => void
 }
 
-export default function ContentFormDialog({ open, onOpenChange, content, campaigns, onSave }: ContentFormDialogProps) {
+export default function ContentFormDialog({
+  open,
+  onOpenChange,
+  content,
+  campaigns,
+  onSave
+}: ContentFormDialogProps) {
   const [form, setForm] = useState<ContentFormData>({
     title: '',
     campaign_id: '',

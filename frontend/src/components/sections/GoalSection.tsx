@@ -37,7 +37,7 @@ export default function GoalSection({ category, onCreateTask }: GoalSectionProps
     }
   })
 
-  const updateMutation = useMutation<any, any, {id: string, data: any}>({
+  const updateMutation = useMutation<any, any, { id: string; data: any }>({
     mutationFn: ({ id, data }) => backend.entities.Goal.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals', category] })

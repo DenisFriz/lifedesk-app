@@ -35,7 +35,8 @@ export default function WhatsNewWidget() {
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {ideas.map(idea => {
-          const cat = categoryConfig[idea.category as keyof typeof categoryConfig] || categoryConfig.other
+          const cat =
+            categoryConfig[idea.category as keyof typeof categoryConfig] || categoryConfig.other
           return (
             <div
               key={idea.id}

@@ -42,7 +42,7 @@ export default function ProblemSection({ category, onCreateTask }: ProblemSectio
     }
   })
 
-  const updateMutation = useMutation<any, any, {id: string, data: any}>({
+  const updateMutation = useMutation<any, any, { id: string; data: any }>({
     mutationFn: ({ id, data }) => backend.entities.Problem.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['problems', category] })

@@ -54,7 +54,7 @@ export default function TaskSection({ category, initialTaskData }: TaskSectionPr
     }
   })
 
-  const updateMutation = useMutation<any, any, {id: string, data: any}>({
+  const updateMutation = useMutation<any, any, { id: string; data: any }>({
     mutationFn: ({ id, data }) => backend.entities.Task.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', category] })

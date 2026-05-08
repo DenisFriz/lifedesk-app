@@ -11,7 +11,13 @@ import {
 } from 'recharts'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns'
 
-export default function IncomeVsExpenseChart({ income, expenses }: { income: any[]; expenses: any[] }) {
+export default function IncomeVsExpenseChart({
+  income,
+  expenses
+}: {
+  income: any[]
+  expenses: any[]
+}) {
   const months = eachMonthOfInterval({
     start: subMonths(new Date(), 5),
     end: new Date()

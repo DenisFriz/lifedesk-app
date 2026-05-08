@@ -27,7 +27,15 @@ import {
   BUSINESS_EXPENSE_CATEGORIES
 } from './categories'
 
-export default function AddToBudgetModal({ open, onClose, transaction }: { open: boolean; onClose: () => void; transaction?: any }) {
+export default function AddToBudgetModal({
+  open,
+  onClose,
+  transaction
+}: {
+  open: boolean
+  onClose: () => void
+  transaction?: any
+}) {
   const queryClient = useQueryClient()
   const isIncome = transaction?.type === 'income'
 

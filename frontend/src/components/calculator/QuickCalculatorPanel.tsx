@@ -23,7 +23,11 @@ interface QuickCalculatorPanelProps {
   setIsOpen: (open: boolean) => void
 }
 
-export default function QuickCalculatorPanel({ collapsed, isOpen, setIsOpen }: QuickCalculatorPanelProps) {
+export default function QuickCalculatorPanel({
+  collapsed,
+  isOpen,
+  setIsOpen
+}: QuickCalculatorPanelProps) {
   const [activeTab, setActiveTab] = useState('basic')
   const [isResizing, setIsResizing] = useState(false)
   const [panelWidth, setPanelWidth] = useState(() => {

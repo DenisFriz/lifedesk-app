@@ -26,7 +26,13 @@ interface ProblemFormProps {
   isLoading?: boolean
 }
 
-export default function ProblemForm({ open, onClose, onSubmit, problem, isLoading }: ProblemFormProps) {
+export default function ProblemForm({
+  open,
+  onClose,
+  onSubmit,
+  problem,
+  isLoading
+}: ProblemFormProps) {
   const [formData, setFormData] = useState<ProblemFormData>({
     title: '',
     description: '',
@@ -62,7 +68,9 @@ export default function ProblemForm({ open, onClose, onSubmit, problem, isLoadin
             <Input
               id="title"
               value={formData.title}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, title: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
               placeholder="What's the problem?"
               maxLength={200}
               required
@@ -73,7 +81,9 @@ export default function ProblemForm({ open, onClose, onSubmit, problem, isLoadin
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               placeholder="Describe the problem..."
               maxLength={5000}
               className="min-h-[80px]"
@@ -83,7 +93,9 @@ export default function ProblemForm({ open, onClose, onSubmit, problem, isLoadin
             <Label>Priority</Label>
             <Select
               value={formData.priority}
-              onValueChange={(value: string) => setFormData({ ...formData, priority: value as 'low' | 'medium' | 'high' })}
+              onValueChange={(value: string) =>
+                setFormData({ ...formData, priority: value as 'low' | 'medium' | 'high' })
+              }
             >
               <SelectTrigger>
                 <SelectValue />

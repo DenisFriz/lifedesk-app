@@ -24,7 +24,13 @@ import {
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from './categories'
 import { Link } from 'react-router-dom'
 
-function PlaidLinkButton({ onSuccess, disabled }: { onSuccess: (token: string, name: string) => void; disabled: boolean }) {
+function PlaidLinkButton({
+  onSuccess,
+  disabled
+}: {
+  onSuccess: (token: string, name: string) => void
+  disabled: boolean
+}) {
   const [linkToken, setLinkToken] = useState(null)
   const [loading, setLoading] = useState(true)
   const [plaidLoaded, setPlaidLoaded] = useState(false)

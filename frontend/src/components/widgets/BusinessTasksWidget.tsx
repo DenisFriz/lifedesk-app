@@ -14,7 +14,8 @@ const priorityColors = {
 export default function BusinessTasksWidget() {
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks-business'],
-    queryFn: () => backend.entities.Task.filter({ category: 'business', status: 'pending' }) as Promise<Task[]>
+    queryFn: () =>
+      backend.entities.Task.filter({ category: 'business', status: 'pending' }) as Promise<Task[]>
   })
 
   const recentTasks = tasks.slice(0, 5)

@@ -3,15 +3,22 @@ import { cn } from '@/lib/utils'
 import { Zap } from 'lucide-react'
 
 interface Props {
-  current: number;
-  max: number | typeof Infinity;
-  label?: string;
-  message?: string;
-  children: React.ReactNode;
-  className?: string;
+  current: number
+  max: number | typeof Infinity
+  label?: string
+  message?: string
+  children: React.ReactNode
+  className?: string
 }
 
-export default function UsageLimitGate({ current, max, label, message, children, className }: Props) {
+export default function UsageLimitGate({
+  current,
+  max,
+  label,
+  message,
+  children,
+  className
+}: Props) {
   const isAtLimit = max !== Infinity && current >= max
 
   if (!isAtLimit) return <>{children}</>

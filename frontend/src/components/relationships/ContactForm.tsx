@@ -47,7 +47,13 @@ interface Props {
   isLoading?: boolean
 }
 
-export default function ContactForm({ open, onClose, onSubmit, contact, isLoading = false }: Props) {
+export default function ContactForm({
+  open,
+  onClose,
+  onSubmit,
+  contact,
+  isLoading = false
+}: Props) {
   const [form, setForm] = useState<FormData>(empty())
 
   useEffect(() => {

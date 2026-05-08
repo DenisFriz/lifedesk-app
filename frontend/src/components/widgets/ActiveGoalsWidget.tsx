@@ -72,9 +72,13 @@ export default function ActiveGoalsWidget() {
                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                     <Badge
                       variant="outline"
-                      className={cn('text-xs', CATEGORY_COLORS[goal.category as keyof typeof CATEGORY_COLORS])}
+                      className={cn(
+                        'text-xs',
+                        CATEGORY_COLORS[goal.category as keyof typeof CATEGORY_COLORS]
+                      )}
                     >
-                      {CATEGORY_LABELS[goal.category as keyof typeof CATEGORY_LABELS] || goal.category}
+                      {CATEGORY_LABELS[goal.category as keyof typeof CATEGORY_LABELS] ||
+                        goal.category}
                     </Badge>
                     {goal.target_date && (
                       <span

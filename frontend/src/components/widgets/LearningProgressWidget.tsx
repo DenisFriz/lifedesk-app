@@ -62,7 +62,9 @@ export default function LearningProgressWidget() {
               key={item.id}
               className="flex items-center gap-2 py-1.5 border-b border-slate-100 last:border-0"
             >
-              <span className="text-base">{TYPE_ICONS[item.type as keyof typeof TYPE_ICONS] || '📌'}</span>
+              <span className="text-base">
+                {TYPE_ICONS[item.type as keyof typeof TYPE_ICONS] || '📌'}
+              </span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-900 truncate">{item.title}</p>
               </div>

@@ -12,7 +12,13 @@ import {
 } from 'recharts'
 import { TrendingUp, TrendingDown, Calendar } from 'lucide-react'
 
-export default function CashFlowForecast({ recurringIncome, recurringExpenses }: { recurringIncome: any[]; recurringExpenses: any[] }) {
+export default function CashFlowForecast({
+  recurringIncome,
+  recurringExpenses
+}: {
+  recurringIncome: any[]
+  recurringExpenses: any[]
+}) {
   const frequencyMultipliers = {
     weekly: 4.33,
     biweekly: 2.17,

@@ -38,7 +38,11 @@ const CATEGORIES = [
 ]
 
 export default function IdeaForm({ open, onClose, onSubmit, isLoading }: IdeaFormProps) {
-  const [form, setForm] = useState<IdeaFormData>({ title: '', description: '', category: 'new_feature' })
+  const [form, setForm] = useState<IdeaFormData>({
+    title: '',
+    description: '',
+    category: 'new_feature'
+  })
   const [showName, setShowName] = useState<boolean>(true)
 
   const set = (k: keyof IdeaFormData, v: string): void => setForm(p => ({ ...p, [k]: v }))
@@ -61,7 +65,9 @@ export default function IdeaForm({ open, onClose, onSubmit, isLoading }: IdeaFor
             <Input
               placeholder="Give your idea a clear title *"
               value={form.title}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('title', e.target.value.slice(0, 50))}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                set('title', e.target.value.slice(0, 50))
+              }
               required
               maxLength={50}
             />
@@ -83,7 +89,9 @@ export default function IdeaForm({ open, onClose, onSubmit, isLoading }: IdeaFor
             <Textarea
               placeholder="Describe your idea in detail — what problem does it solve? How should it work?"
               value={form.description}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('description', e.target.value.slice(0, 500))}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                set('description', e.target.value.slice(0, 500))
+              }
               rows={5}
               className="resize-none"
               maxLength={500}

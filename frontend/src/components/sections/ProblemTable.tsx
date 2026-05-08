@@ -58,7 +58,7 @@ export default function ProblemTable({ category }: ProblemTableProps) {
     (p: any) => p.problem_type === currentType && p.status === currentTab
   )
 
-  const updateMutation = useMutation<any, any, {id: string, data: any}>({
+  const updateMutation = useMutation<any, any, { id: string; data: any }>({
     mutationFn: ({ id, data }) => backend.entities.Problem.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['problems', category] })
@@ -90,7 +90,7 @@ export default function ProblemTable({ category }: ProblemTableProps) {
     }
   })
 
-  const bulkUpdateMutation = useMutation<void, any, {ids: string[], data: any}>({
+  const bulkUpdateMutation = useMutation<void, any, { ids: string[]; data: any }>({
     mutationFn: async ({ ids, data }) => {
       await Promise.all(ids.map(id => backend.entities.Problem.update(id, data)))
     },
@@ -157,7 +157,11 @@ export default function ProblemTable({ category }: ProblemTableProps) {
     }, 150)
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>, problemId: string, field: string): void => {
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+    problemId: string,
+    field: string
+  ): void => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       saveEdit(problemId, field)

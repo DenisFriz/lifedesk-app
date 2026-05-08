@@ -225,7 +225,13 @@ function resolveRange(period) {
 
 export { resolveRange }
 
-export default function BankBalanceChart({ income = [], expenses = [] }: { income?: any[]; expenses?: any[] }) {
+export default function BankBalanceChart({
+  income = [],
+  expenses = []
+}: {
+  income?: any[]
+  expenses?: any[]
+}) {
   const queryClient = useQueryClient()
   const [selectedAccount, setSelectedAccount] = useState('all')
   const [timePeriod, setTimePeriod] = useState('this_year')

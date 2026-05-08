@@ -53,7 +53,13 @@ interface Props {
   isLoading?: boolean
 }
 
-export default function LearningItemForm({ open, onClose, onSubmit, item, isLoading = false }: Props) {
+export default function LearningItemForm({
+  open,
+  onClose,
+  onSubmit,
+  item,
+  isLoading = false
+}: Props) {
   const [form, setForm] = useState<FormData>(empty())
 
   useEffect(() => {

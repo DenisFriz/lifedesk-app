@@ -7,7 +7,15 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 
-export default function TransactionForm({ type, transaction, onClose }: { type: 'income' | 'expense'; transaction?: any; onClose: () => void }) {
+export default function TransactionForm({
+  type,
+  transaction,
+  onClose
+}: {
+  type: 'income' | 'expense'
+  transaction?: any
+  onClose: () => void
+}) {
   const queryClient = useQueryClient()
   const [formData, setFormData] = useState({
     title: transaction?.title || '',

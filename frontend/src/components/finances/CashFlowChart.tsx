@@ -146,7 +146,15 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<any, any>) => {
   )
 }
 
-export default function CashFlowChart({ income, expenses, dateRange }: { income: any[]; expenses: any[]; dateRange?: any }) {
+export default function CashFlowChart({
+  income,
+  expenses,
+  dateRange
+}: {
+  income: any[]
+  expenses: any[]
+  dateRange?: any
+}) {
   const data = useMemo(
     () => buildChartData(income, expenses, dateRange),
     [income, expenses, dateRange]

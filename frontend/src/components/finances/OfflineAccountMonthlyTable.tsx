@@ -68,7 +68,15 @@ function applyFilter(filter) {
   return []
 }
 
-function MonthCell({ account, monthKey, snapshot, prevSnapshot, onSave, onDelete, readOnly }: {
+function MonthCell({
+  account,
+  monthKey,
+  snapshot,
+  prevSnapshot,
+  onSave,
+  onDelete,
+  readOnly
+}: {
   account: any
   monthKey: string
   snapshot: any
@@ -192,7 +200,13 @@ function MonthCell({ account, monthKey, snapshot, prevSnapshot, onSave, onDelete
   )
 }
 
-export default function OfflineAccountMonthlyTable({ account, readOnly = false }: { account: any; readOnly?: boolean }) {
+export default function OfflineAccountMonthlyTable({
+  account,
+  readOnly = false
+}: {
+  account: any
+  readOnly?: boolean
+}) {
   const queryClient = useQueryClient()
   const [filter, setFilter] = useState('this_year')
 

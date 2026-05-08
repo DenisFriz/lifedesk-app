@@ -18,7 +18,12 @@ interface DeleteAccountDialogProps {
   userEmail: string
 }
 
-export default function DeleteAccountDialog({ isOpen, onClose, onSuccess, userEmail }: DeleteAccountDialogProps) {
+export default function DeleteAccountDialog({
+  isOpen,
+  onClose,
+  onSuccess,
+  userEmail
+}: DeleteAccountDialogProps) {
   const [step, setStep] = useState<Step>('confirm')
   const [password, setPassword] = useState<string>('')
   const [error, setError] = useState<string>('')

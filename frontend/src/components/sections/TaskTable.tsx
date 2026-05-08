@@ -77,7 +77,12 @@ interface ReminderValues {
   [key: string]: number[]
 }
 
-export default function TaskTable({ filterType = 'all', category, businessId, isActive = true }: TaskTableProps) {
+export default function TaskTable({
+  filterType = 'all',
+  category,
+  businessId,
+  isActive = true
+}: TaskTableProps) {
   const [taskValues, setTaskValues] = useState<TaskValues>({})
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
@@ -143,7 +148,7 @@ export default function TaskTable({ filterType = 'all', category, businessId, is
     tasks = allTasks.filter(t => t.category === 'business' && t.business_id === businessId)
   }
 
-  const updateMutation = useMutation<any, any, {id: string, data: any}>({
+  const updateMutation = useMutation<any, any, { id: string; data: any }>({
     mutationFn: ({ id, data }) => backend.entities.Task.update(id, data),
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ['tasks'] })
@@ -237,7 +242,7 @@ export default function TaskTable({ filterType = 'all', category, businessId, is
     }
   })
 
-  const bulkUpdateMutation = useMutation<void, any, {ids: string[], data: any}>({
+  const bulkUpdateMutation = useMutation<void, any, { ids: string[]; data: any }>({
     mutationFn: async ({ ids, data }) => {
       if (data.status === 'archived') {
         playAudio('archived')
@@ -412,8 +417,12 @@ export default function TaskTable({ filterType = 'all', category, businessId, is
     }
   }
 
-  const handleCategorySelect = (selectedCategory: string, selectedBusinessId?: string | null): void => {
-    const minOrder = allTasks.length > 0 ? Math.min(...allTasks.map((t: any) => t.order ?? 999999)) : 0
+  const handleCategorySelect = (
+    selectedCategory: string,
+    selectedBusinessId?: string | null
+  ): void => {
+    const minOrder =
+      allTasks.length > 0 ? Math.min(...allTasks.map((t: any) => t.order ?? 999999)) : 0
     const data: any = {
       title: 'New Task',
       status: 'pending',

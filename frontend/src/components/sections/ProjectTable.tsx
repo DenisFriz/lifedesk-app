@@ -57,7 +57,7 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
     return statusFilter === 'all' || project.status === statusFilter
   })
 
-  const updateMutation = useMutation<any, any, {id: string, data: any}>({
+  const updateMutation = useMutation<any, any, { id: string; data: any }>({
     mutationFn: ({ id, data }) => backend.entities.Project.update(id, data),
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ['projects', businessId] })
@@ -99,7 +99,7 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
     }
   })
 
-  const bulkUpdateMutation = useMutation<void, any, {ids: string[], data: any}>({
+  const bulkUpdateMutation = useMutation<void, any, { ids: string[]; data: any }>({
     mutationFn: async ({ ids, data }) => {
       await Promise.all(ids.map(id => backend.entities.Project.update(id, data)))
     },
@@ -155,12 +155,16 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>, project: any, field: string): void => {
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+    project: any,
+    field: string
+  ): void => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      (e.target as HTMLElement).blur()
+      e.preventDefault()
+      ;(e.target as HTMLElement).blur()
     } else if (e.key === 'Escape') {
-      (e.target as HTMLElement).blur()
+      ;(e.target as HTMLElement).blur()
     }
   }
 
