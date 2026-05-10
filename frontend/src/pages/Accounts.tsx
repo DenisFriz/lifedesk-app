@@ -17,7 +17,7 @@ import {
 import { useSubscription } from '@/hooks/useSubscription'
 import { Link } from 'react-router-dom'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-
+const xx = ['EUR', 'USD', 'GBP', 'CHF']
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   Select,
