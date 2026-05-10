@@ -125,13 +125,22 @@ export default function ExpenseForm({
             <Input
               id="title"
               value={formData.title}
-              onChange={e => {
+              onChange={async e => {
                 const title = e.target.value
-                setFormData({ ...formData, title })
+
+                setFormData(prev => ({
+                  ...prev,
+                  title
+                }))
+
                 if (title && !expense) {
-                  const suggestedCategory = categorizeTransaction(title)
-                  if (suggestedCategory !== 'Uncategorized') {
-                    setFormData(prev => ({ ...prev, category: suggestedCategory }))
+                  const result = await categorizeTransaction(title)
+
+                  if (result.category !== 'Uncategorized') {
+                    setFormData(prev => ({
+                      ...prev,
+                      category: result.category
+                    }))
                   }
                 }
               }}

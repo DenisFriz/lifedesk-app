@@ -383,7 +383,8 @@ export default function ContentViews({ businessId }: ContentViewsProps2) {
   })
 
   const createMutation = useMutation({
-    mutationFn: data => backend.entities.ContentIdea.create({ ...data, business_id: businessId }),
+    mutationFn: (data: Record<string, any>) =>
+      backend.entities.ContentIdea.create({ ...data, business_id: businessId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content', businessId] })
       setDialogOpen(false)
@@ -391,7 +392,8 @@ export default function ContentViews({ businessId }: ContentViewsProps2) {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => backend.entities.ContentIdea.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
+      backend.entities.ContentIdea.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content', businessId] })
       setDialogOpen(false)
@@ -400,7 +402,7 @@ export default function ContentViews({ businessId }: ContentViewsProps2) {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: id => backend.entities.ContentIdea.delete(id),
+    mutationFn: (id: string) => backend.entities.ContentIdea.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['content', businessId] })
   })
 

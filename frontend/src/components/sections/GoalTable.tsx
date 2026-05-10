@@ -143,7 +143,13 @@ function TasksToggleButton({
   )
 }
 
-export default function GoalTable({ category, businessId, filterType }) {
+type GoalTableProps = {
+  category?: string
+  businessId?: string
+  filterType?: 'important' | 'business' | 'category' | 'all'
+}
+
+export default function GoalTable({ category, businessId, filterType }: GoalTableProps) {
   const [editingField, setEditingField] = useState(null)
   const [editValue, setEditValue] = useState('')
   const [sortBy, setSortBy] = useState(null)
@@ -176,27 +182,27 @@ export default function GoalTable({ category, businessId, filterType }) {
 
   const goalsLimit = limit('home_goals_limit')
 
-  const { data: allGoals = [] } = useQuery({
+  const { data: allGoals = [] } = useQuery<any[]>({
     queryKey: ['goals'],
     queryFn: async () => {
       const d = await offlineFirst('goals', () => backend.entities.Goal.list('-created_date'))
-      return d.filter(r => !r.is_deleted)
+      return (d as any[]).filter(r => !r.is_deleted)
     }
   })
 
-  const { data: businesses = [] } = useQuery({
+  const { data: businesses = [] } = useQuery<any[]>({
     queryKey: ['businesses'],
     queryFn: async () => {
       const d = await backend.entities.Business.list('order')
-      return d.filter(r => !r.is_deleted)
+      return (d as any[]).filter(r => !r.is_deleted)
     }
   })
 
-  const { data: allTasks = [] } = useQuery({
+  const { data: allTasks = [] } = useQuery<any[]>({
     queryKey: ['tasks'],
     queryFn: async () => {
       const d = await offlineFirst('tasks', () => backend.entities.Task.list('-created_date'))
-      return d.filter(r => !r.is_deleted)
+      return (d as any[]).filter(r => !r.is_deleted)
     }
   })
 
@@ -230,7 +236,7 @@ export default function GoalTable({ category, businessId, filterType }) {
     return business ? business.name : 'Business'
   }
 
-  const updateMutation = useMutation({
+  const updateMutation = useMutation<any, any, { id: string; data: Record<string, any> }>({
     mutationFn: async ({ id, data }) => {
       const result = await backend.entities.Goal.update(id, data)
 
@@ -253,13 +259,13 @@ export default function GoalTable({ category, businessId, filterType }) {
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ['goals'] })
       const previousGoals = queryClient.getQueryData(['goals'])
-      queryClient.setQueryData(['goals'], oldGoals => {
+      queryClient.setQueryData(['goals'], (oldGoals: any) => {
         if (!oldGoals) return oldGoals
-        return oldGoals.map(goal => (goal.id === id ? { ...goal, ...data } : goal))
+        return oldGoals.map((goal: any) => (goal.id === id ? { ...goal, ...data } : goal))
       })
       return { previousGoals }
     },
-    onError: (err, variables, context) => {
+    onError: (err, variables, context: any) => {
       if (context?.previousGoals) {
         queryClient.setQueryData(['goals'], context.previousGoals)
       }
@@ -271,7 +277,7 @@ export default function GoalTable({ category, businessId, filterType }) {
     }
   })
 
-  const updateGoalOrderMutation = useMutation({
+  const updateGoalOrderMutation = useMutation<any, any, { id: string; order: number }[]>({
     mutationFn: async updatedGoals => {
       return Promise.all(
         updatedGoals.map(goal => backend.entities.Goal.update(goal.id, { order: goal.order }))
@@ -280,17 +286,17 @@ export default function GoalTable({ category, businessId, filterType }) {
     onMutate: async newOrderGoals => {
       await queryClient.cancelQueries({ queryKey: ['goals'] })
       const previousGoals = queryClient.getQueryData(['goals'])
-      queryClient.setQueryData(['goals'], oldGoals => {
+      queryClient.setQueryData(['goals'], (oldGoals: any) => {
         if (!oldGoals) return oldGoals
-        const newGoalsMap = new Map(newOrderGoals.map(goal => [goal.id, goal.order]))
-        return oldGoals.map(goal => ({
+        const newGoalsMap = new Map(newOrderGoals.map((goal: any) => [goal.id, goal.order]))
+        return oldGoals.map((goal: any) => ({
           ...goal,
           order: newGoalsMap.has(goal.id) ? newGoalsMap.get(goal.id) : goal.order
         }))
       })
       return { previousGoals }
     },
-    onError: (err, newOrderGoals, context) => {
+    onError: (err, newOrderGoals, context: any) => {
       if (context?.previousGoals) {
         queryClient.setQueryData(['goals'], context.previousGoals)
       }
@@ -302,25 +308,25 @@ export default function GoalTable({ category, businessId, filterType }) {
     }
   })
 
-  const createMutation = useMutation({
+  const createMutation = useMutation<any, any, Record<string, any>>({
     mutationFn: data => offlineCreate('goals', backend.entities.Goal, data),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: ['goals'] })
       return { previousGoals: queryClient.getQueryData(['goals']) }
     },
     onSuccess: newGoal => {
-      queryClient.setQueryData(['goals'], old => {
+      queryClient.setQueryData(['goals'], (old: any) => {
         if (!old) return [newGoal]
-        const exists = old.find(g => g.id === newGoal.id)
-        return exists ? old.map(g => (g.id === newGoal.id ? newGoal : g)) : [newGoal, ...old]
+        const exists = old.find((g: any) => g.id === newGoal.id)
+        return exists ? old.map((g: any) => (g.id === newGoal.id ? newGoal : g)) : [newGoal, ...old]
       })
     },
-    onError: (err, variables, context) => {
+    onError: (err, variables, context: any) => {
       if (context?.previousGoals) queryClient.setQueryData(['goals'], context.previousGoals)
     }
   })
 
-  const deleteMutation = useMutation({
+  const deleteMutation = useMutation<void, any, string>({
     mutationFn: id => {
       playAudio('delete')
       return backend.entities.Goal.delete(id)
@@ -330,7 +336,7 @@ export default function GoalTable({ category, businessId, filterType }) {
     }
   })
 
-  const duplicateMutation = useMutation({
+  const duplicateMutation = useMutation<any, any, Record<string, any>>({
     mutationFn: goal => {
       const { id, created_date, updated_date, created_by, ...rest } = goal
       return backend.entities.Goal.create({
@@ -345,7 +351,7 @@ export default function GoalTable({ category, businessId, filterType }) {
     }
   })
 
-  const bulkDeleteMutation = useMutation({
+  const bulkDeleteMutation = useMutation<void, any, string[]>({
     mutationFn: async ids => {
       playAudio('delete')
       await Promise.all(ids.map(id => backend.entities.Goal.delete(id)))
@@ -356,7 +362,7 @@ export default function GoalTable({ category, businessId, filterType }) {
     }
   })
 
-  const bulkUpdateMutation = useMutation({
+  const bulkUpdateMutation = useMutation<void, any, { ids: string[]; data: Record<string, any> }>({
     mutationFn: async ({ ids, data }) => {
       if (data.status === 'archived') {
         playAudio('archived')
@@ -366,13 +372,13 @@ export default function GoalTable({ category, businessId, filterType }) {
     onMutate: async ({ ids, data }) => {
       await queryClient.cancelQueries({ queryKey: ['goals'] })
       const previousGoals = queryClient.getQueryData(['goals'])
-      queryClient.setQueryData(['goals'], oldGoals => {
+      queryClient.setQueryData(['goals'], (oldGoals: any) => {
         if (!oldGoals) return oldGoals
-        return oldGoals.map(goal => (ids.includes(goal.id) ? { ...goal, ...data } : goal))
+        return oldGoals.map((goal: any) => (ids.includes(goal.id) ? { ...goal, ...data } : goal))
       })
       return { previousGoals }
     },
-    onError: (err, variables, context) => {
+    onError: (err, variables, context: any) => {
       if (context?.previousGoals) {
         queryClient.setQueryData(['goals'], context.previousGoals)
       }
@@ -442,7 +448,7 @@ export default function GoalTable({ category, businessId, filterType }) {
 
     setReorderGoals(newItems)
 
-    const updatedOrderForBackend = newItems.map((goal, index) => ({
+    const updatedOrderForBackend = newItems.map((goal: any, index) => ({
       id: goal.id,
       order: index
     }))
@@ -580,7 +586,7 @@ export default function GoalTable({ category, businessId, filterType }) {
         title: 'New Goal',
         status: 'active',
         order: minOrder === 999999 ? 0 : minOrder - 1
-      }
+      } as Record<string, any>
 
       if (filterType === 'important') {
         data.important = true
@@ -605,7 +611,7 @@ export default function GoalTable({ category, businessId, filterType }) {
       status: 'active',
       category: selectedCategory,
       order: minOrder === 999999 ? 0 : minOrder - 1
-    }
+    } as Record<string, any>
 
     if (selectedBusinessId) {
       data.business_id = selectedBusinessId
@@ -653,18 +659,18 @@ export default function GoalTable({ category, businessId, filterType }) {
       })
   }
 
-  const updateTaskMutation = useMutation({
+  const updateTaskMutation = useMutation<any, any, { id: string; data: Record<string, any> }>({
     mutationFn: ({ id, data }) => backend.entities.Task.update(id, data),
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ['tasks'] })
       const previousTasks = queryClient.getQueryData(['tasks'])
-      queryClient.setQueryData(['tasks'], oldTasks => {
+      queryClient.setQueryData(['tasks'], (oldTasks: any) => {
         if (!oldTasks) return oldTasks
-        return oldTasks.map(task => (task.id === id ? { ...task, ...data } : task))
+        return oldTasks.map((task: any) => (task.id === id ? { ...task, ...data } : task))
       })
       return { previousTasks }
     },
-    onError: (err, variables, context) => {
+    onError: (err, variables, context: any) => {
       if (context?.previousTasks) {
         queryClient.setQueryData(['tasks'], context.previousTasks)
       }
@@ -674,26 +680,28 @@ export default function GoalTable({ category, businessId, filterType }) {
     }
   })
 
-  const updateTaskOrderMutation = useMutation({
+  const updateTaskOrderMutation = useMutation<any, any, { id: string; order: number }[]>({
     mutationFn: async updatedTasks => {
       return Promise.all(
-        updatedTasks.map(task => backend.entities.Task.update(task.id, { order: task.order }))
+        updatedTasks.map((task: any) =>
+          backend.entities.Task.update(task.id, { order: task.order })
+        )
       )
     },
     onMutate: async newOrderTasks => {
       await queryClient.cancelQueries({ queryKey: ['tasks'] })
       const previousTasks = queryClient.getQueryData(['tasks'])
-      queryClient.setQueryData(['tasks'], oldTasks => {
+      queryClient.setQueryData(['tasks'], (oldTasks: any) => {
         if (!oldTasks) return oldTasks
-        const newTasksMap = new Map(newOrderTasks.map(task => [task.id, task.order]))
-        return oldTasks.map(task => ({
+        const newTasksMap = new Map(newOrderTasks.map((task: any) => [task.id, task.order]))
+        return oldTasks.map((task: any) => ({
           ...task,
           order: newTasksMap.has(task.id) ? newTasksMap.get(task.id) : task.order
         }))
       })
       return { previousTasks }
     },
-    onError: (err, newOrderTasks, context) => {
+    onError: (err, newOrderTasks, context: any) => {
       if (context?.previousTasks) {
         queryClient.setQueryData(['tasks'], context.previousTasks)
       }
@@ -1143,7 +1151,10 @@ export default function GoalTable({ category, businessId, filterType }) {
                                                 value={editValue}
                                                 onValueChange={value => {
                                                   setEditValue(value)
-                                                  const updateData = { category: value }
+                                                  const updateData = { category: value } as Record<
+                                                    string,
+                                                    any
+                                                  >
                                                   if (value !== 'business') {
                                                     updateData.business_id = null
                                                   }
@@ -1271,7 +1282,7 @@ export default function GoalTable({ category, businessId, filterType }) {
                                                 if (!e.currentTarget.contains(e.relatedTarget)) {
                                                   const timeInput = document.querySelector(
                                                     `input[data-time-for="${goal.id}"]`
-                                                  )
+                                                  ) as HTMLInputElement | null
                                                   const reminders = reminderValues[goal.id] || []
                                                   saveEdit(goal.id, 'target_date', {
                                                     target_time: timeInput?.value || null,
@@ -1290,7 +1301,7 @@ export default function GoalTable({ category, businessId, filterType }) {
                                                   if (e.key === 'Enter') {
                                                     const timeInput = document.querySelector(
                                                       `input[data-time-for="${goal.id}"]`
-                                                    )
+                                                    ) as HTMLInputElement | null
                                                     const reminders = reminderValues[goal.id] || []
                                                     saveEdit(goal.id, 'target_date', {
                                                       target_time: timeInput?.value || null,
@@ -1318,7 +1329,7 @@ export default function GoalTable({ category, businessId, filterType }) {
                                                     if (e.key === 'Enter') {
                                                       const timeInput = document.querySelector(
                                                         `input[data-time-for="${goal.id}"]`
-                                                      )
+                                                      ) as HTMLInputElement | null
                                                       const reminders =
                                                         reminderValues[goal.id] || []
                                                       saveEdit(goal.id, 'target_date', {
@@ -1805,13 +1816,17 @@ export default function GoalTable({ category, businessId, filterType }) {
                                                     backend.entities.Task,
                                                     data
                                                   ).then(newTask => {
-                                                    queryClient.setQueryData(['tasks'], old =>
-                                                      old
-                                                        ? [
-                                                            newTask,
-                                                            ...old.filter(t => t.id !== newTask.id)
-                                                          ]
-                                                        : [newTask]
+                                                    queryClient.setQueryData(
+                                                      ['tasks'],
+                                                      (old: any) =>
+                                                        old
+                                                          ? [
+                                                              newTask,
+                                                              ...old.filter(
+                                                                t => t.id !== newTask.id
+                                                              )
+                                                            ]
+                                                          : [newTask]
                                                     )
                                                   })
                                                 }}
@@ -2002,7 +2017,7 @@ export default function GoalTable({ category, businessId, filterType }) {
                                                   : goal.category
                                               }
                                               onValueChange={value => {
-                                                const updateData = {}
+                                                const updateData: Record<string, any> = {}
                                                 if (value.startsWith('business-')) {
                                                   updateData.category = 'business'
                                                   updateData.business_id = value.replace(
@@ -2081,7 +2096,7 @@ export default function GoalTable({ category, businessId, filterType }) {
                                                   ) {
                                                     const timeInput = document.querySelector(
                                                       `input[data-mobile-time-for="${goal.id}"]`
-                                                    )
+                                                    ) as HTMLInputElement | null
                                                     handleBlur(goal.id, 'target_date', {
                                                       target_time: timeInput?.value || null
                                                     })
@@ -2091,7 +2106,7 @@ export default function GoalTable({ category, businessId, filterType }) {
                                                   if (e.key === 'Enter') {
                                                     const timeInput = document.querySelector(
                                                       `input[data-mobile-time-for="${goal.id}"]`
-                                                    )
+                                                    ) as HTMLInputElement | null
                                                     saveEdit(goal.id, 'target_date', {
                                                       target_time: timeInput?.value || null
                                                     })
@@ -2111,7 +2126,7 @@ export default function GoalTable({ category, businessId, filterType }) {
                                                   if (e.key === 'Enter') {
                                                     const timeInput = document.querySelector(
                                                       `input[data-mobile-time-for="${goal.id}"]`
-                                                    )
+                                                    ) as HTMLInputElement | null
                                                     saveEdit(goal.id, 'target_date', {
                                                       target_time: timeInput?.value || null
                                                     })
@@ -2351,7 +2366,7 @@ export default function GoalTable({ category, businessId, filterType }) {
                                                                 const timeInput =
                                                                   document.querySelector(
                                                                     `input[data-mobile-task-time-for="${task.id}"]`
-                                                                  )
+                                                                  ) as HTMLInputElement | null
                                                                 saveTaskEdit(task.id, 'due_date')
                                                                 updateTaskMutation.mutate({
                                                                   id: task.id,
@@ -2367,7 +2382,7 @@ export default function GoalTable({ category, businessId, filterType }) {
                                                                 const timeInput =
                                                                   document.querySelector(
                                                                     `input[data-mobile-task-time-for="${task.id}"]`
-                                                                  )
+                                                                  ) as HTMLInputElement | null
                                                                 saveTaskEdit(task.id, 'due_date')
                                                                 updateTaskMutation.mutate({
                                                                   id: task.id,
@@ -2394,7 +2409,7 @@ export default function GoalTable({ category, businessId, filterType }) {
                                                                 const timeInput =
                                                                   document.querySelector(
                                                                     `input[data-mobile-task-time-for="${task.id}"]`
-                                                                  )
+                                                                  ) as HTMLInputElement | null
                                                                 saveTaskEdit(task.id, 'due_date')
                                                                 updateTaskMutation.mutate({
                                                                   id: task.id,
@@ -2503,7 +2518,7 @@ export default function GoalTable({ category, businessId, filterType }) {
                                                 backend.entities.Task,
                                                 data
                                               ).then(newTask => {
-                                                queryClient.setQueryData(['tasks'], old =>
+                                                queryClient.setQueryData(['tasks'], (old: any) =>
                                                   old
                                                     ? [
                                                         newTask,

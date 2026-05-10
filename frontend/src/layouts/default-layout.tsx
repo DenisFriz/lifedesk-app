@@ -5,7 +5,7 @@ import { createPageUrl } from '@/utils'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Scrollbars, positionValues } from 'react-custom-scrollbars-2'
+import { Scrollbars } from 'react-custom-scrollbars-2'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 
 import {
@@ -85,7 +85,7 @@ interface NavItemProps {
   item: NavItemType
   level?: number
   parentName?: string | null
-  isDragging?: ConstrainBooleanOrDOMString
+  isDragging?: boolean
   dragHandleProps?: DraggableProvidedDragHandleProps | null
   onNavigate?: () => void
   isFirst?: boolean

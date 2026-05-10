@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
@@ -48,7 +48,7 @@ function PlaidLinkButton({
 
     backend.functions
       .invoke('plaid', { action: 'create_link_token' })
-      .then(res => setLinkToken(res.data.link_token))
+      .then((res: { data: { link_token: string } }) => setLinkToken(res.data.link_token))
       .finally(() => setLoading(false))
   }, [])
 
@@ -152,15 +152,24 @@ export default function BankConnectionManager({
   } = useQuery({
     queryKey: ['plaid-connections'],
     queryFn: async () => {
-      const res = await backend.functions.invoke('plaid', { action: 'get_connections' })
-      return res.data.connections || []
+      const res = await backend.functions.invoke<{ data: { connections: any[] } }>('plaid', {
+        action: 'get_connections'
+      })
+
+      return res.data?.connections || []
     },
     enabled: open
   })
 
   const connectMutation = useMutation({
-    mutationFn: async ({ public_token, institution_name }) => {
-      const res = await backend.functions.invoke('plaid', {
+    mutationFn: async ({
+      public_token,
+      institution_name
+    }: {
+      public_token: string
+      institution_name: string
+    }) => {
+      const res = await backend.functions.invoke<any>('plaid', {
         action: 'exchange_public_token',
         public_token,
         institution_name
@@ -171,8 +180,8 @@ export default function BankConnectionManager({
   })
 
   const fetchForReviewMutation = useMutation({
-    mutationFn: async ({ days }) => {
-      const res = await backend.functions.invoke('plaid', { action: 'get_transactions', days })
+    mutationFn: async ({ days }: { days: number }) => {
+      const res = await backend.functions.invoke<any>('plaid', { action: 'get_transactions', days })
       return res.data.transactions || []
     },
     onSuccess: transactions => {
@@ -190,7 +199,7 @@ export default function BankConnectionManager({
   })
 
   const importMutation = useMutation({
-    mutationFn: async txList => {
+    mutationFn: async (txList: any[]) => {
       const toImport = txList.filter(tx => tx.include)
       for (const tx of toImport) {
         const amount = Math.abs(tx.amount)
@@ -259,12 +268,16 @@ export default function BankConnectionManager({
 
   const categorySummary = useMemo(() => {
     if (!reviewTransactions) return []
+
     const expenses = reviewTransactions.filter(tx => tx.include && tx.amount < 0)
-    const map = {}
+
+    const map: Record<string, number> = {}
+
     for (const tx of expenses) {
       const cat = tx.category || 'Other'
       map[cat] = (map[cat] || 0) + Math.abs(tx.amount)
     }
+
     return Object.entries(map)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8)

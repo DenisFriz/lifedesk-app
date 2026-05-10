@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery } from '@tanstack/react-query'
 import { formatCurrency } from '@/components/utils/formatters'
@@ -66,12 +66,18 @@ export default function PlannedVsActual({
       const d = new Date(i.date)
       return d >= monthStart && d <= monthEnd
     })
-    if (businessId) txs = txs.filter(i => String(i.business_id) === String(businessId))
-    const map = {}
+
+    if (businessId) {
+      txs = txs.filter(i => String(i.business_id) === String(businessId))
+    }
+
+    const map: Record<string, number> = {}
+
     txs.forEach(i => {
       const c = i.category || 'Uncategorized'
       map[c] = (map[c] || 0) + (i.amount || 0)
     })
+
     return map
   }, [allIncome, selectedMonth, businessId])
 
@@ -80,8 +86,11 @@ export default function PlannedVsActual({
       const d = new Date(e.date)
       return d >= monthStart && d <= monthEnd
     })
+
     if (businessId) txs = txs.filter(e => String(e.business_id) === String(businessId))
-    const map = {}
+
+    const map: Record<string, number> = {}
+
     txs.forEach(e => {
       const c = e.category || 'Uncategorized'
       map[c] = (map[c] || 0) + (e.amount || 0)
@@ -90,24 +99,28 @@ export default function PlannedVsActual({
   }, [allExpenses, selectedMonth, businessId])
 
   const plannedIncome = useMemo(() => {
-    const map = {}
+    const map: Record<string, number> = {}
+
     recurringIncome
       .filter(i => i.active !== false)
       .forEach(i => {
         const c = i.category || 'Uncategorized'
         map[c] = (map[c] || 0) + i.amount * (frequencyMultiplier[i.frequency] || 1)
       })
+
     return map
   }, [recurringIncome])
 
   const plannedExpenses = useMemo(() => {
-    const map = {}
+    const map: Record<string, number> = {}
+
     recurringExpenses
       .filter(e => e.active !== false)
       .forEach(e => {
         const c = e.category || 'Uncategorized'
         map[c] = (map[c] || 0) + e.amount * (frequencyMultiplier[e.frequency] || 1)
       })
+
     return map
   }, [recurringExpenses])
 

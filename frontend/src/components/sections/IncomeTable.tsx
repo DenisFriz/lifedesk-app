@@ -37,7 +37,7 @@ export default function IncomeTable({ businessId }) {
   const queryClient = useQueryClient()
   const blurTimeoutRef = React.useRef(null)
 
-  const { data: allIncome = [] } = useQuery({
+  const { data: allIncome = [] } = useQuery<any[]>({
     queryKey: ['income', businessId],
     queryFn: () => {
       if (businessId) {
@@ -53,17 +53,17 @@ export default function IncomeTable({ businessId }) {
     return categoryFilter === 'all' || income.category === categoryFilter
   })
 
-  const updateMutation = useMutation({
+  const updateMutation = useMutation<any, any, { id: string; data: Record<string, any> }>({
     mutationFn: ({ id, data }) => backend.entities.Income.update(id, data),
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ['income', businessId] })
       const previousIncome = queryClient.getQueryData(['income', businessId])
-      queryClient.setQueryData(['income', businessId], old =>
-        old.map(income => (income.id === id ? { ...income, ...data } : income))
+      queryClient.setQueryData(['income', businessId], (old: any) =>
+        old.map((income: any) => (income.id === id ? { ...income, ...data } : income))
       )
       return { previousIncome }
     },
-    onError: (err, variables, context) => {
+    onError: (err, variables, context: any) => {
       queryClient.setQueryData(['income', businessId], context.previousIncome)
     },
     onSuccess: () => {
@@ -72,21 +72,21 @@ export default function IncomeTable({ businessId }) {
     }
   })
 
-  const createMutation = useMutation({
+  const createMutation = useMutation<any, any, Record<string, any>>({
     mutationFn: data => backend.entities.Income.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['income', businessId] })
     }
   })
 
-  const deleteMutation = useMutation({
+  const deleteMutation = useMutation<void, any, string>({
     mutationFn: id => backend.entities.Income.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['income', businessId] })
     }
   })
 
-  const bulkDeleteMutation = useMutation({
+  const bulkDeleteMutation = useMutation<void, any, string[]>({
     mutationFn: async ids => {
       await Promise.all(ids.map(id => backend.entities.Income.delete(id)))
     },
@@ -164,7 +164,7 @@ export default function IncomeTable({ businessId }) {
       title: 'New Income',
       amount: 0,
       date: new Date().toISOString().split('T')[0]
-    }
+    } as Record<string, any>
     if (businessId) data.business_id = businessId
     createMutation.mutate(data)
   }

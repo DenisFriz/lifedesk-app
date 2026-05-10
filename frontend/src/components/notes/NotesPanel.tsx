@@ -109,7 +109,7 @@ function NotesPanelContent({ collapsed }: NotesPanelContentProps) {
   })
 
   const updateNoteMutation = useMutation({
-    mutationFn: async ({ category, newContent }) => {
+    mutationFn: async ({ category, newContent }: { category: string; newContent: string }) => {
       const existingNote = notesRef.current.find(n => n.category === category)
       if (existingNote) {
         return backend.entities.Note.update(existingNote.id, { content: newContent })

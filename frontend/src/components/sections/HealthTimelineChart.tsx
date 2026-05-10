@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,7 @@ import {
   ResponsiveContainer
 } from 'recharts'
 import { Calendar, Eye, EyeOff } from 'lucide-react'
-import { format, subDays, parseISO, isAfter } from 'date-fns'
+import { format, subDays, parseISO } from 'date-fns'
 
 const problemTypes = [
   { value: 'health_problem', label: 'Health Problems', color: '#ef4444', yPos: 0 },
@@ -37,7 +37,7 @@ export default function HealthTimelineChart({ category }) {
   const [visibleTypes, setVisibleTypes] = useState(problemTypes.map(t => t.value))
   const [selectedPeriod, setSelectedPeriod] = useState('all')
 
-  const { data: problems = [] } = useQuery({
+  const { data: problems = [] } = useQuery<any[]>({
     queryKey: ['problems', category],
     queryFn: () => backend.entities.Problem.filter({ category })
   })
@@ -59,7 +59,7 @@ export default function HealthTimelineChart({ category }) {
     const rangeEnd = now
 
     // Collect all unique dates where any problem starts or ends
-    const allDates = new Set()
+    const allDates = new Set<number>()
 
     const filteredProblems = problems.filter(p => {
       if (!p.show_in_timeline || !p.date_occurred) return false
@@ -155,7 +155,7 @@ export default function HealthTimelineChart({ category }) {
     return [startDate, endDate]
   }, [selectedPeriod])
 
-  const CustomTooltip = ({ active, payload }) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
     if (active && payload && payload.length) {
       const hoveredProblems = payload
         .filter(p => p.dataKey !== 'date')

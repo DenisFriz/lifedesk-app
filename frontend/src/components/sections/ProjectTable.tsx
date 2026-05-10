@@ -41,10 +41,10 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
     queryFn: async () => {
       if (businessId) {
         const data = await backend.entities.Project.filter({ business_id: businessId })
-        return data.filter(r => !r.is_deleted)
+        return (data as any[]).filter(r => !r.is_deleted)
       }
       const data = await backend.entities.Project.list('-created_date')
-      return data.filter(r => !r.is_deleted)
+      return (data as any[]).filter(r => !r.is_deleted)
     }
   })
 

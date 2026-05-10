@@ -49,12 +49,12 @@ export interface NavItem {
 // ─── API ──────────────────────────────────────────────────────────────────
 
 export interface EntityApi {
-  list: (sort?: string, limit?: number) => Promise<unknown[]>
-  filter: (conditions: Record<string, unknown>, sort?: string, limit?: number) => Promise<unknown[]>
-  create: (data: Record<string, unknown>) => Promise<unknown>
-  update: (id: string, data: Record<string, unknown>) => Promise<unknown>
+  list: (sort?: string, limit?: number) => Promise<any[]>
+  filter: <T = any>(conditions: Record<string, any>, sort?: string, limit?: number) => Promise<T[]>
+  create: (data: Record<string, any>) => Promise<any>
+  update: (id: string, data: Record<string, any>) => Promise<any>
   delete: (id: string) => Promise<void>
-  bulkCreate: (records: unknown[]) => Promise<unknown>
+  bulkCreate: (records: any[]) => Promise<any>
 }
 
 // ─── Sync & Offline ───────────────────────────────────────────────────────

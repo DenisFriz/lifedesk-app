@@ -132,7 +132,9 @@ export default function TaskFormSimple({
               <Label>Priority</Label>
               <Select
                 value={formData.priority}
-                onValueChange={value => setFormData({ ...formData, priority: value })}
+                onValueChange={value =>
+                  setFormData({ ...formData, priority: value as 'low' | 'medium' | 'high' })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -219,7 +221,9 @@ export default function TaskFormSimple({
               <Checkbox
                 id="is_recurring"
                 checked={formData.is_recurring}
-                onCheckedChange={checked => setFormData({ ...formData, is_recurring: checked })}
+                onCheckedChange={checked =>
+                  setFormData({ ...formData, is_recurring: checked === true })
+                }
               />
               <Label htmlFor="is_recurring" className="flex items-center gap-2 cursor-pointer">
                 <Repeat className="w-4 h-4" />

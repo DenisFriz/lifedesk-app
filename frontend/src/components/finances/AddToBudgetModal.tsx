@@ -27,6 +27,32 @@ import {
   BUSINESS_EXPENSE_CATEGORIES
 } from './categories'
 
+type Business = {
+  id: string
+  name: string
+  categories?: string[]
+}
+
+type RecurringTransactionInput = {
+  title: string
+  amount: number
+  frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly'
+  start_date: string
+  category?: string
+  business_id?: string | null
+}
+
+type Frequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly'
+
+type FormState = {
+  title: string
+  amount: string
+  frequency: Frequency
+  start_date: string
+  category: string
+  business_id: string
+}
+
 export default function AddToBudgetModal({
   open,
   onClose,
@@ -39,12 +65,15 @@ export default function AddToBudgetModal({
   const queryClient = useQueryClient()
   const isIncome = transaction?.type === 'income'
 
-  const { data: businesses = [] } = useQuery({
+  const { data: businesses = [] } = useQuery<Business[]>({
     queryKey: ['businesses'],
-    queryFn: () => backend.entities.Business.list('order')
+    queryFn: async (): Promise<Business[]> => {
+      const res = await backend.entities.Business.list('order')
+      return res as Business[]
+    }
   })
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormState>({
     title: '',
     amount: '',
     frequency: 'monthly',
@@ -67,7 +96,7 @@ export default function AddToBudgetModal({
   }, [transaction, open])
 
   const createMutation = useMutation({
-    mutationFn: data => {
+    mutationFn: (data: RecurringTransactionInput) => {
       if (isIncome) {
         return backend.entities.RecurringIncome.create(data)
       } else {
@@ -141,7 +170,7 @@ export default function AddToBudgetModal({
               <Label>Frequency</Label>
               <Select
                 value={formData.frequency}
-                onValueChange={v => setFormData({ ...formData, frequency: v })}
+                onValueChange={(v: Frequency) => setFormData({ ...formData, frequency: v })}
               >
                 <SelectTrigger>
                   <SelectValue />

@@ -51,12 +51,12 @@ export default function FitnessTimelineChart() {
   const [visibleMeasurements, setVisibleMeasurements] = useState(['weight'])
   const [selectedPeriod, setSelectedPeriod] = useState('all')
 
-  const { data: workouts = [] } = useQuery({
+  const { data: workouts = [] } = useQuery<any[]>({
     queryKey: ['workouts'],
     queryFn: () => backend.entities.Workout.list('-date')
   })
 
-  const { data: measurements = [] } = useQuery({
+  const { data: measurements = [] } = useQuery<any[]>({
     queryKey: ['measurements'],
     queryFn: () => backend.entities.BodyMeasurement.list('-date')
   })
@@ -74,7 +74,7 @@ export default function FitnessTimelineChart() {
     const daysToShow = period?.getDays()
     const cutoffDate = daysToShow ? subDays(new Date(), daysToShow) : null
 
-    const allDates = new Set()
+    const allDates = new Set<number>()
     const dataMap = new Map()
 
     // Process workouts
@@ -148,7 +148,7 @@ export default function FitnessTimelineChart() {
     return [startDate, endDate]
   }, [selectedPeriod])
 
-  const CustomTooltip = ({ active, payload }) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
     if (!active || !payload || payload.length === 0) return null
 
     const data = payload[0]?.payload

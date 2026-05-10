@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
@@ -6,18 +6,33 @@ import { Plus, TrendingUp, Pencil, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import IncomeForm from './IncomeForm'
 
+type Income = {
+  id: string
+  title: string
+  amount: number
+  date: string
+  category?: string
+}
+
+type IncomeInput = {
+  title: string
+  amount: number
+  date: string
+  category?: string
+}
+
 export default function IncomeSection() {
   const [showForm, setShowForm] = useState(false)
   const [editingItem, setEditingItem] = useState<any>(null)
   const queryClient = useQueryClient()
 
-  const { data: income = [] } = useQuery({
+  const { data: income = [] } = useQuery<Income[]>({
     queryKey: ['income'],
-    queryFn: () => backend.entities.Income.list('-date')
+    queryFn: () => backend.entities.Income.list('-date') as Promise<Income[]>
   })
 
   const createMutation = useMutation({
-    mutationFn: data => backend.entities.Income.create(data),
+    mutationFn: (data: IncomeInput) => backend.entities.Income.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['income'] })
       setShowForm(false)
@@ -25,7 +40,8 @@ export default function IncomeSection() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => backend.entities.Income.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<Income> }) =>
+      backend.entities.Income.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['income'] })
       setShowForm(false)
@@ -34,7 +50,7 @@ export default function IncomeSection() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: id => backend.entities.Income.delete(id),
+    mutationFn: (id: string) => backend.entities.Income.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['income'] })
     }

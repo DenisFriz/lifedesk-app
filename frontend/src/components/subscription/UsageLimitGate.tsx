@@ -9,6 +9,7 @@ interface Props {
   message?: string
   children: React.ReactNode
   className?: string
+  inline?: boolean
 }
 
 export default function UsageLimitGate({

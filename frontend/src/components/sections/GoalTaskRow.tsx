@@ -159,7 +159,9 @@ export default function GoalTaskRow({
                 onBlur={e => {
                   if (selectOpen) return
                   if (!e.currentTarget.contains(e.relatedTarget)) {
-                    const timeInput = document.querySelector(`input[data-time-for="${task.id}"]`)
+                    const timeInput = document.querySelector(
+                      `input[data-time-for="${task.id}"]`
+                    ) as HTMLInputElement | null
                     const reminders = reminderValues[task.id] || []
                     saveTaskEdit(task.id, 'due_date')
                     updateTaskMutation.mutate({
@@ -177,7 +179,9 @@ export default function GoalTaskRow({
                   onChange={e => setEditValue(e.target.value)}
                   onKeyDown={e => {
                     if (e.key === 'Enter') {
-                      const timeInput = document.querySelector(`input[data-time-for="${task.id}"]`)
+                      const timeInput = document.querySelector(
+                        `input[data-time-for="${task.id}"]`
+                      ) as HTMLInputElement | null
                       const reminders = reminderValues[task.id] || []
                       saveTaskEdit(task.id, 'due_date')
                       updateTaskMutation.mutate({
@@ -206,7 +210,7 @@ export default function GoalTaskRow({
                       if (e.key === 'Enter') {
                         const timeInput = document.querySelector(
                           `input[data-time-for="${task.id}"]`
-                        )
+                        ) as HTMLInputElement | null
                         const reminders = reminderValues[task.id] || []
                         saveTaskEdit(task.id, 'due_date')
                         updateTaskMutation.mutate({

@@ -17,7 +17,7 @@ export default function RecurringExpenseList() {
   })
 
   const createMutation = useMutation({
-    mutationFn: data => backend.entities.RecurringExpense.create(data),
+    mutationFn: (data: Record<string, any>) => backend.entities.RecurringExpense.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring-expenses'] })
       setShowForm(false)
@@ -25,7 +25,8 @@ export default function RecurringExpenseList() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => backend.entities.RecurringExpense.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
+      backend.entities.RecurringExpense.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring-expenses'] })
       setShowForm(false)
@@ -34,13 +35,13 @@ export default function RecurringExpenseList() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: id => backend.entities.RecurringExpense.delete(id),
+    mutationFn: (id: string) => backend.entities.RecurringExpense.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring-expenses'] })
     }
   })
 
-  const handleSubmit = data => {
+  const handleSubmit = (data: Record<string, any>) => {
     if (editingItem) {
       updateMutation.mutate({ id: editingItem.id, data })
     } else {
@@ -48,7 +49,7 @@ export default function RecurringExpenseList() {
     }
   }
 
-  const toggleActive = item => {
+  const toggleActive = (item: any) => {
     updateMutation.mutate({ id: item.id, data: { active: !item.active } })
   }
 

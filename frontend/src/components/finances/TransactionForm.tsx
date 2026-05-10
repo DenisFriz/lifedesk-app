@@ -28,7 +28,7 @@ export default function TransactionForm({
   const entityName = type === 'income' ? 'Income' : 'Expense'
 
   const createMutation = useMutation({
-    mutationFn: data => backend.entities[entityName].create(data),
+    mutationFn: (data: Record<string, any>) => backend.entities[entityName].create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [entityName.toLowerCase()] })
       onClose()
@@ -36,14 +36,15 @@ export default function TransactionForm({
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => backend.entities[entityName].update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
+      backend.entities[entityName].update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [entityName.toLowerCase()] })
       onClose()
     }
   })
 
-  const handleSubmit = e => {
+  const handleSubmit = (e: any) => {
     e.preventDefault()
     const data = {
       ...formData,

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -6,10 +6,8 @@ import {
   eachDayOfInterval,
   subDays,
   subMonths,
-  subYears,
   getYear,
   startOfYear,
-  endOfYear,
   startOfMonth,
   endOfMonth
 } from 'date-fns'
@@ -225,6 +223,27 @@ function resolveRange(period) {
 
 export { resolveRange }
 
+type BankBalanceSnapshot = {
+  id: string
+  account_id: string
+  account_name?: string
+  balance: number
+  date: string
+}
+
+type OfflineAccountSnapshot = {
+  id: string
+  account_id: string
+  balance: number
+  date: string
+}
+
+type OfflineAccount = {
+  id: string
+  name: string
+  created_date: string
+}
+
 export default function BankBalanceChart({
   income = [],
   expenses = []
@@ -236,19 +255,28 @@ export default function BankBalanceChart({
   const [selectedAccount, setSelectedAccount] = useState('all')
   const [timePeriod, setTimePeriod] = useState('this_year')
 
-  const { data: bankSnapshots = [], isLoading } = useQuery({
+  const { data: bankSnapshots = [], isLoading: isBankLoading } = useQuery<BankBalanceSnapshot[]>({
     queryKey: ['bankBalanceSnapshots'],
-    queryFn: () => backend.entities.BankBalanceSnapshot.list('-date', 500)
+    queryFn: () =>
+      backend.entities.BankBalanceSnapshot.list('-date', 500) as Promise<BankBalanceSnapshot[]>
   })
 
-  const { data: offlineSnapshotsRaw = [] } = useQuery({
+  const { data: offlineSnapshotsRaw = [], isLoading: isOfflineSnapshotsLoading } = useQuery<
+    OfflineAccountSnapshot[]
+  >({
     queryKey: ['offlineAccountSnapshots'],
-    queryFn: () => backend.entities.OfflineAccountSnapshot.list('-date', 1000)
+    queryFn: () =>
+      backend.entities.OfflineAccountSnapshot.list('-date', 1000) as Promise<
+        OfflineAccountSnapshot[]
+      >
   })
 
-  const { data: offlineAccounts = [] } = useQuery({
+  const { data: offlineAccounts = [], isLoading: isOfflineAccountsLoading } = useQuery<
+    OfflineAccount[]
+  >({
     queryKey: ['offlineAccounts'],
-    queryFn: () => backend.entities.OfflineAccount.list('-created_date')
+    queryFn: () =>
+      backend.entities.OfflineAccount.list('-created_date') as Promise<OfflineAccount[]>
   })
 
   const snapshotMutation = useMutation({
@@ -304,6 +332,7 @@ export default function BankBalanceChart({
 
   const hasDropdownOptions = connectedBankAccounts.length > 0 || offlineAccountOptions.length > 0
 
+  const isLoading = isBankLoading || isOfflineSnapshotsLoading || isOfflineAccountsLoading
   return (
     <div>
       <div className="flex items-center justify-between mb-4">

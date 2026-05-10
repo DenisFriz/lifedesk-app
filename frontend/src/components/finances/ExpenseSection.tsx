@@ -17,7 +17,7 @@ export default function ExpenseSection() {
   })
 
   const createMutation = useMutation({
-    mutationFn: data => backend.entities.Expense.create(data),
+    mutationFn: (data: Record<string, any>) => backend.entities.Expense.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] })
       setShowForm(false)
@@ -25,7 +25,8 @@ export default function ExpenseSection() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => backend.entities.Expense.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
+      backend.entities.Expense.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] })
       setShowForm(false)
@@ -34,13 +35,13 @@ export default function ExpenseSection() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: id => backend.entities.Expense.delete(id),
+    mutationFn: (id: string) => backend.entities.Expense.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] })
     }
   })
 
-  const handleSubmit = data => {
+  const handleSubmit = (data: Record<string, any>) => {
     if (editingItem) {
       updateMutation.mutate({ id: editingItem.id, data })
     } else {

@@ -272,7 +272,15 @@ export default function OfflineAccountMonthlyTable({
   }, [months, snapshotMap, getLastKnownSnapshot])
 
   const saveMutation = useMutation({
-    mutationFn: async ({ monthKey, balance, existingId }) => {
+    mutationFn: async ({
+      monthKey,
+      balance,
+      existingId
+    }: {
+      monthKey: string
+      balance: number
+      existingId?: string
+    }) => {
       const date = `${monthKey}-01`
       if (existingId) {
         return backend.entities.OfflineAccountSnapshot.update(existingId, { balance, date })
@@ -288,7 +296,7 @@ export default function OfflineAccountMonthlyTable({
   })
 
   const deleteMutation = useMutation({
-    mutationFn: id => backend.entities.OfflineAccountSnapshot.delete(id),
+    mutationFn: (id: string) => backend.entities.OfflineAccountSnapshot.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['offlineAccountSnapshots'] })
   })
 

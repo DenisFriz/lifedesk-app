@@ -41,6 +41,11 @@ interface LayoutProps {
   currentPageName: string
 }
 
+type ChatMessage = {
+  role: 'user' | 'assistant'
+  content: string
+}
+
 export default function Layout({ children, currentPageName }: LayoutProps) {
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(() => {
@@ -54,10 +59,12 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
   const [calculatorOpen, setCalculatorOpen] = useState(false)
   const [timeTrackerOpen, setTimeTrackerOpen] = useState(false)
   const [aiChatOpen, setAiChatOpen] = useState(false)
-  const [aiChatMessages, setAiChatMessages] = useState<unknown[]>(() => {
+
+  const [aiChatMessages, setAiChatMessages] = useState<ChatMessage[]>(() => {
     const saved = localStorage.getItem('aiChatMessages')
     return saved ? JSON.parse(saved) : []
   })
+
   const [hiddenTools, setHiddenTools] = useState<string[]>(() => {
     const saved = localStorage.getItem('hiddenTools')
     return saved ? JSON.parse(saved) : []

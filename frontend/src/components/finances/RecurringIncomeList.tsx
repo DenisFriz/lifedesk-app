@@ -17,7 +17,7 @@ export default function RecurringIncomeList() {
   })
 
   const createMutation = useMutation({
-    mutationFn: data => backend.entities.RecurringIncome.create(data),
+    mutationFn: (data: Record<string, any>) => backend.entities.RecurringIncome.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring-income'] })
       setShowForm(false)
@@ -25,7 +25,8 @@ export default function RecurringIncomeList() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => backend.entities.RecurringIncome.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
+      backend.entities.RecurringIncome.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring-income'] })
       setShowForm(false)
@@ -34,13 +35,13 @@ export default function RecurringIncomeList() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: id => backend.entities.RecurringIncome.delete(id),
+    mutationFn: (id: string) => backend.entities.RecurringIncome.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring-income'] })
     }
   })
 
-  const handleSubmit = data => {
+  const handleSubmit = (data: Record<string, any>) => {
     if (editingItem) {
       updateMutation.mutate({ id: editingItem.id, data })
     } else {
@@ -48,7 +49,7 @@ export default function RecurringIncomeList() {
     }
   }
 
-  const toggleActive = item => {
+  const toggleActive = (item: any) => {
     updateMutation.mutate({ id: item.id, data: { active: !item.active } })
   }
 

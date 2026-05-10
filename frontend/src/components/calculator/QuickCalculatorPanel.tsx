@@ -23,6 +23,11 @@ interface QuickCalculatorPanelProps {
   setIsOpen: (open: boolean) => void
 }
 
+type ExchangeRatesResponse = {
+  base: string
+  rates: Record<string, number>
+}
+
 export default function QuickCalculatorPanel({
   collapsed,
   isOpen,
@@ -68,7 +73,8 @@ export default function QuickCalculatorPanel({
   const fetchExchangeRates = async () => {
     setRatesLoading(true)
     try {
-      const { data } = await backend.functions.invoke('getExchangeRates')
+      const data = await backend.functions.invoke<ExchangeRatesResponse>('getExchangeRates')
+
       if (data && data.rates) {
         const allRates = { [data.base]: 1, ...data.rates }
         setExchangeRates(allRates)
@@ -135,17 +141,17 @@ export default function QuickCalculatorPanel({
 
   // Save calculation
   const saveCalculationMutation = useMutation({
-    mutationFn: data => backend.entities.CalculationHistory.create(data),
+    mutationFn: (data: Record<string, any>) => backend.entities.CalculationHistory.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['calculationHistory'])
+      queryClient.invalidateQueries({ queryKey: ['calculationHistory'] })
     }
   })
 
   // Delete calculation
   const deleteCalculationMutation = useMutation({
-    mutationFn: id => backend.entities.CalculationHistory.delete(id),
+    mutationFn: (id: string) => backend.entities.CalculationHistory.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['calculationHistory'])
+      queryClient.invalidateQueries({ queryKey: ['calculationHistory'] })
       toast.success('Calculation deleted')
     }
   })

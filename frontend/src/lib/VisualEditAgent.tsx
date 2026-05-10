@@ -384,7 +384,7 @@ export default function VisualEditAgent(): null {
     }
 
     const handleMessage = (event: MessageEvent): void => {
-      const message = event.data as MessageEvent
+      const message = event.data as unknown as MessageEvent
 
       switch (message.type) {
         case 'toggle-visual-edit-mode':

@@ -227,6 +227,7 @@ export interface CommunityIdea {
   category?: string
   status?: string
   updated_date?: string
+  anonymous: boolean
 }
 
 export interface Event {

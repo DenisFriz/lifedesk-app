@@ -14,32 +14,35 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { format } from 'date-fns'
-import { CalendarIcon, X } from 'lucide-react'
+import { CalendarIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-interface FormData {
+export type TaskPriority = 'low' | 'medium' | 'high'
+export type TaskStatus = 'todo' | 'in_progress' | 'completed' | 'archived'
+
+export interface TaskFormData {
   title: string
   description: string
-  priority: string
+  priority: TaskPriority
   due_date: string
-  status: string
+  status: TaskStatus
 }
 
 interface Props {
   open: boolean
   onClose: (open?: boolean) => void
-  onSubmit: (data: FormData) => void
+  onSubmit: (data: TaskFormData) => void
   task?: any
   isLoading?: boolean
 }
 
 export default function TaskForm({ open, onClose, onSubmit, task, isLoading = false }: Props) {
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<TaskFormData>({
     title: '',
     description: '',
     priority: 'medium',
     due_date: '',
-    status: 'pending'
+    status: 'todo'
   })
 
   useEffect(() => {
@@ -49,7 +52,7 @@ export default function TaskForm({ open, onClose, onSubmit, task, isLoading = fa
         description: task.description || '',
         priority: task.priority || 'medium',
         due_date: task.due_date || '',
-        status: task.status || 'pending'
+        status: task.status || 'todo'
       })
     } else {
       setFormData({
@@ -57,7 +60,7 @@ export default function TaskForm({ open, onClose, onSubmit, task, isLoading = fa
         description: '',
         priority: 'medium',
         due_date: '',
-        status: 'pending'
+        status: 'todo'
       })
     }
   }, [task, open])
@@ -111,7 +114,9 @@ export default function TaskForm({ open, onClose, onSubmit, task, isLoading = fa
               <Label className="text-sm font-medium text-slate-700">Priority</Label>
               <Select
                 value={formData.priority}
-                onValueChange={value => setFormData({ ...formData, priority: value })}
+                onValueChange={value =>
+                  setFormData({ ...formData, priority: value as TaskPriority })
+                }
               >
                 <SelectTrigger className="h-11 border-slate-200">
                   <SelectValue />

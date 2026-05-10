@@ -1,4 +1,3 @@
-import React from 'react'
 import { backend } from '@/api/backend'
 import { useQuery } from '@tanstack/react-query'
 import { Heart, TrendingUp, Target } from 'lucide-react'
@@ -18,7 +17,7 @@ export default function HealthScoreTrendWidget() {
 
   const { data: bodyGoals = [] } = useQuery({
     queryKey: ['goals-health-body'],
-    queryFn: () => backend.entities.Goal.filter({ category: 'health_body' }) as Promise<Goal[]>
+    queryFn: () => backend.entities.Goal.filter<Goal>({ category: 'health_body' })
   })
 
   const { data: mindGoals = [] } = useQuery({

@@ -29,7 +29,7 @@ export default function ContentTable({ businessId }) {
   const [bulkMode, setBulkMode] = useState(false)
   const queryClient = useQueryClient()
 
-  const { data: allContent = [] } = useQuery({
+  const { data: allContent = [] } = useQuery<any[]>({
     queryKey: ['content', businessId],
     queryFn: () => {
       if (businessId) {
@@ -45,17 +45,17 @@ export default function ContentTable({ businessId }) {
     return statusMatch && typeMatch
   })
 
-  const updateMutation = useMutation({
+  const updateMutation = useMutation<any, any, { id: string; data: Record<string, any> }>({
     mutationFn: ({ id, data }) => backend.entities.ContentIdea.update(id, data),
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ['content', businessId] })
       const previousContent = queryClient.getQueryData(['content', businessId])
-      queryClient.setQueryData(['content', businessId], old =>
-        old.map(content => (content.id === id ? { ...content, ...data } : content))
+      queryClient.setQueryData(['content', businessId], (old: any) =>
+        old.map((content: any) => (content.id === id ? { ...content, ...data } : content))
       )
       return { previousContent }
     },
-    onError: (err, variables, context) => {
+    onError: (err, variables, context: any) => {
       queryClient.setQueryData(['content', businessId], context.previousContent)
     },
     onSuccess: () => {
@@ -63,21 +63,21 @@ export default function ContentTable({ businessId }) {
     }
   })
 
-  const createMutation = useMutation({
+  const createMutation = useMutation<any, any, Record<string, any>>({
     mutationFn: data => backend.entities.ContentIdea.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content', businessId] })
     }
   })
 
-  const deleteMutation = useMutation({
+  const deleteMutation = useMutation<void, any, string>({
     mutationFn: id => backend.entities.ContentIdea.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content', businessId] })
     }
   })
 
-  const bulkDeleteMutation = useMutation({
+  const bulkDeleteMutation = useMutation<void, any, string[]>({
     mutationFn: async ids => {
       await Promise.all(ids.map(id => backend.entities.ContentIdea.delete(id)))
     },
@@ -87,7 +87,7 @@ export default function ContentTable({ businessId }) {
     }
   })
 
-  const bulkUpdateMutation = useMutation({
+  const bulkUpdateMutation = useMutation<void, any, { ids: string[]; data: Record<string, any> }>({
     mutationFn: async ({ ids, data }) => {
       await Promise.all(ids.map(id => backend.entities.ContentIdea.update(id, data)))
     },
@@ -157,7 +157,7 @@ export default function ContentTable({ businessId }) {
       title: 'New Content Idea',
       status: 'idea',
       type: 'blog'
-    }
+    } as Record<string, any>
     if (businessId) data.business_id = businessId
     createMutation.mutate(data)
   }

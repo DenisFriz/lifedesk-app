@@ -47,7 +47,7 @@ export default function ProblemTable({ category }: ProblemTableProps) {
   const [selectedProblems, setSelectedProblems] = useState<string[]>([])
   const [bulkMode, setBulkMode] = useState<boolean>(false)
   const queryClient = useQueryClient()
-  const blurTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
+  const blurTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { data: allProblems = [] } = useQuery<any[]>({
     queryKey: ['problems', category],

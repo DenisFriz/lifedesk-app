@@ -31,7 +31,7 @@ function buildChartData(income, expenses, dateRange) {
     ...income.map(i => i.date).filter(Boolean),
     ...expenses.map(e => e.date).filter(Boolean)
   ]
-    .map(d => new Date(d))
+    .map(d => new Date(d).getTime())
     .filter(d => !isNaN(d))
 
   const today = new Date()

@@ -115,7 +115,7 @@ export default function TaskTable({
     queryKey: ['tasks'],
     queryFn: async () => {
       const data = await offlineFirst('tasks', () => backend.entities.Task.list('-created_date'))
-      return data.filter(r => !r.is_deleted)
+      return (data as any[]).filter(r => !r.is_deleted)
     },
     enabled: isActive
   })
@@ -124,7 +124,7 @@ export default function TaskTable({
     queryKey: ['businesses'],
     queryFn: async () => {
       const data = await backend.entities.Business.list('order')
-      return data.filter(r => !r.is_deleted)
+      return (data as any[]).filter(r => !r.is_deleted)
     },
     enabled: isActive
   })
@@ -133,7 +133,7 @@ export default function TaskTable({
     queryKey: ['goals'],
     queryFn: async () => {
       const data = await offlineFirst('goals', () => backend.entities.Goal.list('-created_date'))
-      return data.filter(r => !r.is_deleted)
+      return (data as any[]).filter(r => !r.is_deleted)
     },
     enabled: isActive
   })
@@ -577,7 +577,10 @@ export default function TaskTable({
       </Dialog>
 
       <div className="task-table-container bg-white rounded-xl overflow-hidden mb-6">
-        <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+        <Tabs
+          value={statusFilter}
+          onValueChange={v => setStatusFilter(v as 'active' | 'done' | 'archived')}
+        >
           <div className="task-table-header flex flex-col lg:flex-row items-stretch lg:items-center gap-2 lg:gap-3 p-4">
             <TabsList className="bg-[#eaecf4] p-1 flex-1 lg:flex-none flex">
               <TabsTrigger
@@ -899,7 +902,7 @@ export default function TaskTable({
                                                 : task.category
                                             }
                                             onValueChange={value => {
-                                              const updateData = {}
+                                              const updateData: Record<string, any> = {}
                                               if (value.startsWith('business-')) {
                                                 updateData.category = 'business'
                                                 updateData.business_id = value.replace(
@@ -1012,7 +1015,7 @@ export default function TaskTable({
                                               if (!e.currentTarget.contains(e.relatedTarget)) {
                                                 const timeInput = document.querySelector(
                                                   `input[data-time-for="${task.id}"]`
-                                                )
+                                                ) as HTMLInputElement | null
                                                 const reminders = reminderValues[task.id] || []
                                                 handleTaskBlur(task, 'due_date')
                                                 if (
@@ -1511,7 +1514,7 @@ export default function TaskTable({
                                                   : task.category
                                               }
                                               onValueChange={value => {
-                                                const updateData = {}
+                                                const updateData: Record<string, any> = {}
                                                 if (value.startsWith('business-')) {
                                                   updateData.category = 'business'
                                                   updateData.business_id = value.replace(
@@ -1608,7 +1611,7 @@ export default function TaskTable({
                                                 ) {
                                                   const timeInput = document.querySelector(
                                                     `input[data-time-for-mobile="${task.id}"]`
-                                                  )
+                                                  ) as HTMLInputElement | null
                                                   const reminders = reminderValues[task.id] || []
                                                   handleTaskBlur(task, 'due_date')
                                                   if (

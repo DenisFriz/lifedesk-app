@@ -54,12 +54,15 @@ import {
 } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { format } from 'date-fns'
 import { formatDateMedium } from '@/components/utils/formatters'
 import { useSubscription } from '@/hooks/useSubscription'
 import UsageLimitGate from '@/components/subscription/UsageLimitGate'
 
-export default function EventTable({ category, businessId, filterType }) {
+export default function EventTable({
+  category,
+  businessId,
+  filterType
+}: { category?: string; businessId?: string; filterType?: string } = {}) {
   const { limit } = useSubscription()
   const [editingField, setEditingField] = useState(null)
   const [editValue, setEditValue] = useState('')
@@ -88,7 +91,7 @@ export default function EventTable({ category, businessId, filterType }) {
   const tableRef = React.useRef(null)
   const { playAudio } = useLayout()
 
-  const { data: allEvents = [] } = useQuery({
+  const { data: allEvents = [] } = useQuery<any[]>({
     queryKey: ['events', category, businessId],
     queryFn: () => {
       if (!category) {
@@ -99,7 +102,7 @@ export default function EventTable({ category, businessId, filterType }) {
     }
   })
 
-  const { data: businesses = [] } = useQuery({
+  const { data: businesses = [] } = useQuery<any[]>({
     queryKey: ['businesses'],
     queryFn: () => backend.entities.Business.list('order')
   })
@@ -130,35 +133,35 @@ export default function EventTable({ category, businessId, filterType }) {
     return business ? business.name : 'Business'
   }
 
-  const updateMutation = useMutation({
+  const updateMutation = useMutation<any, any, { id: string; data: Record<string, any> }>({
     mutationFn: ({ id, data }) => backend.entities.Event.update(id, data),
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ['events', category, businessId] })
       const previousEvents = queryClient.getQueryData(['events', category, businessId])
-      queryClient.setQueryData(['events', category, businessId], old =>
-        old.map(event => (event.id === id ? { ...event, ...data } : event))
+      queryClient.setQueryData(['events', category, businessId], (old: any) =>
+        old.map((event: any) => (event.id === id ? { ...event, ...data } : event))
       )
       return { previousEvents }
     },
-    onError: (err, variables, context) => {
+    onError: (err, variables, context: any) => {
       queryClient.setQueryData(['events', category, businessId], context.previousEvents)
     },
     onSuccess: (updatedEvent, { id }) => {
-      queryClient.setQueryData(['events', category, businessId], old =>
-        old ? old.map(event => (event.id === id ? updatedEvent : event)) : old
+      queryClient.setQueryData(['events', category, businessId], (old: any) =>
+        old ? old.map((event: any) => (event.id === id ? updatedEvent : event)) : old
       )
       setEditingField(null)
     }
   })
 
-  const createMutation = useMutation({
+  const createMutation = useMutation<any, any, Record<string, any>>({
     mutationFn: data => backend.entities.Event.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events', category, businessId] })
     }
   })
 
-  const deleteMutation = useMutation({
+  const deleteMutation = useMutation<void, any, string>({
     mutationFn: id => {
       playAudio('delete')
       return backend.entities.Event.delete(id)
@@ -168,7 +171,7 @@ export default function EventTable({ category, businessId, filterType }) {
     }
   })
 
-  const duplicateMutation = useMutation({
+  const duplicateMutation = useMutation<any, any, Record<string, any>>({
     mutationFn: event => {
       const { id, created_date, updated_date, created_by, ...rest } = event
       return backend.entities.Event.create({
@@ -183,7 +186,7 @@ export default function EventTable({ category, businessId, filterType }) {
     }
   })
 
-  const bulkDeleteMutation = useMutation({
+  const bulkDeleteMutation = useMutation<void, any, string[]>({
     mutationFn: async ids => {
       playAudio('delete')
       await Promise.all(ids.map(id => backend.entities.Event.delete(id)))
@@ -194,7 +197,7 @@ export default function EventTable({ category, businessId, filterType }) {
     }
   })
 
-  const bulkUpdateMutation = useMutation({
+  const bulkUpdateMutation = useMutation<void, any, { ids: string[]; data: Record<string, any> }>({
     mutationFn: async ({ ids, data }) => {
       if (data.status === 'archived') {
         playAudio('archived')
@@ -246,10 +249,10 @@ export default function EventTable({ category, businessId, filterType }) {
     items.splice(result.destination.index, 0, reorderedItem)
 
     // Optimistically update the UI immediately
-    queryClient.setQueryData(['events', category, businessId], oldEvents => {
+    queryClient.setQueryData(['events', category, businessId], (oldEvents: any) => {
       if (!oldEvents) return oldEvents
-      return oldEvents.map(event => {
-        const itemIndex = items.findIndex(item => item.id === event.id)
+      return oldEvents.map((event: any) => {
+        const itemIndex = items.findIndex((item: any) => item.id === event.id)
         if (itemIndex !== -1) {
           return { ...event, order: itemIndex }
         }
@@ -329,7 +332,7 @@ export default function EventTable({ category, businessId, filterType }) {
         status: 'active',
         start_date: new Date().toISOString().split('T')[0],
         order: minOrder === 999999 ? 0 : minOrder - 1
-      }
+      } as Record<string, any>
 
       if (filterType === 'important') {
         data.important = true
@@ -355,7 +358,7 @@ export default function EventTable({ category, businessId, filterType }) {
       category: selectedCategory,
       start_date: new Date().toISOString().split('T')[0],
       order: minOrder === 999999 ? 0 : minOrder - 1
-    }
+    } as Record<string, any>
 
     if (selectedBusinessId) {
       data.business_id = selectedBusinessId
@@ -804,7 +807,10 @@ export default function EventTable({ category, businessId, filterType }) {
                                             value={editValue}
                                             onValueChange={value => {
                                               setEditValue(value)
-                                              const updateData = { category: value }
+                                              const updateData = { category: value } as Record<
+                                                string,
+                                                any
+                                              >
                                               if (value !== 'business') {
                                                 updateData.business_id = null
                                               }
@@ -890,7 +896,7 @@ export default function EventTable({ category, businessId, filterType }) {
                                             if (!e.currentTarget.contains(e.relatedTarget)) {
                                               const timeInput = document.querySelector(
                                                 `input[data-time-for="${event.id}"]`
-                                              )
+                                              ) as HTMLInputElement | null
                                               const reminders = reminderValues[event.id] || []
                                               saveEdit(event.id, 'start_date', {
                                                 start_time: timeInput?.value || null,
@@ -909,7 +915,7 @@ export default function EventTable({ category, businessId, filterType }) {
                                               if (e.key === 'Enter') {
                                                 const timeInput = document.querySelector(
                                                   `input[data-time-for="${event.id}"]`
-                                                )
+                                                ) as HTMLInputElement | null
                                                 const reminders = reminderValues[event.id] || []
                                                 saveEdit(event.id, 'start_date', {
                                                   start_time: timeInput?.value || null,
@@ -937,7 +943,7 @@ export default function EventTable({ category, businessId, filterType }) {
                                                 if (e.key === 'Enter') {
                                                   const timeInput = document.querySelector(
                                                     `input[data-time-for="${event.id}"]`
-                                                  )
+                                                  ) as HTMLInputElement | null
                                                   const reminders = reminderValues[event.id] || []
                                                   saveEdit(event.id, 'start_date', {
                                                     start_time: timeInput?.value || null,
@@ -1188,7 +1194,7 @@ export default function EventTable({ category, businessId, filterType }) {
                                             if (!e.currentTarget.contains(e.relatedTarget)) {
                                               const timeInput = document.querySelector(
                                                 `input[data-end-time-for="${event.id}"]`
-                                              )
+                                              ) as HTMLInputElement | null
                                               saveEdit(event.id, 'end_date', {
                                                 end_time: timeInput?.value || null
                                               })
@@ -1203,7 +1209,7 @@ export default function EventTable({ category, businessId, filterType }) {
                                               if (e.key === 'Enter') {
                                                 const timeInput = document.querySelector(
                                                   `input[data-end-time-for="${event.id}"]`
-                                                )
+                                                ) as HTMLInputElement | null
                                                 saveEdit(event.id, 'end_date', {
                                                   end_time: timeInput?.value || null
                                                 })
@@ -1223,7 +1229,7 @@ export default function EventTable({ category, businessId, filterType }) {
                                               if (e.key === 'Enter') {
                                                 const timeInput = document.querySelector(
                                                   `input[data-end-time-for="${event.id}"]`
-                                                )
+                                                ) as HTMLInputElement | null
                                                 saveEdit(event.id, 'end_date', {
                                                   end_time: timeInput?.value || null
                                                 })
@@ -1491,7 +1497,7 @@ export default function EventTable({ category, businessId, filterType }) {
                                                   : event.category
                                               }
                                               onValueChange={value => {
-                                                const updateData = {}
+                                                const updateData: Record<string, any> = {}
                                                 if (value.startsWith('business-')) {
                                                   updateData.category = 'business'
                                                   updateData.business_id = value.replace(

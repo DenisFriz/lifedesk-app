@@ -10,6 +10,8 @@ interface UserPlan {
 interface Subscription {
   user_email: string
   plan_name: string
+  cancel_at_period_end?: boolean
+  current_period_end?: string
 }
 
 interface SubscriptionReturn {

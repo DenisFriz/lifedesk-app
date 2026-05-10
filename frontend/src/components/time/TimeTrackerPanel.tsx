@@ -35,19 +35,6 @@ interface Section {
   businessId?: string
 }
 
-interface Client {
-  id: string
-  name: string
-  business_id?: string
-}
-
-interface Project {
-  id: string
-  name: string
-  business_id?: string
-  client_id?: string
-}
-
 interface Business {
   id: string
   name: string
@@ -125,7 +112,7 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
   const runningEntry = contextRunningEntry
 
   const createEntryMutation = useMutation({
-    mutationFn: data => backend.entities.TimeEntry.create(data),
+    mutationFn: (data: Record<string, any>) => backend.entities.TimeEntry.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['runningTimeEntry'] })
       queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
@@ -133,7 +120,8 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
   })
 
   const updateEntryMutation = useMutation({
-    mutationFn: ({ id, data }) => backend.entities.TimeEntry.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
+      backend.entities.TimeEntry.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
       setEditingEntryId(null)
@@ -142,7 +130,7 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
   })
 
   const deleteEntryMutation = useMutation({
-    mutationFn: id => backend.entities.TimeEntry.delete(id),
+    mutationFn: (id: string) => backend.entities.TimeEntry.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
       toast.success('Entry deleted')
@@ -150,7 +138,7 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
   })
 
   const resumeEntryMutation = useMutation({
-    mutationFn: entry => {
+    mutationFn: (entry: any) => {
       const now = new Date()
       return backend.entities.TimeEntry.update(entry.id, {
         date: format(now, 'yyyy-MM-dd'),
@@ -189,7 +177,8 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
 
   useEffect(() => {
     // Capture the current favicon URL so we can restore it later
-    const existingLink = document.querySelector("link[rel*='icon']")
+    const existingLink = document.querySelector("link[rel*='icon']") as HTMLLinkElement | null
+
     originalFaviconRef.current = existingLink
       ? existingLink.href
       : 'https://data.lifedesk.me/images/lifedesk-task-finance-health-business-manager-favicon.webp?v=4'
@@ -208,7 +197,7 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
       // Reset title and favicon on unmount
       document.title = originalTitleRef.current
       if (originalFaviconRef.current) {
-        const faviconLink = document.querySelector("link[rel*='icon']")
+        const faviconLink = document.querySelector("link[rel*='icon']") as HTMLLinkElement | null
         if (faviconLink) faviconLink.href = originalFaviconRef.current
       }
     }
@@ -221,7 +210,8 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
       document.title = `⏱️ ${formatTime(elapsedTime)} - ${originalTitleRef.current}`
 
       // Change favicon to green dot
-      const link = document.querySelector("link[rel*='icon']") || document.createElement('link')
+      const link = (document.querySelector("link[rel*='icon']") ||
+        document.createElement('link')) as HTMLLinkElement
       link.type = 'image/x-icon'
       link.rel = 'shortcut icon'
       link.href =
@@ -232,7 +222,7 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
 
       // Reset favicon
       if (originalFaviconRef.current) {
-        const link = document.querySelector("link[rel*='icon']")
+        const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement | null
         if (link) {
           link.href = originalFaviconRef.current
         }
