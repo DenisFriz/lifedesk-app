@@ -6,15 +6,6 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, X, ShieldOff } from 'lucide-react'
 import { format } from 'date-fns'
 
-type User = {
-  id: string
-  email?: string
-  full_name?: string
-  role: 'admin' | 'user' | string
-  is_deleted?: boolean | null
-  deleted_at?: string | null
-}
-
 export default function AdminUsers() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')

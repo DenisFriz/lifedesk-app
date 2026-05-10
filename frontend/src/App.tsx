@@ -15,7 +15,7 @@ import { Navigate } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 
 import Home from './pages/Home'
-const x = 1
+
 interface LayoutWrapperProps {
   children: ReactNode
   currentPageName: string
