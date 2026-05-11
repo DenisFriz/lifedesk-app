@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { backend } from '@/api/backend'
 import { Tabs } from '@/components/ui/tabs'
@@ -12,6 +12,41 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { ChevronDown, Clock } from 'lucide-react'
+
+const tabs = [
+  { key: 'all', filterType: 'all' },
+  { key: 'important', filterType: 'important' },
+  {
+    key: 'assets',
+    filterType: 'category',
+    category: 'assets'
+  },
+  {
+    key: 'health',
+    filterType: 'category',
+    category: 'health_body'
+  },
+  {
+    key: 'fitness',
+    filterType: 'category',
+    category: 'fitness'
+  },
+  {
+    key: 'hobbies',
+    filterType: 'category',
+    category: 'hobbies'
+  },
+  {
+    key: 'learning',
+    filterType: 'category',
+    category: 'learning'
+  },
+  {
+    key: 'relationships',
+    filterType: 'category',
+    category: 'relationships'
+  }
+]
 
 export default function MainEvents() {
   const [activeTab, setActiveTab] = useState(() => {
@@ -105,7 +140,7 @@ export default function MainEvents() {
     section: `Business > ${business.name}`
   }))
 
-  const allTabs = React.useMemo(() => {
+  const allTabs = useMemo(() => {
     return [
       { value: 'all', label: 'All Events' },
       { value: 'important', label: 'Important' },
@@ -156,7 +191,6 @@ export default function MainEvents() {
           </div>
         )}
 
-        {/* Page Header - Normal position */}
         <div ref={headerRef} className="py-6 sm:py-8">
           <h1 className="mainevents-page-title text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
             <Clock className="w-9 h-9 text-black" />
@@ -227,37 +261,14 @@ export default function MainEvents() {
             </div>
           </div>
 
-          <div className={activeTab === 'all' ? '' : 'hidden'}>
-            <EventTable filterType="all" />
-          </div>
-
-          <div className={activeTab === 'important' ? '' : 'hidden'}>
-            <EventTable filterType="important" />
-          </div>
-
-          <div className={activeTab === 'assets' ? '' : 'hidden'}>
-            <EventTable filterType="category" category="assets" />
-          </div>
-
-          <div className={activeTab === 'health' ? '' : 'hidden'}>
-            <EventTable filterType="category" category="health_body" />
-          </div>
-
-          <div className={activeTab === 'fitness' ? '' : 'hidden'}>
-            <EventTable filterType="category" category="fitness" />
-          </div>
-
-          <div className={activeTab === 'hobbies' ? '' : 'hidden'}>
-            <EventTable filterType="category" category="hobbies" />
-          </div>
-
-          <div className={activeTab === 'learning' ? '' : 'hidden'}>
-            <EventTable filterType="category" category="learning" />
-          </div>
-
-          <div className={activeTab === 'relationships' ? '' : 'hidden'}>
-            <EventTable filterType="category" category="relationships" />
-          </div>
+          {tabs.map(
+            tab =>
+              activeTab === tab.key && (
+                <div key={tab.key}>
+                  <EventTable filterType={tab.filterType} category={tab.category} />
+                </div>
+              )
+          )}
 
           {orderedBusinesses.map(business => (
             <div

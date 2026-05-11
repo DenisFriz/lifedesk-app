@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { createPageUrl } from '../utils'
 import { useLayout } from '../Layout'
@@ -41,6 +41,7 @@ import FitnessSummaryWidget from '@/components/widgets/FitnessSummaryWidget'
 import MonthlyFinanceWidget from '@/components/widgets/MonthlyFinanceWidget'
 import ActiveGoalsWidget from '@/components/widgets/ActiveGoalsWidget'
 import WhatsNewWidget from '@/components/widgets/WhatsNewWidget'
+import { useLocalStorageState } from '@/hooks/useLocalStorage'
 
 const AVAILABLE_WIDGETS = [
   { id: 'upcoming-tasks', name: 'All Tasks & Events', component: UpcomingTasksWidget },
@@ -57,18 +58,87 @@ const AVAILABLE_WIDGETS = [
   { id: 'business-tasks', name: 'Business Tasks', component: BusinessTasksWidget }
 ]
 
+const allCards = [
+  {
+    title: 'Finance',
+    description: 'Track income, expenses, and manage budgets',
+    icon: DollarSign,
+    color: 'from-green-500 to-emerald-500',
+    page: 'Finances',
+    sectionName: 'Finance'
+  },
+  {
+    title: 'Assets',
+    description: 'Manage vehicles, estates, and other assets',
+    icon: Wallet,
+    color: 'from-teal-500 to-cyan-500',
+    page: 'Overview',
+    sectionName: 'Assets'
+  },
+  {
+    title: 'Health',
+    description: 'Track physical and mental wellness',
+    icon: Heart,
+    color: 'from-rose-500 to-pink-500',
+    page: 'HealthBody',
+    sectionName: 'Health'
+  },
+  {
+    title: 'Fitness',
+    description: 'Log workouts, measurements, and progress',
+    icon: Dumbbell,
+    color: 'from-orange-500 to-red-500',
+    page: 'Fitness',
+    sectionName: 'Fitness'
+  },
+  {
+    title: 'Hobbies',
+    description: 'Organize and track your hobbies and interests',
+    icon: Palette,
+    color: 'from-purple-500 to-pink-500',
+    page: 'Hobbies',
+    sectionName: 'Hobbies'
+  },
+  {
+    title: 'Learning & Development',
+    description: 'Manage your learning goals and progress',
+    icon: Brain,
+    color: 'from-blue-500 to-indigo-500',
+    page: 'Learning',
+    sectionName: 'Learning & Development'
+  },
+  {
+    title: 'Relationships',
+    description: 'Track and nurture your relationships',
+    icon: Users,
+    color: 'from-yellow-500 to-orange-500',
+    page: 'Relationships',
+    sectionName: 'Relationships'
+  },
+  {
+    title: 'Business',
+    description: 'Manage projects, clients, and business tasks',
+    icon: Briefcase,
+    color: 'from-indigo-500 to-blue-500',
+    page: 'ManageBusinesses',
+    sectionName: 'Business'
+  }
+]
+
 export default function Home() {
   const { isHidden } = useLayout()
-  const [widgets, setWidgets] = useState(() => {
-    const saved = localStorage.getItem('homeWidgets')
-    return saved ? JSON.parse(saved) : ['upcoming-tasks', 'active-goals', 'monthly-finance']
-  })
+  const [widgets, setWidgets] = useLocalStorageState<string[]>('homeWidgets', [
+    'upcoming-tasks',
+    'active-goals',
+    'monthly-finance'
+  ])
+  const [expandedSections, setExpandedSections] = useLocalStorageState<Record<string, boolean>>(
+    'homeExpandedSections',
+    { whatsnew: true, widgets: true, sections: true }
+  )
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
-  const [expandedSections, setExpandedSections] = useState(() => {
-    const saved = localStorage.getItem('homeExpandedSections')
-    return saved ? JSON.parse(saved) : { whatsnew: true, widgets: true, sections: true }
-  })
+
   const headerRef = useRef(null)
 
   useEffect(() => {
@@ -84,103 +154,42 @@ export default function Home() {
   }, [])
 
   const addWidget = (widgetId: string) => {
-    if (!widgets.includes(widgetId)) {
-      const newWidgets = [...widgets, widgetId]
-      setWidgets(newWidgets)
-      localStorage.setItem('homeWidgets', JSON.stringify(newWidgets))
-      setShowAddDialog(false)
-    }
+    setWidgets(prev => (prev.includes(widgetId) ? prev : [...prev, widgetId]))
+    setShowAddDialog(false)
   }
 
   const removeWidget = (widgetId: string) => {
-    const newWidgets = widgets.filter(id => id !== widgetId)
-    setWidgets(newWidgets)
-    localStorage.setItem('homeWidgets', JSON.stringify(newWidgets))
+    setWidgets(prev => prev.filter(id => id !== widgetId))
   }
 
   const handleDragEnd = result => {
     if (!result.destination) return
-    const newWidgets = Array.from(widgets)
-    const [moved] = newWidgets.splice(result.source.index, 1)
-    newWidgets.splice(result.destination.index, 0, moved)
-    setWidgets(newWidgets)
-    localStorage.setItem('homeWidgets', JSON.stringify(newWidgets))
+
+    setWidgets(prev => {
+      const newWidgets = Array.from(prev)
+      const [moved] = newWidgets.splice(result.source.index, 1)
+      newWidgets.splice(result.destination.index, 0, moved)
+      return newWidgets
+    })
   }
 
-  const toggleSection = section => {
-    const newExpanded = { ...expandedSections, [section]: !expandedSections[section] }
-    setExpandedSections(newExpanded)
-    localStorage.setItem('homeExpandedSections', JSON.stringify(newExpanded))
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }))
   }
 
-  const allCards = [
-    {
-      title: 'Finance',
-      description: 'Track income, expenses, and manage budgets',
-      icon: DollarSign,
-      color: 'from-green-500 to-emerald-500',
-      page: 'Finances',
-      sectionName: 'Finance'
-    },
-    {
-      title: 'Assets',
-      description: 'Manage vehicles, estates, and other assets',
-      icon: Wallet,
-      color: 'from-teal-500 to-cyan-500',
-      page: 'Overview',
-      sectionName: 'Assets'
-    },
-    {
-      title: 'Health',
-      description: 'Track physical and mental wellness',
-      icon: Heart,
-      color: 'from-rose-500 to-pink-500',
-      page: 'HealthBody',
-      sectionName: 'Health'
-    },
-    {
-      title: 'Fitness',
-      description: 'Log workouts, measurements, and progress',
-      icon: Dumbbell,
-      color: 'from-orange-500 to-red-500',
-      page: 'Fitness',
-      sectionName: 'Fitness'
-    },
-    {
-      title: 'Hobbies',
-      description: 'Organize and track your hobbies and interests',
-      icon: Palette,
-      color: 'from-purple-500 to-pink-500',
-      page: 'Hobbies',
-      sectionName: 'Hobbies'
-    },
-    {
-      title: 'Learning & Development',
-      description: 'Manage your learning goals and progress',
-      icon: Brain,
-      color: 'from-blue-500 to-indigo-500',
-      page: 'Learning',
-      sectionName: 'Learning & Development'
-    },
-    {
-      title: 'Relationships',
-      description: 'Track and nurture your relationships',
-      icon: Users,
-      color: 'from-yellow-500 to-orange-500',
-      page: 'Relationships',
-      sectionName: 'Relationships'
-    },
-    {
-      title: 'Business',
-      description: 'Manage projects, clients, and business tasks',
-      icon: Briefcase,
-      color: 'from-indigo-500 to-blue-500',
-      page: 'ManageBusinesses',
-      sectionName: 'Business'
-    }
-  ]
+  const widgetMap = useMemo(() => {
+    return Object.fromEntries(AVAILABLE_WIDGETS.map(w => [w.id, w]))
+  }, [])
 
-  const cards = allCards.filter(card => !isHidden(card.sectionName))
+  const cards = useMemo(() => allCards.filter(card => !isHidden(card.sectionName)), [isHidden])
+
+  const availableToAdd = useMemo(
+    () => AVAILABLE_WIDGETS.filter(w => !widgets.includes(w.id)),
+    [widgets]
+  )
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
@@ -248,7 +257,7 @@ export default function Home() {
                       <DialogTitle>Add Widget</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-2 mt-4">
-                      {AVAILABLE_WIDGETS.filter(w => !widgets.includes(w.id)).map(widget => (
+                      {availableToAdd.map(widget => (
                         <button
                           key={widget.id}
                           onClick={() => addWidget(widget.id)}
@@ -257,7 +266,7 @@ export default function Home() {
                           <span className="font-medium text-slate-900">{widget.name}</span>
                         </button>
                       ))}
-                      {AVAILABLE_WIDGETS.filter(w => !widgets.includes(w.id)).length === 0 && (
+                      {availableToAdd.length === 0 && (
                         <p className="text-sm text-slate-500 text-center py-4">
                           All widgets are already added
                         </p>
@@ -289,7 +298,7 @@ export default function Home() {
                       ref={provided.innerRef}
                     >
                       {widgets.map((widgetId, index) => {
-                        const widgetConfig = AVAILABLE_WIDGETS.find(w => w.id === widgetId)
+                        const widgetConfig = widgetMap[widgetId]
                         if (!widgetConfig) return null
                         const WidgetComponent = widgetConfig.component
                         return (

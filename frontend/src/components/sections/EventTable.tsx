@@ -146,10 +146,14 @@ export default function EventTable({
     onError: (err, variables, context: any) => {
       queryClient.setQueryData(['events', category, businessId], context.previousEvents)
     },
-    onSuccess: (updatedEvent, { id }) => {
-      queryClient.setQueryData(['events', category, businessId], (old: any) =>
-        old ? old.map((event: any) => (event.id === id ? updatedEvent : event)) : old
-      )
+    onSuccess: (updatedEvent, { id, data }) => {
+      if ('category' in data || 'business_id' in data) {
+        queryClient.invalidateQueries({ queryKey: ['events'] })
+      } else {
+        queryClient.setQueryData(['events', category, businessId], (old: any) =>
+          old ? old.map((event: any) => (event.id === id ? updatedEvent : event)) : old
+        )
+      }
       setEditingField(null)
     }
   })
@@ -167,7 +171,7 @@ export default function EventTable({
       return backend.entities.Event.delete(id)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['events', category, businessId] })
+      queryClient.invalidateQueries({ queryKey: ['events'] })
     }
   })
 
@@ -182,7 +186,7 @@ export default function EventTable({
       })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['events', category, businessId] })
+      queryClient.invalidateQueries({ queryKey: ['events'] })
     }
   })
 
@@ -192,7 +196,7 @@ export default function EventTable({
       await Promise.all(ids.map(id => backend.entities.Event.delete(id)))
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['events', category, businessId] })
+      queryClient.invalidateQueries({ queryKey: ['events'] })
       setSelectedEvents([])
     }
   })
@@ -205,7 +209,7 @@ export default function EventTable({
       await Promise.all(ids.map(id => backend.entities.Event.update(id, data)))
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['events', category, businessId] })
+      queryClient.invalidateQueries({ queryKey: ['events'] })
       setSelectedEvents([])
     }
   })

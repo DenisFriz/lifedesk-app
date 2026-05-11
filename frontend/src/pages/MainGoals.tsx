@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { backend } from '@/api/backend'
 import { Tabs } from '@/components/ui/tabs'
@@ -13,6 +13,27 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ChevronDown, Target } from 'lucide-react'
 
+type FilterType = 'all' | 'important' | 'category' | 'business'
+
+type TabConfig = {
+  value: string
+  filterType: FilterType
+  category?: string
+}
+
+const tabs: TabConfig[] = [
+  { value: 'all', filterType: 'all' },
+  { value: 'important', filterType: 'important' },
+
+  { value: 'finances', filterType: 'category', category: 'finances' },
+  { value: 'assets', filterType: 'category', category: 'assets' },
+  { value: 'health', filterType: 'category', category: 'health_body' },
+  { value: 'fitness', filterType: 'category', category: 'fitness' },
+  { value: 'hobbies', filterType: 'category', category: 'hobbies' },
+  { value: 'learning', filterType: 'category', category: 'learning' },
+  { value: 'relationships', filterType: 'category', category: 'relationships' }
+]
+
 export default function MainGoals() {
   const [activeTab, setActiveTab] = useState(() => {
     const saved = localStorage.getItem('mainGoalsActiveTab')
@@ -22,7 +43,6 @@ export default function MainGoals() {
   const [visibleTabs, setVisibleTabs] = useState([])
   const [overflowTabs, setOverflowTabs] = useState([])
   const [isScrolled, setIsScrolled] = useState(false)
-  const tabsRef = useRef(null)
   const headerRef = useRef(null)
 
   const { data: businesses = [] } = useQuery({
@@ -80,8 +100,13 @@ export default function MainGoals() {
     })
   }
 
-  const orderedCategories = getOrderedCategories()
-  const orderedBusinesses = getOrderedBusinesses()
+  const orderedCategories = useMemo(() => {
+    return getOrderedCategories()
+  }, [])
+
+  const orderedBusinesses = useMemo(() => {
+    return getOrderedBusinesses()
+  }, [businesses])
 
   // Determine order of Business vs Private based on sidebar section order
   const getSectionOrder = () => {
@@ -106,7 +131,7 @@ export default function MainGoals() {
     section: `Business > ${business.name}`
   }))
 
-  const allTabs = React.useMemo(() => {
+  const allTabs = useMemo(() => {
     return [
       { value: 'all', label: 'All Goals' },
       { value: 'important', label: 'Important' },
@@ -176,7 +201,7 @@ export default function MainGoals() {
           }}
           className="all-goals-tabs space-y-6"
         >
-          <div ref={tabsRef} className="all-goals-tab-container tab-container rounded-lg p-1">
+          <div className="all-goals-tab-container tab-container rounded-lg p-1">
             <div className="all-goals-tabs-wrapper flex flex-wrap gap-1">
               {visibleTabs.map(tab => (
                 <button
@@ -231,45 +256,14 @@ export default function MainGoals() {
             </div>
           </div>
 
-          <div className={`all-goals-content-all ${activeTab === 'all' ? '' : 'hidden'}`}>
-            <GoalTable filterType="all" />
-          </div>
-
-          <div
-            className={`all-goals-content-important ${activeTab === 'important' ? '' : 'hidden'}`}
-          >
-            <GoalTable filterType="important" />
-          </div>
-
-          <div className={`all-goals-content-finances ${activeTab === 'finances' ? '' : 'hidden'}`}>
-            <GoalTable filterType="category" category="finances" />
-          </div>
-
-          <div className={`all-goals-content-assets ${activeTab === 'assets' ? '' : 'hidden'}`}>
-            <GoalTable filterType="category" category="assets" />
-          </div>
-
-          <div className={`all-goals-content-health ${activeTab === 'health' ? '' : 'hidden'}`}>
-            <GoalTable filterType="category" category="health_body" />
-          </div>
-
-          <div className={`all-goals-content-fitness ${activeTab === 'fitness' ? '' : 'hidden'}`}>
-            <GoalTable filterType="category" category="fitness" />
-          </div>
-
-          <div className={`all-goals-content-hobbies ${activeTab === 'hobbies' ? '' : 'hidden'}`}>
-            <GoalTable filterType="category" category="hobbies" />
-          </div>
-
-          <div className={`all-goals-content-learning ${activeTab === 'learning' ? '' : 'hidden'}`}>
-            <GoalTable filterType="category" category="learning" />
-          </div>
-
-          <div
-            className={`all-goals-content-relationships ${activeTab === 'relationships' ? '' : 'hidden'}`}
-          >
-            <GoalTable filterType="category" category="relationships" />
-          </div>
+          {tabs.map(
+            tab =>
+              activeTab === tab.value && (
+                <div key={tab.value} className={`all-goals-content-${tab.value}`}>
+                  <GoalTable filterType={tab.filterType} category={tab.category} />
+                </div>
+              )
+          )}
 
           {orderedBusinesses.map(business => (
             <div

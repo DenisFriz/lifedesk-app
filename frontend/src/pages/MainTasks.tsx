@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery } from '@tanstack/react-query'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
@@ -12,6 +12,26 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { ChevronDown, ListTodo } from 'lucide-react'
+
+type FilterType = 'all' | 'important' | 'category' | 'business'
+
+type TabConfig = {
+  value: string
+  filterType: FilterType
+  category?: string
+}
+
+const tabs: TabConfig[] = [
+  { value: 'all', filterType: 'all' },
+  { value: 'important', filterType: 'important' },
+  { value: 'finances', filterType: 'category', category: 'finances' },
+  { value: 'assets', filterType: 'category', category: 'assets' },
+  { value: 'health', filterType: 'category', category: 'health_body' },
+  { value: 'fitness', filterType: 'category', category: 'fitness' },
+  { value: 'hobbies', filterType: 'category', category: 'hobbies' },
+  { value: 'learning', filterType: 'category', category: 'learning' },
+  { value: 'relationships', filterType: 'category', category: 'relationships' }
+]
 
 export default function MainTasks() {
   const [activeTab, setActiveTab] = useState(() => {
@@ -106,7 +126,7 @@ export default function MainTasks() {
     section: `Business > ${business.name}`
   }))
 
-  const allTabs = React.useMemo(() => {
+  const allTabs = useMemo(() => {
     return [
       { value: 'all', label: 'All Tasks' },
       { value: 'important', label: 'Important' },
@@ -146,7 +166,6 @@ export default function MainTasks() {
   return (
     <div className="all-tasks-page min-h-screen page-bg">
       <div className="all-tasks-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Page Title - Sticky on mobile when scrolled */}
         {isScrolled && (
           <div className="all-tasks-sticky-header lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
             <div className="py-3">
@@ -157,7 +176,6 @@ export default function MainTasks() {
           </div>
         )}
 
-        {/* Page Header - Normal position */}
         <div ref={headerRef} className="all-tasks-header py-6 sm:py-8">
           <h1 className="all-tasks-title text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
             <ListTodo className="w-9 h-9 text-black" />
@@ -231,65 +249,18 @@ export default function MainTasks() {
             </div>
           </div>
 
-          <TabsContent value="all" className="all-tasks-content-all">
-            <TaskTable filterType="all" isActive={activeTab === 'all'} />
-          </TabsContent>
-
-          <TabsContent value="important" className="all-tasks-content-important">
-            <TaskTable filterType="important" isActive={activeTab === 'important'} />
-          </TabsContent>
-
-          <TabsContent value="finances" className="all-tasks-content-finances">
-            <TaskTable
-              filterType="category"
-              category="finances"
-              isActive={activeTab === 'finances'}
-            />
-          </TabsContent>
-
-          <TabsContent value="assets" className="all-tasks-content-assets">
-            <TaskTable filterType="category" category="assets" isActive={activeTab === 'assets'} />
-          </TabsContent>
-
-          <TabsContent value="health" className="all-tasks-content-health">
-            <TaskTable
-              filterType="category"
-              category="health_body"
-              isActive={activeTab === 'health'}
-            />
-          </TabsContent>
-
-          <TabsContent value="fitness" className="all-tasks-content-fitness">
-            <TaskTable
-              filterType="category"
-              category="fitness"
-              isActive={activeTab === 'fitness'}
-            />
-          </TabsContent>
-
-          <TabsContent value="hobbies" className="all-tasks-content-hobbies">
-            <TaskTable
-              filterType="category"
-              category="hobbies"
-              isActive={activeTab === 'hobbies'}
-            />
-          </TabsContent>
-
-          <TabsContent value="learning" className="all-tasks-content-learning">
-            <TaskTable
-              filterType="category"
-              category="learning"
-              isActive={activeTab === 'learning'}
-            />
-          </TabsContent>
-
-          <TabsContent value="relationships" className="all-tasks-content-relationships">
-            <TaskTable
-              filterType="category"
-              category="relationships"
-              isActive={activeTab === 'relationships'}
-            />
-          </TabsContent>
+          {tabs.map(
+            tab =>
+              activeTab === tab.value && (
+                <TabsContent
+                  key={tab.value}
+                  value={tab.value}
+                  className={`all-tasks-content-${tab.value}`}
+                >
+                  <TaskTable filterType={tab.filterType} category={tab.category} />
+                </TabsContent>
+              )
+          )}
 
           {orderedBusinesses.map(business => (
             <TabsContent

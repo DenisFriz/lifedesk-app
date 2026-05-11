@@ -231,7 +231,7 @@ export default function ExpenseForm({
                 <SelectValue placeholder="Personal expense" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Personal</SelectItem>
+                <SelectItem value="personal">Personal</SelectItem>
                 {businesses.map(business => (
                   <SelectItem key={business.id} value={String(business.id)}>
                     {business.name}
