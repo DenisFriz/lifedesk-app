@@ -21,6 +21,7 @@ import {
 import { Download, Filter, Calendar, DollarSign } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { Helmet } from 'react-helmet-async'
 
 type TimeEntry = {
   id: string
@@ -157,193 +158,204 @@ export default function TimeReports() {
   }
 
   return (
-    <div className="min-h-screen p-6 page-bg">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Time Reports</h1>
-          <p className="text-slate-600">Track and analyze your time entries</p>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="w-5 h-5 text-slate-500" />
-            <h2 className="text-lg font-semibold text-slate-900">Filters</h2>
+    <>
+      <Helmet>
+        <title>Time Reports</title>
+      </Helmet>
+      <div className="min-h-screen p-6 page-bg">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Time Reports</h1>
+            <p className="text-slate-600">Track and analyze your time entries</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Start Date</label>
-              <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+          {/* Filters */}
+          <div className="bg-white rounded-lg border border-slate-200 p-6 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter className="w-5 h-5 text-slate-500" />
+              <h2 className="text-lg font-semibold text-slate-900">Filters</h2>
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">End Date</label>
-              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1 block">Start Date</label>
+                <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1 block">End Date</label>
+                <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1 block">Client</label>
+                <Select value={filterClient} onValueChange={setFilterClient}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All clients" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Clients</SelectItem>
+                    {clients.map(client => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1 block">Project</label>
+                <Select value={filterProject} onValueChange={setFilterProject}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All projects" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Projects</SelectItem>
+                    {projects.map(project => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Client</label>
-              <Select value={filterClient} onValueChange={setFilterClient}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All clients" />
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setDateRange('today')}>
+                Today
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setDateRange('this-week')}>
+                This Week
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setDateRange('this-month')}>
+                This Month
+              </Button>
+
+              <Select value={filterBillable} onValueChange={setFilterBillable}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Clients</SelectItem>
-                  {clients.map(client => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="billable">Billable Only</SelectItem>
+                  <SelectItem value="non-billable">Non-billable Only</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
 
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Project</label>
-              <Select value={filterProject} onValueChange={setFilterProject}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All projects" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Projects</SelectItem>
-                  {projects.map(project => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Button onClick={handleExportCSV} variant="outline" size="sm" className="ml-auto">
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setDateRange('today')}>
-              Today
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setDateRange('this-week')}>
-              This Week
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setDateRange('this-month')}>
-              This Month
-            </Button>
-
-            <Select value={filterBillable} onValueChange={setFilterBillable}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="billable">Billable Only</SelectItem>
-                <SelectItem value="non-billable">Non-billable Only</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button onClick={handleExportCSV} variant="outline" size="sm" className="ml-auto">
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
-          </div>
-        </div>
-
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-lg border border-slate-200 p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-blue-600" />
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white rounded-lg border border-slate-200 p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-600">Total Hours</p>
+                  <p className="text-2xl font-bold text-slate-900">
+                    {formatDuration(totalDuration)}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-slate-600">Total Hours</p>
-                <p className="text-2xl font-bold text-slate-900">{formatDuration(totalDuration)}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-slate-200 p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-600">Billable Hours</p>
+                  <p className="text-2xl font-bold text-slate-900">
+                    {formatDuration(totalBillable)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg border border-slate-200 p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-600">Entries</p>
+                  <p className="text-2xl font-bold text-slate-900">{filteredEntries.length}</p>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-slate-200 p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-slate-600">Billable Hours</p>
-                <p className="text-2xl font-bold text-slate-900">{formatDuration(totalBillable)}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg border border-slate-200 p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-slate-600">Entries</p>
-                <p className="text-2xl font-bold text-slate-900">{filteredEntries.length}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Time Entries Table */}
-        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Project</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Billable</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEntries.length === 0 ? (
+          {/* Time Entries Table */}
+          <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-slate-500 py-8">
-                      No time entries found for the selected filters
-                    </TableCell>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Duration</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Project</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Billable</TableHead>
                   </TableRow>
-                ) : (
-                  filteredEntries.map(entry => (
-                    <TableRow key={entry.id}>
-                      <TableCell className="font-medium">
-                        {format(new Date(entry.date), 'MMM dd, yyyy')}
-                      </TableCell>
-                      <TableCell className="text-sm text-slate-600">
-                        {entry.start_time} - {entry.end_time || '...'}
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        {formatDuration(entry.duration || 0)}
-                      </TableCell>
-                      <TableCell className="text-sm">{getClientName(entry.client_id)}</TableCell>
-                      <TableCell className="text-sm">{getProjectName(entry.project_id)}</TableCell>
-                      <TableCell className="text-sm text-slate-600 max-w-xs truncate">
-                        {entry.description || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={cn(
-                            'px-2 py-1 rounded-full text-xs font-medium',
-                            entry.billable
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-slate-100 text-slate-700'
-                          )}
-                        >
-                          {entry.billable ? 'Billable' : 'Non-billable'}
-                        </span>
+                </TableHeader>
+                <TableBody>
+                  {filteredEntries.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-slate-500 py-8">
+                        No time entries found for the selected filters
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    filteredEntries.map(entry => (
+                      <TableRow key={entry.id}>
+                        <TableCell className="font-medium">
+                          {format(new Date(entry.date), 'MMM dd, yyyy')}
+                        </TableCell>
+                        <TableCell className="text-sm text-slate-600">
+                          {entry.start_time} - {entry.end_time || '...'}
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          {formatDuration(entry.duration || 0)}
+                        </TableCell>
+                        <TableCell className="text-sm">{getClientName(entry.client_id)}</TableCell>
+                        <TableCell className="text-sm">
+                          {getProjectName(entry.project_id)}
+                        </TableCell>
+                        <TableCell className="text-sm text-slate-600 max-w-xs truncate">
+                          {entry.description || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={cn(
+                              'px-2 py-1 rounded-full text-xs font-medium',
+                              entry.billable
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-slate-100 text-slate-700'
+                            )}
+                          >
+                            {entry.billable ? 'Billable' : 'Non-billable'}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

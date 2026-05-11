@@ -26,6 +26,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatCurrency } from '@/components/utils/formatters'
 import { subMonths, subYears, startOfDay, endOfDay } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { Helmet } from 'react-helmet-async'
 
 const COLORS = [
   '#6366f1',
@@ -38,7 +39,7 @@ const COLORS = [
   '#3b82f6',
   '#8b5cf6',
   '#84cc16'
-]
+] as const
 
 function useDateRange(period) {
   const now = new Date()
@@ -305,134 +306,142 @@ export default function Analytics() {
   )
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left flex items-center justify-center lg:justify-start gap-3">
-              <ChartNoAxesCombined className="w-8 h-8 sm:w-9 sm:h-9" />
-              Analytics
-            </h1>
-            <p className="text-sm sm:text-base text-slate-600 mt-1 text-center lg:text-left">
-              Calculated automatically from your transactions. Spending and income breakdowns by
-              category and life area.
-            </p>
-          </div>
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="this_month">This Month</SelectItem>
-              <SelectItem value="last_month">Last Month</SelectItem>
-              <SelectItem value="3months">Last 3 Months</SelectItem>
-              <SelectItem value="6months">Last 6 Months</SelectItem>
-              <SelectItem value="this_year">This Year</SelectItem>
-              <SelectItem value="1year">Last 12 Months</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Drill-down panel */}
-        {drillCategory && (
-          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-indigo-900">Transactions: {drillCategory}</h3>
-              <button
-                onClick={() => setDrillCategory(null)}
-                className="text-xs text-indigo-600 underline"
-              >
-                Close
-              </button>
+    <>
+      <Helmet>
+        <title>Analytics</title>
+      </Helmet>
+      <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left flex items-center justify-center lg:justify-start gap-3">
+                <ChartNoAxesCombined className="w-8 h-8 sm:w-9 sm:h-9" />
+                Analytics
+              </h1>
+              <p className="text-sm sm:text-base text-slate-600 mt-1 text-center lg:text-left">
+                Calculated automatically from your transactions. Spending and income breakdowns by
+                category and life area.
+              </p>
             </div>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {drillTransactions.length === 0 ? (
-                <p className="text-sm text-indigo-400">No transactions found.</p>
-              ) : (
-                drillTransactions.map(t => (
-                  <div
-                    key={t.id}
-                    className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-indigo-100"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">{t.title}</p>
-                      <p className="text-xs text-slate-400">{t.date?.slice(0, 10)}</p>
-                    </div>
-                    <span
-                      className={cn(
-                        'font-semibold text-sm',
-                        t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'
-                      )}
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="this_month">This Month</SelectItem>
+                <SelectItem value="last_month">Last Month</SelectItem>
+                <SelectItem value="3months">Last 3 Months</SelectItem>
+                <SelectItem value="6months">Last 6 Months</SelectItem>
+                <SelectItem value="this_year">This Year</SelectItem>
+                <SelectItem value="1year">Last 12 Months</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Drill-down panel */}
+          {drillCategory && (
+            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-indigo-900">Transactions: {drillCategory}</h3>
+                <button
+                  onClick={() => setDrillCategory(null)}
+                  className="text-xs text-indigo-600 underline"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {drillTransactions.length === 0 ? (
+                  <p className="text-sm text-indigo-400">No transactions found.</p>
+                ) : (
+                  drillTransactions.map(t => (
+                    <div
+                      key={t.id}
+                      className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-indigo-100"
                     >
-                      {t.type === 'income' ? '+' : '-'}
-                      {formatCurrency(t.amount)}
-                    </span>
-                  </div>
-                ))
-              )}
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">{t.title}</p>
+                        <p className="text-xs text-slate-400">{t.date?.slice(0, 10)}</p>
+                      </div>
+                      <span
+                        className={cn(
+                          'font-semibold text-sm',
+                          t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'
+                        )}
+                      >
+                        {t.type === 'income' ? '+' : '-'}
+                        {formatCurrency(t.amount)}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <PiePanel
-              data={incomeData}
-              title="Income by"
-              icon={<TrendingUp className="w-5 h-5 text-emerald-600" />}
-              groupBy={incomeGroupBy}
-              setGroupBy={setIncomeGroupBy}
-            />
-            <PiePanel
-              data={expenseData}
-              title="Expenses by"
-              icon={<TrendingDown className="w-5 h-5 text-rose-600" />}
-              groupBy={expenseGroupBy}
-              setGroupBy={setExpenseGroupBy}
-            />
-          </div>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <PiePanel
+                data={incomeData}
+                title="Income by"
+                icon={<TrendingUp className="w-5 h-5 text-emerald-600" />}
+                groupBy={incomeGroupBy}
+                setGroupBy={setIncomeGroupBy}
+              />
+              <PiePanel
+                data={expenseData}
+                title="Expenses by"
+                icon={<TrendingDown className="w-5 h-5 text-rose-600" />}
+                groupBy={expenseGroupBy}
+                setGroupBy={setExpenseGroupBy}
+              />
+            </div>
 
-          {/* Cashflow Trend */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              Cashflow Trend (12 Months)
-            </h3>
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={cashflowTrend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" fontSize={11} />
-                <YAxis fontSize={11} tickFormatter={v => formatCurrency(v).replace(/[€$£]/g, '')} />
-                <Tooltip formatter={v => formatCurrency(Number(v))} />
-                <Legend wrapperStyle={{ fontSize: '12px' }} />
-                <Line
-                  type="monotone"
-                  dataKey="income"
-                  stroke="#10b981"
-                  name="Income"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="expenses"
-                  stroke="#ef4444"
-                  name="Expenses"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="cashflow"
-                  stroke="#6366f1"
-                  name="Net"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {/* Cashflow Trend */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                Cashflow Trend (12 Months)
+              </h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={cashflowTrend}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" fontSize={11} />
+                  <YAxis
+                    fontSize={11}
+                    tickFormatter={v => formatCurrency(v).replace(/[€$£]/g, '')}
+                  />
+                  <Tooltip formatter={v => formatCurrency(Number(v))} />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Line
+                    type="monotone"
+                    dataKey="income"
+                    stroke="#10b981"
+                    name="Income"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="expenses"
+                    stroke="#ef4444"
+                    name="Expenses"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="cashflow"
+                    stroke="#6366f1"
+                    name="Net"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

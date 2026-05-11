@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Target } from 'lucide-react'
 import GoalTable from '@/components/sections/GoalTable'
+import { Helmet } from 'react-helmet-async'
 
 export default function FinancesGoals() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -19,29 +20,34 @@ export default function FinancesGoals() {
   }, [])
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {isScrolled && (
-          <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
-            <div className="py-3">
-              <h1 className="financesgoals-sticky-title text-sm font-normal text-slate-900 text-center">
-                Financial Goals
-              </h1>
+    <>
+      <Helmet>
+        <title>Finances Goals</title>
+      </Helmet>
+      <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {isScrolled && (
+            <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
+              <div className="py-3">
+                <h1 className="financesgoals-sticky-title text-sm font-normal text-slate-900 text-center">
+                  Financial Goals
+                </h1>
+              </div>
             </div>
+          )}
+          <div ref={headerRef} className="py-6 sm:py-8">
+            <h1 className="financesgoals-page-title text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
+              <Target className="w-8 h-8 sm:w-9 sm:h-9" />
+              Financial Goals
+            </h1>
+            <p className="text-sm sm:text-base text-slate-600 text-center lg:text-left">
+              Set and achieve your financial objectives
+            </p>
           </div>
-        )}
-        <div ref={headerRef} className="py-6 sm:py-8">
-          <h1 className="financesgoals-page-title text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
-            <Target className="w-8 h-8 sm:w-9 sm:h-9" />
-            Financial Goals
-          </h1>
-          <p className="text-sm sm:text-base text-slate-600 text-center lg:text-left">
-            Set and achieve your financial objectives
-          </p>
-        </div>
 
-        <GoalTable filterType="category" category="finances" />
+          <GoalTable filterType="category" category="finances" />
+        </div>
       </div>
-    </div>
+    </>
   )
 }

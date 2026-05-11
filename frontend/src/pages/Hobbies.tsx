@@ -16,6 +16,7 @@ import HobbyCard from '@/components/hobbies/HobbyCard'
 import HobbyForm from '@/components/hobbies/HobbyForm'
 import { useSubscription } from '@/hooks/useSubscription'
 import OverLimitItem from '@/components/subscription/OverLimitItem'
+import { Helmet } from 'react-helmet-async'
 
 const CATEGORIES = [
   { value: 'all', label: 'All' },
@@ -136,142 +137,147 @@ export default function Hobbies() {
   const activeCount = hobbies.filter(h => h.status === 'active').length
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {isScrolled && (
-          <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
-            <div className="py-3">
-              <h1 className="text-sm font-normal text-slate-900 text-center">
+    <>
+      <Helmet>
+        <title>Hobbies</title>
+      </Helmet>
+      <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {isScrolled && (
+            <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
+              <div className="py-3">
+                <h1 className="text-sm font-normal text-slate-900 text-center">
+                  Hobbies & Interests
+                </h1>
+              </div>
+            </div>
+          )}
+
+          <div
+            ref={headerRef}
+            className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 py-6 sm:py-8"
+          >
+            <div className="text-center lg:text-left w-full lg:w-auto">
+              <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2 flex items-center gap-3">
+                <PaletteIcon className="w-8 h-8" />
                 Hobbies & Interests
               </h1>
+              <p className="text-sm sm:text-base text-slate-600">
+                {activeCount > 0
+                  ? `${activeCount} active ${activeCount === 1 ? 'hobby' : 'hobbies'}`
+                  : 'Track your leisure activities and passions'}
+              </p>
             </div>
-          </div>
-        )}
-
-        <div
-          ref={headerRef}
-          className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 py-6 sm:py-8"
-        >
-          <div className="text-center lg:text-left w-full lg:w-auto">
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2 flex items-center gap-3">
-              <PaletteIcon className="w-8 h-8" />
-              Hobbies & Interests
-            </h1>
-            <p className="text-sm sm:text-base text-slate-600">
-              {activeCount > 0
-                ? `${activeCount} active ${activeCount === 1 ? 'hobby' : 'hobbies'}`
-                : 'Track your leisure activities and passions'}
-            </p>
-          </div>
-          {atLimit ? (
-            <Link to="/Upgrade" className="w-full lg:w-auto">
-              <Button className="w-full bg-amber-500 hover:bg-amber-600">
-                <Lock className="w-4 h-4 mr-2" />
-                Limit reached ({hobbies.length}/{hobbyLimit})
-              </Button>
-            </Link>
-          ) : (
-            <Button
-              onClick={() => {
-                setEditingHobby(null)
-                setShowForm(true)
-              }}
-              className="bg-indigo-600 hover:bg-indigo-700 w-full lg:w-auto"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Hobby
-            </Button>
-          )}
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input
-              placeholder="Search hobbies..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9 bg-white"
-            />
-          </div>
-          <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-full sm:w-44 bg-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {CATEGORIES.map(c => (
-                <SelectItem key={c.value} value={c.value}>
-                  {c.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-full sm:w-40 bg-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="on_pause">On Pause</SelectItem>
-              <SelectItem value="want_to_start">Want to Start</SelectItem>
-              <SelectItem value="retired">Retired</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Grid */}
-        {hobbies.length === 0 ? (
-          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-            <PaletteIcon className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <p className="text-lg font-medium text-slate-700 mb-2">No hobbies added yet</p>
-            <p className="text-slate-500 mb-6">
-              Add your hobbies to track your passions and leisure activities
-            </p>
-            {!atLimit && (
+            {atLimit ? (
+              <Link to="/Upgrade" className="w-full lg:w-auto">
+                <Button className="w-full bg-amber-500 hover:bg-amber-600">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Limit reached ({hobbies.length}/{hobbyLimit})
+                </Button>
+              </Link>
+            ) : (
               <Button
-                onClick={() => setShowForm(true)}
-                className="bg-indigo-600 hover:bg-indigo-700"
+                onClick={() => {
+                  setEditingHobby(null)
+                  setShowForm(true)
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 w-full lg:w-auto"
               >
-                <Plus className="w-4 h-4 mr-2" /> Add Your First Hobby
+                <Plus className="w-4 h-4 mr-2" />
+                Add Hobby
               </Button>
             )}
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-12 text-slate-500">No hobbies match your filters.</div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filtered.map(hobby => {
-              const hobbyIdx = hobbies.indexOf(hobby)
-              const overLimit = isOverLimit(hobbyIdx)
-              return overLimit ? (
-                <OverLimitItem key={hobby.id}>
-                  <HobbyCard hobby={hobby} onEdit={() => {}} onDelete={() => {}} />
-                </OverLimitItem>
-              ) : (
-                <HobbyCard
-                  key={hobby.id}
-                  hobby={hobby}
-                  onEdit={handleEdit}
-                  onDelete={deleteMutation.mutate}
-                />
-              )
-            })}
-          </div>
-        )}
 
-        <HobbyForm
-          open={showForm}
-          onClose={() => {
-            setShowForm(false)
-            setEditingHobby(null)
-          }}
-          onSubmit={handleSubmit}
-          hobby={editingHobby}
-          isLoading={createMutation.isPending || updateMutation.isPending}
-        />
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                placeholder="Search hobbies..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9 bg-white"
+              />
+            </div>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-full sm:w-44 bg-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map(c => (
+                  <SelectItem key={c.value} value={c.value}>
+                    {c.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-full sm:w-40 bg-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="on_pause">On Pause</SelectItem>
+                <SelectItem value="want_to_start">Want to Start</SelectItem>
+                <SelectItem value="retired">Retired</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Grid */}
+          {hobbies.length === 0 ? (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <PaletteIcon className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <p className="text-lg font-medium text-slate-700 mb-2">No hobbies added yet</p>
+              <p className="text-slate-500 mb-6">
+                Add your hobbies to track your passions and leisure activities
+              </p>
+              {!atLimit && (
+                <Button
+                  onClick={() => setShowForm(true)}
+                  className="bg-indigo-600 hover:bg-indigo-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Add Your First Hobby
+                </Button>
+              )}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12 text-slate-500">No hobbies match your filters.</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filtered.map(hobby => {
+                const hobbyIdx = hobbies.indexOf(hobby)
+                const overLimit = isOverLimit(hobbyIdx)
+                return overLimit ? (
+                  <OverLimitItem key={hobby.id}>
+                    <HobbyCard hobby={hobby} onEdit={() => {}} onDelete={() => {}} />
+                  </OverLimitItem>
+                ) : (
+                  <HobbyCard
+                    key={hobby.id}
+                    hobby={hobby}
+                    onEdit={handleEdit}
+                    onDelete={deleteMutation.mutate}
+                  />
+                )
+              })}
+            </div>
+          )}
+
+          <HobbyForm
+            open={showForm}
+            onClose={() => {
+              setShowForm(false)
+              setEditingHobby(null)
+            }}
+            onSubmit={handleSubmit}
+            hobby={editingHobby}
+            isLoading={createMutation.isPending || updateMutation.isPending}
+          />
+        </div>
       </div>
-    </div>
+    </>
   )
 }

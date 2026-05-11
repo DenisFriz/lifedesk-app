@@ -35,6 +35,7 @@ import {
   Percent,
   Package
 } from 'lucide-react'
+import { Helmet } from 'react-helmet-async'
 
 type Income = {
   id: string
@@ -227,319 +228,326 @@ export default function Overview() {
   ]
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {isScrolled && (
-          <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
-            <div className="py-3">
-              <h1 className="overview-sticky-title text-sm font-normal text-slate-900 text-center">
+    <>
+      <Helmet>
+        <title>Overview</title>
+      </Helmet>
+      <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {isScrolled && (
+            <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
+              <div className="py-3">
+                <h1 className="overview-sticky-title text-sm font-normal text-slate-900 text-center">
+                  Financial Overview
+                </h1>
+              </div>
+            </div>
+          )}
+          <div
+            ref={headerRef}
+            className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 py-6 sm:py-8"
+          >
+            <div>
+              <h1 className="overview-page-title text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left flex items-center justify-center lg:justify-start gap-3">
+                <WalletIcon className="w-8 h-8 sm:w-9 sm:h-9" />
                 Financial Overview
               </h1>
+              <p className="text-sm sm:text-base text-slate-600 text-center lg:text-left mt-1">
+                Budget, transactions, and assets dashboard
+              </p>
             </div>
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="this_month">This Month</SelectItem>
+                <SelectItem value="last_month">Last Month</SelectItem>
+                <SelectItem value="this_year">This Year</SelectItem>
+                <SelectItem value="last_year">Last Year</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        )}
-        <div
-          ref={headerRef}
-          className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 py-6 sm:py-8"
-        >
-          <div>
-            <h1 className="overview-page-title text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left flex items-center justify-center lg:justify-start gap-3">
-              <WalletIcon className="w-8 h-8 sm:w-9 sm:h-9" />
-              Financial Overview
-            </h1>
-            <p className="text-sm sm:text-base text-slate-600 text-center lg:text-left mt-1">
-              Budget, transactions, and assets dashboard
-            </p>
-          </div>
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="this_month">This Month</SelectItem>
-              <SelectItem value="last_month">Last Month</SelectItem>
-              <SelectItem value="this_year">This Year</SelectItem>
-              <SelectItem value="last_year">Last Year</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-slate-600">Net Worth</span>
-              <Wallet className="w-5 h-5 text-indigo-600" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-slate-600">Net Worth</span>
+                <Wallet className="w-5 h-5 text-indigo-600" />
+              </div>
+              <p
+                className={cn(
+                  'text-2xl font-bold',
+                  netWorth >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                )}
+              >
+                {formatCurrency(netWorth)}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">Assets + Liquid Cash</p>
             </div>
-            <p
-              className={cn(
-                'text-2xl font-bold',
-                netWorth >= 0 ? 'text-emerald-600' : 'text-rose-600'
+
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-slate-600">Actual Cashflow</span>
+                <DollarSign className="w-5 h-5 text-blue-600" />
+              </div>
+              <p
+                className={cn(
+                  'text-2xl font-bold',
+                  actualCashflow >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                )}
+              >
+                {formatCurrency(actualCashflow)}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">Income - Expenses (Actual)</p>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-slate-600">Budget Remaining</span>
+                <PiggyBank className="w-5 h-5 text-amber-600" />
+              </div>
+              <p
+                className={cn(
+                  'text-2xl font-bold',
+                  budgetRemaining >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                )}
+              >
+                {formatCurrency(Math.abs(budgetRemaining))}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                {budgetRemaining >= 0 ? 'Under budget' : 'Over budget'}
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-slate-600">Savings Rate</span>
+                <Percent className="w-5 h-5 text-emerald-600" />
+              </div>
+              <p
+                className={cn(
+                  'text-2xl font-bold',
+                  savingsRate >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                )}
+              >
+                {formatPercent(savingsRate)}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">Cashflow / Income</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="overview-networth-title text-lg font-semibold text-slate-900 mb-4">
+                Net Worth Breakdown
+              </h3>
+              {netWorthBreakdown.length > 0 ? (
+                <>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={netWorthBreakdown}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {netWorthBreakdown.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: any) =>
+                          formatCurrency(typeof value === 'number' ? value : 0)
+                        }
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="mt-4 space-y-2">
+                    {netWorthBreakdown.map((item, index) => (
+                      <div key={item.name} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                          />
+                          <span className="text-slate-700">{item.name}</span>
+                        </div>
+                        <span className="font-medium text-slate-900">
+                          {formatCurrency(item.value)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-slate-500 text-center py-8">No data available</p>
               )}
-            >
-              {formatCurrency(netWorth)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Assets + Liquid Cash</p>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-slate-600">Actual Cashflow</span>
-              <DollarSign className="w-5 h-5 text-blue-600" />
             </div>
-            <p
-              className={cn(
-                'text-2xl font-bold',
-                actualCashflow >= 0 ? 'text-emerald-600' : 'text-rose-600'
-              )}
-            >
-              {formatCurrency(actualCashflow)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Income - Expenses (Actual)</p>
-          </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-slate-600">Budget Remaining</span>
-              <PiggyBank className="w-5 h-5 text-amber-600" />
-            </div>
-            <p
-              className={cn(
-                'text-2xl font-bold',
-                budgetRemaining >= 0 ? 'text-emerald-600' : 'text-rose-600'
-              )}
-            >
-              {formatCurrency(Math.abs(budgetRemaining))}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              {budgetRemaining >= 0 ? 'Under budget' : 'Over budget'}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-slate-600">Savings Rate</span>
-              <Percent className="w-5 h-5 text-emerald-600" />
-            </div>
-            <p
-              className={cn(
-                'text-2xl font-bold',
-                savingsRate >= 0 ? 'text-emerald-600' : 'text-rose-600'
-              )}
-            >
-              {formatPercent(savingsRate)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Cashflow / Income</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h3 className="overview-networth-title text-lg font-semibold text-slate-900 mb-4">
-              Net Worth Breakdown
-            </h3>
-            {netWorthBreakdown.length > 0 ? (
-              <>
-                <ResponsiveContainer width="100%" height={200}>
-                  <PieChart>
-                    <Pie
-                      data={netWorthBreakdown}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {netWorthBreakdown.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="overview-budget-comparison-title text-lg font-semibold text-slate-900 mb-4">
+                Budget vs Actual by Category
+              </h3>
+              {categoryComparison.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={categoryComparison}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="category"
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      fontSize={11}
+                    />
+                    <YAxis
+                      fontSize={11}
+                      tickFormatter={value => `${formatCurrency(value).replace(/[€$£]/g, '')}`}
+                    />
                     <Tooltip
                       formatter={(value: any) =>
                         formatCurrency(typeof value === 'number' ? value : 0)
                       }
                     />
-                  </PieChart>
+                    <Legend wrapperStyle={{ fontSize: '12px' }} />
+                    <Bar dataKey="planned" fill="#94a3b8" name="Planned" />
+                    <Bar dataKey="actual" fill="#6366f1" name="Actual" />
+                  </BarChart>
                 </ResponsiveContainer>
-                <div className="mt-4 space-y-2">
-                  {netWorthBreakdown.map((item, index) => (
-                    <div key={item.name} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                        />
-                        <span className="text-slate-700">{item.name}</span>
-                      </div>
-                      <span className="font-medium text-slate-900">
-                        {formatCurrency(item.value)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="text-slate-500 text-center py-8">No data available</p>
-            )}
+              ) : (
+                <p className="text-slate-500 text-center py-8">No category data</p>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+            <h3 className="overview-cashflow-trend-title text-lg font-semibold text-slate-900 mb-4">
+              Cashflow Trend (12 Months)
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={cashflowTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" fontSize={11} />
+                <YAxis
+                  fontSize={11}
+                  tickFormatter={value => `${formatCurrency(value).replace(/[€$£]/g, '')}`}
+                />
+                <Tooltip
+                  formatter={(value: any) => formatCurrency(typeof value === 'number' ? value : 0)}
+                />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+                <Line
+                  type="monotone"
+                  dataKey="income"
+                  stroke="#10b981"
+                  name="Income (Actual)"
+                  strokeWidth={2}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="expenses"
+                  stroke="#ef4444"
+                  name="Expenses (Actual)"
+                  strokeWidth={2}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="cashflow"
+                  stroke="#6366f1"
+                  name="Cashflow"
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h3 className="overview-budget-comparison-title text-lg font-semibold text-slate-900 mb-4">
-              Budget vs Actual by Category
-            </h3>
-            {categoryComparison.length > 0 ? (
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={categoryComparison}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="category"
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                    fontSize={11}
-                  />
-                  <YAxis
-                    fontSize={11}
-                    tickFormatter={value => `${formatCurrency(value).replace(/[€$£]/g, '')}`}
-                  />
-                  <Tooltip
-                    formatter={(value: any) =>
-                      formatCurrency(typeof value === 'number' ? value : 0)
-                    }
-                  />
-                  <Legend wrapperStyle={{ fontSize: '12px' }} />
-                  <Bar dataKey="planned" fill="#94a3b8" name="Planned" />
-                  <Bar dataKey="actual" fill="#6366f1" name="Actual" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-slate-500 text-center py-8">No category data</p>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="overview-assets-title text-lg font-semibold text-slate-900">
+                Physical Assets Summary
+              </h3>
+              <Package className="w-5 h-5 text-slate-600" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="text-center p-4 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-600 mb-1">Total Value</p>
+                <p className="text-xl font-bold text-slate-900">
+                  {formatCurrency(totalAssetValue)}
+                </p>
+              </div>
+              <div className="text-center p-4 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-600 mb-1">Purchase Cost</p>
+                <p className="text-xl font-bold text-slate-900">{formatCurrency(totalAssetCost)}</p>
+              </div>
+              <div className="text-center p-4 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-600 mb-1">Unrealized Gain/Loss</p>
+                <p
+                  className={cn(
+                    'text-xl font-bold',
+                    unrealizedGain >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                  )}
+                >
+                  {unrealizedGain >= 0 ? '+' : ''}
+                  {formatCurrency(unrealizedGain)}
+                </p>
+              </div>
+              <div className="text-center p-4 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-600 mb-1">Total Assets</p>
+                <p className="text-xl font-bold text-slate-900">{formatNumber(assets.length)}</p>
+              </div>
+            </div>
+
+            {topAssets.length > 0 && (
+              <div>
+                <h4 className="overview-topassets-title text-sm font-semibold text-slate-700 mb-3">
+                  Top Assets
+                </h4>
+                <div className="space-y-2">
+                  {topAssets.map(asset => {
+                    const gain = (asset.current_value || 0) - (asset.purchase_price || 0)
+                    return (
+                      <div
+                        key={asset.id}
+                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-slate-900">{asset.title}</p>
+                          <p className="text-xs text-slate-500">
+                            {asset.category?.replace('_', ' ')}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-slate-900">
+                            {formatCurrency(asset.current_value || 0)}
+                          </p>
+                          <p
+                            className={cn(
+                              'text-xs flex items-center gap-1 justify-end',
+                              gain >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                            )}
+                          >
+                            {gain >= 0 ? (
+                              <TrendingUp className="w-3 h-3" />
+                            ) : (
+                              <TrendingDown className="w-3 h-3" />
+                            )}
+                            {gain >= 0 ? '+' : ''}
+                            {formatCurrency(gain)}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             )}
           </div>
         </div>
-
-        <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
-          <h3 className="overview-cashflow-trend-title text-lg font-semibold text-slate-900 mb-4">
-            Cashflow Trend (12 Months)
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={cashflowTrend}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" fontSize={11} />
-              <YAxis
-                fontSize={11}
-                tickFormatter={value => `${formatCurrency(value).replace(/[€$£]/g, '')}`}
-              />
-              <Tooltip
-                formatter={(value: any) => formatCurrency(typeof value === 'number' ? value : 0)}
-              />
-              <Legend wrapperStyle={{ fontSize: '12px' }} />
-              <Line
-                type="monotone"
-                dataKey="income"
-                stroke="#10b981"
-                name="Income (Actual)"
-                strokeWidth={2}
-              />
-              <Line
-                type="monotone"
-                dataKey="expenses"
-                stroke="#ef4444"
-                name="Expenses (Actual)"
-                strokeWidth={2}
-              />
-              <Line
-                type="monotone"
-                dataKey="cashflow"
-                stroke="#6366f1"
-                name="Cashflow"
-                strokeWidth={2}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="overview-assets-title text-lg font-semibold text-slate-900">
-              Physical Assets Summary
-            </h3>
-            <Package className="w-5 h-5 text-slate-600" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-4 bg-slate-50 rounded-lg">
-              <p className="text-sm text-slate-600 mb-1">Total Value</p>
-              <p className="text-xl font-bold text-slate-900">{formatCurrency(totalAssetValue)}</p>
-            </div>
-            <div className="text-center p-4 bg-slate-50 rounded-lg">
-              <p className="text-sm text-slate-600 mb-1">Purchase Cost</p>
-              <p className="text-xl font-bold text-slate-900">{formatCurrency(totalAssetCost)}</p>
-            </div>
-            <div className="text-center p-4 bg-slate-50 rounded-lg">
-              <p className="text-sm text-slate-600 mb-1">Unrealized Gain/Loss</p>
-              <p
-                className={cn(
-                  'text-xl font-bold',
-                  unrealizedGain >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                )}
-              >
-                {unrealizedGain >= 0 ? '+' : ''}
-                {formatCurrency(unrealizedGain)}
-              </p>
-            </div>
-            <div className="text-center p-4 bg-slate-50 rounded-lg">
-              <p className="text-sm text-slate-600 mb-1">Total Assets</p>
-              <p className="text-xl font-bold text-slate-900">{formatNumber(assets.length)}</p>
-            </div>
-          </div>
-
-          {topAssets.length > 0 && (
-            <div>
-              <h4 className="overview-topassets-title text-sm font-semibold text-slate-700 mb-3">
-                Top Assets
-              </h4>
-              <div className="space-y-2">
-                {topAssets.map(asset => {
-                  const gain = (asset.current_value || 0) - (asset.purchase_price || 0)
-                  return (
-                    <div
-                      key={asset.id}
-                      className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-slate-900">{asset.title}</p>
-                        <p className="text-xs text-slate-500">
-                          {asset.category?.replace('_', ' ')}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-slate-900">
-                          {formatCurrency(asset.current_value || 0)}
-                        </p>
-                        <p
-                          className={cn(
-                            'text-xs flex items-center gap-1 justify-end',
-                            gain >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                          )}
-                        >
-                          {gain >= 0 ? (
-                            <TrendingUp className="w-3 h-3" />
-                          ) : (
-                            <TrendingDown className="w-3 h-3" />
-                          )}
-                          {gain >= 0 ? '+' : ''}
-                          {formatCurrency(gain)}
-                        </p>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-        </div>
       </div>
-    </div>
+    </>
   )
 }

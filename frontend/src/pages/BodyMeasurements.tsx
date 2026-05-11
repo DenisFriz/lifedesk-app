@@ -23,6 +23,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { Lock } from 'lucide-react'
+import { Helmet } from 'react-helmet-async'
 
 const METRIC_GROUPS = [
   {
@@ -206,161 +207,168 @@ export default function BodyMeasurements() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {isScrolled && (
-          <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
-            <div className="py-3">
-              <h1 className="text-sm font-normal text-slate-900 text-center">Measurements</h1>
+    <>
+      <Helmet>
+        <title>Body Measurements</title>
+      </Helmet>
+      <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {isScrolled && (
+            <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
+              <div className="py-3">
+                <h1 className="text-sm font-normal text-slate-900 text-center">Measurements</h1>
+              </div>
             </div>
-          </div>
-        )}
-        <div
-          ref={headerRef}
-          className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 py-6 sm:py-8"
-        >
-          <div className="text-center lg:text-left w-full lg:w-auto">
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">Measurements</h1>
-            <p className="text-sm sm:text-base text-slate-600">
-              Track body composition, vitals & wellness — all metrics your smartwatch captures
-            </p>
-          </div>
-          {atLimit ? (
-            <Link to="/Upgrade" className="w-full lg:w-auto">
-              <Button className="w-full bg-amber-500 hover:bg-amber-600">
-                <Lock className="w-4 h-4 mr-2" />
-                Limit reached ({measurements.length}/{measurementLimit})
+          )}
+          <div
+            ref={headerRef}
+            className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 py-6 sm:py-8"
+          >
+            <div className="text-center lg:text-left w-full lg:w-auto">
+              <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">Measurements</h1>
+              <p className="text-sm sm:text-base text-slate-600">
+                Track body composition, vitals & wellness — all metrics your smartwatch captures
+              </p>
+            </div>
+            {atLimit ? (
+              <Link to="/Upgrade" className="w-full lg:w-auto">
+                <Button className="w-full bg-amber-500 hover:bg-amber-600">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Limit reached ({measurements.length}/{measurementLimit})
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                onClick={() => setShowForm(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 w-full lg:w-auto"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Measurement
               </Button>
-            </Link>
-          ) : (
-            <Button
-              onClick={() => setShowForm(true)}
-              className="bg-indigo-600 hover:bg-indigo-700 w-full lg:w-auto"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Measurement
-            </Button>
-          )}
-        </div>
+            )}
+          </div>
 
-        <div className="grid gap-4">
-          {measurements.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <TrendingUp className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500 mb-4">No measurements recorded yet</p>
-                {!atLimit && (
-                  <Button onClick={() => setShowForm(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Your First Measurement
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            measurements.map((m, idx) => {
-              const overLimit = isOverLimit(idx)
-              const card = (
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Calendar className="w-4 h-4" />
-                      {format(new Date(m.date), 'MMMM d, yyyy')}
-                    </div>
-                    {!overLimit && (
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setEditingMeasurement(m)
-                            setShowForm(true)
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteMutation.mutate(m.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-rose-500" />
-                        </Button>
+          <div className="grid gap-4">
+            {measurements.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <TrendingUp className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-500 mb-4">No measurements recorded yet</p>
+                  {!atLimit && (
+                    <Button onClick={() => setShowForm(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Your First Measurement
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              measurements.map((m, idx) => {
+                const overLimit = isOverLimit(idx)
+                const card = (
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Calendar className="w-4 h-4" />
+                        {format(new Date(m.date), 'MMMM d, yyyy')}
                       </div>
-                    )}
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {METRIC_GROUPS.map(group => {
-                      const hasValues = group.fields.some(f => m[f.key] != null && m[f.key] !== '')
-                      if (!hasValues) return null
-                      const Icon = group.icon
-                      return (
-                        <div key={group.label}>
-                          <div className="flex items-center gap-1.5 mb-2">
-                            <Icon className={cn('w-3.5 h-3.5', group.color)} />
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                              {group.label}
-                            </p>
-                          </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                            {group.fields.map(f => {
-                              if (m[f.key] == null || m[f.key] === '') return null
-                              // Special display for blood pressure
-                              if (
-                                f.key === 'blood_pressure_systolic' &&
-                                m.blood_pressure_diastolic
-                              ) {
-                                return (
-                                  <div key={f.key} className="flex flex-col">
-                                    <p className="text-xs text-slate-500">Blood Pressure</p>
-                                    <p className="text-base font-semibold text-slate-900">
-                                      {m.blood_pressure_systolic}/{m.blood_pressure_diastolic}{' '}
-                                      <span className="text-xs font-normal text-slate-500">
-                                        mmHg
-                                      </span>
-                                    </p>
-                                  </div>
-                                )
-                              }
-                              if (f.key === 'blood_pressure_diastolic') return null // rendered above
-                              return (
-                                <MetricBadge
-                                  key={f.key}
-                                  value={m[f.key]}
-                                  unit={f.unit}
-                                  label={f.label}
-                                />
-                              )
-                            })}
-                          </div>
+                      {!overLimit && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setEditingMeasurement(m)
+                              setShowForm(true)
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteMutation.mutate(m.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-rose-500" />
+                          </Button>
                         </div>
-                      )
-                    })}
-                    {m.notes && <p className="text-sm text-slate-600 border-t pt-3">{m.notes}</p>}
-                  </CardContent>
-                </Card>
-              )
-              return overLimit ? (
-                <OverLimitItem key={m.id}>{card}</OverLimitItem>
-              ) : (
-                <React.Fragment key={m.id}>{card}</React.Fragment>
-              )
-            })
-          )}
-        </div>
+                      )}
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {METRIC_GROUPS.map(group => {
+                        const hasValues = group.fields.some(
+                          f => m[f.key] != null && m[f.key] !== ''
+                        )
+                        if (!hasValues) return null
+                        const Icon = group.icon
+                        return (
+                          <div key={group.label}>
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <Icon className={cn('w-3.5 h-3.5', group.color)} />
+                              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                {group.label}
+                              </p>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                              {group.fields.map(f => {
+                                if (m[f.key] == null || m[f.key] === '') return null
+                                // Special display for blood pressure
+                                if (
+                                  f.key === 'blood_pressure_systolic' &&
+                                  m.blood_pressure_diastolic
+                                ) {
+                                  return (
+                                    <div key={f.key} className="flex flex-col">
+                                      <p className="text-xs text-slate-500">Blood Pressure</p>
+                                      <p className="text-base font-semibold text-slate-900">
+                                        {m.blood_pressure_systolic}/{m.blood_pressure_diastolic}{' '}
+                                        <span className="text-xs font-normal text-slate-500">
+                                          mmHg
+                                        </span>
+                                      </p>
+                                    </div>
+                                  )
+                                }
+                                if (f.key === 'blood_pressure_diastolic') return null // rendered above
+                                return (
+                                  <MetricBadge
+                                    key={f.key}
+                                    value={m[f.key]}
+                                    unit={f.unit}
+                                    label={f.label}
+                                  />
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {m.notes && <p className="text-sm text-slate-600 border-t pt-3">{m.notes}</p>}
+                    </CardContent>
+                  </Card>
+                )
+                return overLimit ? (
+                  <OverLimitItem key={m.id}>{card}</OverLimitItem>
+                ) : (
+                  <React.Fragment key={m.id}>{card}</React.Fragment>
+                )
+              })
+            )}
+          </div>
 
-        <MeasurementForm
-          open={showForm}
-          onClose={() => {
-            setShowForm(false)
-            setEditingMeasurement(null)
-          }}
-          onSubmit={handleSubmit}
-          measurement={editingMeasurement}
-          isLoading={createMutation.isPending || updateMutation.isPending}
-        />
+          <MeasurementForm
+            open={showForm}
+            onClose={() => {
+              setShowForm(false)
+              setEditingMeasurement(null)
+            }}
+            onSubmit={handleSubmit}
+            measurement={editingMeasurement}
+            isLoading={createMutation.isPending || updateMutation.isPending}
+          />
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

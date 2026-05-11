@@ -20,6 +20,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { format } from 'date-fns'
+import { Helmet } from 'react-helmet-async'
 
 type Workout = {
   id: string
@@ -140,204 +141,209 @@ export default function Workouts() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {isScrolled && (
-          <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
-            <div className="py-3">
-              <h1 className="workouts-sticky-title text-sm font-normal text-slate-900 text-center">
+    <>
+      <Helmet>
+        <title>Workouts</title>
+      </Helmet>
+      <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {isScrolled && (
+            <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
+              <div className="py-3">
+                <h1 className="workouts-sticky-title text-sm font-normal text-slate-900 text-center">
+                  Workouts
+                </h1>
+              </div>
+            </div>
+          )}
+          <div
+            ref={headerRef}
+            className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 py-6 sm:py-8"
+          >
+            <div className="text-center lg:text-left w-full lg:w-auto">
+              <h1 className="workouts-page-title text-3xl sm:text-4xl font-bold text-slate-900 mb-2 flex items-center justify-center lg:justify-start gap-3">
+                <Dumbbell className="w-8 h-8 sm:w-9 sm:h-9" />
                 Workouts
               </h1>
+              <p className="text-sm sm:text-base text-slate-600">
+                Log and track your training sessions
+              </p>
             </div>
-          </div>
-        )}
-        <div
-          ref={headerRef}
-          className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 py-6 sm:py-8"
-        >
-          <div className="text-center lg:text-left w-full lg:w-auto">
-            <h1 className="workouts-page-title text-3xl sm:text-4xl font-bold text-slate-900 mb-2 flex items-center justify-center lg:justify-start gap-3">
-              <Dumbbell className="w-8 h-8 sm:w-9 sm:h-9" />
-              Workouts
-            </h1>
-            <p className="text-sm sm:text-base text-slate-600">
-              Log and track your training sessions
-            </p>
-          </div>
-          <div className="flex gap-2 w-full lg:w-auto">
-            <Link to={createPageUrl('WorkoutPlans')} className="flex-1 lg:flex-initial">
-              <Button variant="outline" className="w-full">
-                <CalendarDays className="w-4 h-4 mr-2" />
-                Plans
-              </Button>
-            </Link>
-            {atLimit ? (
-              <Link to="/Upgrade" className="flex-1 lg:flex-initial">
-                <Button className="w-full bg-amber-500 hover:bg-amber-600">
-                  <Lock className="w-4 h-4 mr-2" />
-                  Limit reached ({workouts.length}/{workoutLimit})
+            <div className="flex gap-2 w-full lg:w-auto">
+              <Link to={createPageUrl('WorkoutPlans')} className="flex-1 lg:flex-initial">
+                <Button variant="outline" className="w-full">
+                  <CalendarDays className="w-4 h-4 mr-2" />
+                  Plans
                 </Button>
               </Link>
-            ) : (
-              <Button
-                onClick={() => setShowForm(true)}
-                className="bg-indigo-600 hover:bg-indigo-700 flex-1 lg:flex-initial"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Log Workout
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={filterType === 'all' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilterType('all')}
-            >
-              All ({workouts.length})
-            </Button>
-            {['strength', 'cardio', 'flexibility', 'sports', 'other'].map(type => {
-              const count = workouts.filter(w => w.type === type).length
-              return (
-                <Button
-                  key={type}
-                  variant={filterType === type ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setFilterType(type)}
-                >
-                  {workoutTypeLabels[type]} ({count})
-                </Button>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="grid gap-4">
-          {filteredWorkouts.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <Dumbbell className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500 mb-4">
-                  {workouts.length === 0
-                    ? 'No workouts logged yet'
-                    : 'No workouts found for this filter'}
-                </p>
-                {!atLimit && (
-                  <Button onClick={() => setShowForm(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Log Your First Workout
+              {atLimit ? (
+                <Link to="/Upgrade" className="flex-1 lg:flex-initial">
+                  <Button className="w-full bg-amber-500 hover:bg-amber-600">
+                    <Lock className="w-4 h-4 mr-2" />
+                    Limit reached ({workouts.length}/{workoutLimit})
                   </Button>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            filteredWorkouts.map(workout => {
-              const workoutIdx = workouts.indexOf(workout)
-              const overLimit = isOverLimit(workoutIdx)
-              const card = (
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <CardTitle className="workouts-card-title">{workout.title}</CardTitle>
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${workoutTypeColors[workout.type]}`}
-                        >
-                          {workoutTypeLabels[workout.type]}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {format(new Date(workout.date), 'MMM d, yyyy')}
-                        </span>
-                        {workout.duration_minutes && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            {workout.duration_minutes} min
+                </Link>
+              ) : (
+                <Button
+                  onClick={() => setShowForm(true)}
+                  className="bg-indigo-600 hover:bg-indigo-700 flex-1 lg:flex-initial"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Log Workout
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={filterType === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFilterType('all')}
+              >
+                All ({workouts.length})
+              </Button>
+              {['strength', 'cardio', 'flexibility', 'sports', 'other'].map(type => {
+                const count = workouts.filter(w => w.type === type).length
+                return (
+                  <Button
+                    key={type}
+                    variant={filterType === type ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFilterType(type)}
+                  >
+                    {workoutTypeLabels[type]} ({count})
+                  </Button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            {filteredWorkouts.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Dumbbell className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-500 mb-4">
+                    {workouts.length === 0
+                      ? 'No workouts logged yet'
+                      : 'No workouts found for this filter'}
+                  </p>
+                  {!atLimit && (
+                    <Button onClick={() => setShowForm(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Log Your First Workout
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              filteredWorkouts.map(workout => {
+                const workoutIdx = workouts.indexOf(workout)
+                const overLimit = isOverLimit(workoutIdx)
+                const card = (
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CardTitle className="workouts-card-title">{workout.title}</CardTitle>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full ${workoutTypeColors[workout.type]}`}
+                          >
+                            {workoutTypeLabels[workout.type]}
                           </span>
-                        )}
-                        {workout.calories_burned && (
+                        </div>
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
                           <span className="flex items-center gap-1">
-                            <Flame className="w-4 h-4" />
-                            {workout.calories_burned} cal
+                            <Calendar className="w-4 h-4" />
+                            {format(new Date(workout.date), 'MMM d, yyyy')}
                           </span>
-                        )}
-                      </div>
-                    </div>
-                    {!overLimit && (
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setEditingWorkout(workout)
-                            setShowForm(true)
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteMutation.mutate(workout.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-rose-500" />
-                        </Button>
-                      </div>
-                    )}
-                  </CardHeader>
-                  <CardContent>
-                    {workout.exercises && workout.exercises.length > 0 && (
-                      <div className="mb-4">
-                        <p className="text-xs font-semibold text-slate-600 mb-2">Exercises</p>
-                        <div className="space-y-2">
-                          {workout.exercises.map((exercise, idx) => (
-                            <div key={idx} className="bg-slate-50 rounded-lg p-3">
-                              <p className="font-medium text-sm">{exercise.name}</p>
-                              <div className="flex flex-wrap gap-3 mt-1 text-xs text-slate-600">
-                                {exercise.sets && <span>{exercise.sets} sets</span>}
-                                {exercise.reps && <span>{exercise.reps} reps</span>}
-                                {exercise.weight && <span>{exercise.weight} kg</span>}
-                                {exercise.distance && <span>{exercise.distance} km</span>}
-                                {exercise.duration && <span>{exercise.duration} min</span>}
-                              </div>
-                              {exercise.notes && (
-                                <p className="text-xs text-slate-500 mt-1">{exercise.notes}</p>
-                              )}
-                            </div>
-                          ))}
+                          {workout.duration_minutes && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {workout.duration_minutes} min
+                            </span>
+                          )}
+                          {workout.calories_burned && (
+                            <span className="flex items-center gap-1">
+                              <Flame className="w-4 h-4" />
+                              {workout.calories_burned} cal
+                            </span>
+                          )}
                         </div>
                       </div>
-                    )}
-                    {workout.notes && <p className="text-sm text-slate-600">{workout.notes}</p>}
-                  </CardContent>
-                </Card>
-              )
-              return overLimit ? (
-                <OverLimitItem key={workout.id}>{card}</OverLimitItem>
-              ) : (
-                <Fragment key={workout.id}>{card}</Fragment>
-              )
-            })
-          )}
-        </div>
+                      {!overLimit && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setEditingWorkout(workout)
+                              setShowForm(true)
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteMutation.mutate(workout.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-rose-500" />
+                          </Button>
+                        </div>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      {workout.exercises && workout.exercises.length > 0 && (
+                        <div className="mb-4">
+                          <p className="text-xs font-semibold text-slate-600 mb-2">Exercises</p>
+                          <div className="space-y-2">
+                            {workout.exercises.map((exercise, idx) => (
+                              <div key={idx} className="bg-slate-50 rounded-lg p-3">
+                                <p className="font-medium text-sm">{exercise.name}</p>
+                                <div className="flex flex-wrap gap-3 mt-1 text-xs text-slate-600">
+                                  {exercise.sets && <span>{exercise.sets} sets</span>}
+                                  {exercise.reps && <span>{exercise.reps} reps</span>}
+                                  {exercise.weight && <span>{exercise.weight} kg</span>}
+                                  {exercise.distance && <span>{exercise.distance} km</span>}
+                                  {exercise.duration && <span>{exercise.duration} min</span>}
+                                </div>
+                                {exercise.notes && (
+                                  <p className="text-xs text-slate-500 mt-1">{exercise.notes}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {workout.notes && <p className="text-sm text-slate-600">{workout.notes}</p>}
+                    </CardContent>
+                  </Card>
+                )
+                return overLimit ? (
+                  <OverLimitItem key={workout.id}>{card}</OverLimitItem>
+                ) : (
+                  <Fragment key={workout.id}>{card}</Fragment>
+                )
+              })
+            )}
+          </div>
 
-        <WorkoutForm
-          open={showForm}
-          onClose={() => {
-            setShowForm(false)
-            setEditingWorkout(null)
-          }}
-          onSubmit={handleSubmit}
-          workout={editingWorkout}
-          isLoading={createMutation.isPending || updateMutation.isPending}
-        />
+          <WorkoutForm
+            open={showForm}
+            onClose={() => {
+              setShowForm(false)
+              setEditingWorkout(null)
+            }}
+            onSubmit={handleSubmit}
+            workout={editingWorkout}
+            isLoading={createMutation.isPending || updateMutation.isPending}
+          />
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

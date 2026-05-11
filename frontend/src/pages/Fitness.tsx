@@ -6,6 +6,7 @@ import { Dumbbell, TrendingUp, Calendar, Flame } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { createPageUrl } from '@/utils'
 import FitnessTimelineChart from '@/components/sections/FitnessTimelineChart'
+import { Helmet } from 'react-helmet-async'
 
 type Workout = {
   id?: string
@@ -60,117 +61,122 @@ export default function Fitness() {
   const previousMeasurement = measurements[1]
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {isScrolled && (
-          <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
-            <div className="py-3">
-              <h1 className="fitness-sticky-title text-sm font-normal text-slate-900 text-center">
-                Fitness Overview
-              </h1>
-            </div>
-          </div>
-        )}
-        <div ref={headerRef} className="py-6 sm:py-8">
-          <h1 className="fitness-page-title text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
-            <Dumbbell className="w-8 h-8 sm:w-9 sm:h-9" />
-            Fitness Overview
-          </h1>
-          <p className="text-sm sm:text-base text-slate-600 text-center lg:text-left">
-            Track your workouts, progress, and body measurements
-          </p>
-        </div>
-
-        <FitnessTimelineChart />
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="fitness-stat-workouts text-sm font-medium text-slate-600 flex items-center gap-2">
-                <Dumbbell className="w-4 h-4" />
-                Workouts This Week
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-slate-900">{thisWeek.length}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="fitness-stat-minutes text-sm font-medium text-slate-600 flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Total Minutes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-slate-900">{totalMinutes}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="fitness-stat-calories text-sm font-medium text-slate-600 flex items-center gap-2">
-                <Flame className="w-4 h-4" />
-                Calories Burned
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-slate-900">{totalCalories}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="fitness-stat-weight text-sm font-medium text-slate-600 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                Weight
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-slate-900">
-                {latestMeasurement?.weight || '-'}
+    <>
+      <Helmet>
+        <title>Fitness</title>
+      </Helmet>
+      <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {isScrolled && (
+            <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
+              <div className="py-3">
+                <h1 className="fitness-sticky-title text-sm font-normal text-slate-900 text-center">
+                  Fitness Overview
+                </h1>
               </div>
-              {previousMeasurement && latestMeasurement && (
-                <p className="text-xs text-slate-500 mt-1">
-                  {latestMeasurement.weight > previousMeasurement.weight ? '+' : ''}
-                  {(latestMeasurement.weight - previousMeasurement.weight).toFixed(1)} kg
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          )}
+          <div ref={headerRef} className="py-6 sm:py-8">
+            <h1 className="fitness-page-title text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
+              <Dumbbell className="w-8 h-8 sm:w-9 sm:h-9" />
+              Fitness Overview
+            </h1>
+            <p className="text-sm sm:text-base text-slate-600 text-center lg:text-left">
+              Track your workouts, progress, and body measurements
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Link to={createPageUrl('Workouts')}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardHeader>
-                <CardTitle className="fitness-link-workouts flex items-center gap-2">
-                  <Dumbbell className="w-5 h-5" />
-                  Workouts
+          <FitnessTimelineChart />
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="fitness-stat-workouts text-sm font-medium text-slate-600 flex items-center gap-2">
+                  <Dumbbell className="w-4 h-4" />
+                  Workouts This Week
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-600">Log and track your training sessions</p>
+                <div className="text-3xl font-bold text-slate-900">{thisWeek.length}</div>
               </CardContent>
             </Card>
-          </Link>
 
-          <Link to={createPageUrl('BodyMeasurements')}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardHeader>
-                <CardTitle className="fitness-link-measurements flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  Body Measurements
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="fitness-stat-minutes text-sm font-medium text-slate-600 flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Total Minutes
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-600">Track your body composition and progress</p>
+                <div className="text-3xl font-bold text-slate-900">{totalMinutes}</div>
               </CardContent>
             </Card>
-          </Link>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="fitness-stat-calories text-sm font-medium text-slate-600 flex items-center gap-2">
+                  <Flame className="w-4 h-4" />
+                  Calories Burned
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-slate-900">{totalCalories}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="fitness-stat-weight text-sm font-medium text-slate-600 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  Weight
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-slate-900">
+                  {latestMeasurement?.weight || '-'}
+                </div>
+                {previousMeasurement && latestMeasurement && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    {latestMeasurement.weight > previousMeasurement.weight ? '+' : ''}
+                    {(latestMeasurement.weight - previousMeasurement.weight).toFixed(1)} kg
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Link to={createPageUrl('Workouts')}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardHeader>
+                  <CardTitle className="fitness-link-workouts flex items-center gap-2">
+                    <Dumbbell className="w-5 h-5" />
+                    Workouts
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-slate-600">Log and track your training sessions</p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to={createPageUrl('BodyMeasurements')}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardHeader>
+                  <CardTitle className="fitness-link-measurements flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    Body Measurements
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-slate-600">Track your body composition and progress</p>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSubscription } from '@/hooks/useSubscription'
+import { Helmet } from 'react-helmet-async'
 
 const FREE_FEATURES = [
   '10 Goals / 20 Tasks',
@@ -245,418 +246,423 @@ export default function Upgrade() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8 flex items-center gap-4">
-          <Link to="/Profile">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft className="w-4 h-4" /> Back
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">Upgrade Your Plan</h1>
-            <p className="text-slate-500 mt-1">Unlock the full power of LifeDesk</p>
+    <>
+      <Helmet>
+        <title>Upgrade</title>
+      </Helmet>
+      <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="mb-8 flex items-center gap-4">
+            <Link to="/Profile">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <ArrowLeft className="w-4 h-4" /> Back
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Upgrade Your Plan</h1>
+              <p className="text-slate-500 mt-1">Unlock the full power of LifeDesk</p>
+            </div>
           </div>
+
+          {isCancelled && periodEndDate && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-amber-900">
+                    Subscription Scheduled for Cancellation
+                  </p>
+                  <p className="text-sm text-amber-800 mt-1">
+                    Your current plan will remain active until{' '}
+                    <strong>
+                      {periodEndDate.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </strong>
+                    . After that, you'll be downgraded to the Free plan.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Free Plan */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-8 flex flex-col">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-slate-500" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">Free</h2>
+                  <p className="text-slate-500 text-sm">Forever free</p>
+                </div>
+              </div>
+              <div className="mt-4 mb-4">
+                <span className="text-4xl font-bold text-slate-900">$0</span>
+                <span className="text-slate-500 ml-1">/ month</span>
+              </div>
+              <p className="text-sm text-slate-600 mb-4 leading-relaxed">
+                Get started with the essentials. Manage your goals, tasks, calendar, events, basic
+                finances, assets, health, fitness, and business areas with limited entries — perfect
+                for exploring LifeDesk.
+              </p>
+              <button
+                onClick={() => toggleFeatures('free')}
+                className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700 mb-4 transition-colors"
+              >
+                {expandedPlans.has('free') ? (
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5" /> Hide feature list
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5" /> What's included
+                  </>
+                )}
+              </button>
+              {expandedPlans.has('free') && (
+                <div className="space-y-3 mb-6">
+                  {FREE_FEATURES.map(f => (
+                    <div key={f} className="flex items-center gap-2 text-sm text-slate-600">
+                      <Check className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                      {f}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="mt-auto pt-4">
+                {subIsLoading ? (
+                  <Button variant="outline" className="w-full" disabled>
+                    Loading...
+                  </Button>
+                ) : !isPlus ? (
+                  <Button variant="outline" className="w-full" disabled>
+                    Current Plan
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleDowngradeClick}
+                    disabled={!!loading}
+                  >
+                    {loading === 'downgrade' ? 'Redirecting...' : 'Downgrade'}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Plus Plan */}
+            <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-8 text-white relative overflow-hidden shadow-xl flex flex-col">
+              <div className="absolute top-4 right-4">
+                <span className="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                  POPULAR
+                </span>
+              </div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Crown className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Plus</h2>
+                  <p className="text-white/70 text-sm">Everything you need</p>
+                </div>
+              </div>
+              <div className="mt-4 mb-4">
+                <span className="text-4xl font-bold">$9</span>
+                <span className="text-white/70 ml-1">/ month</span>
+              </div>
+              <p className="text-sm text-white/80 mb-4 leading-relaxed">
+                For users who want full personal organization and connected finance. Unlock higher
+                limits, connect real bank accounts, use automatic transaction categorization, and
+                manage vehicles, health, fitness, and private life in a much more complete way.
+              </p>
+              <button
+                onClick={() => toggleFeatures('plus')}
+                className="flex items-center gap-1 text-xs font-medium text-white/70 hover:text-white mb-4 transition-colors"
+              >
+                {expandedPlans.has('plus') ? (
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5" /> Hide feature list
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5" /> See full feature list
+                  </>
+                )}
+              </button>
+              {expandedPlans.has('plus') && (
+                <div className="space-y-3 mb-6">
+                  {PLUS_FEATURES.map(f => (
+                    <div key={f} className="flex items-center gap-2 text-sm text-white/90">
+                      <Check className="w-4 h-4 text-white/70 flex-shrink-0" />
+                      {f}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="mt-auto pt-4">
+                {subIsLoading ? (
+                  <Button className="w-full bg-white/20 text-white font-semibold" disabled>
+                    Loading...
+                  </Button>
+                ) : planName === 'plus' ? (
+                  <Button
+                    className="w-full bg-white text-indigo-700 hover:bg-white/90 font-semibold"
+                    disabled
+                  >
+                    <Check className="w-4 h-4 mr-2" /> Current Plan
+                  </Button>
+                ) : isPro ? (
+                  <Button
+                    className="w-full bg-white/20 text-white hover:bg-white/30 font-semibold border border-white/30"
+                    onClick={() => setShowDowngradeToPlusWarning(true)}
+                    disabled={!!loading}
+                  >
+                    {loading === 'downgrade-plus' ? (
+                      <span className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 animate-spin" /> Processing...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Crown className="w-4 h-4" /> Downgrade to Plus
+                      </span>
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full bg-white text-indigo-700 hover:bg-white/90 font-semibold"
+                    onClick={handleUpgrade}
+                    disabled={!!loading}
+                  >
+                    {loading === 'plus' ? (
+                      <span className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 animate-spin" /> Redirecting...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4" /> Upgrade to Plus — $9/mo
+                      </span>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Pro Plan */}
+            <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-8 text-white relative overflow-hidden shadow-xl flex flex-col">
+              <div className="absolute top-4 right-4">
+                <span className="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                  BEST VALUE
+                </span>
+              </div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Rocket className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Pro</h2>
+                  <p className="text-white/70 text-sm">Unlimited everything + AI</p>
+                </div>
+              </div>
+              <div className="mt-4 mb-4">
+                <span className="text-4xl font-bold">$19</span>
+                <span className="text-white/70 ml-1">/ month</span>
+              </div>
+              <p className="text-sm text-white/80 mb-4 leading-relaxed">
+                For power users, solopreneurs, and serious planners. Get unlimited usage across
+                almost all areas, full business transactions, and the AI Assistant with access to
+                your LifeDesk areas to answer questions and help create entries for you.
+              </p>
+              <button
+                onClick={() => toggleFeatures('pro')}
+                className="flex items-center gap-1 text-xs font-medium text-white/70 hover:text-white mb-4 transition-colors"
+              >
+                {expandedPlans.has('pro') ? (
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5" /> Hide feature list
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5" /> See full feature list
+                  </>
+                )}
+              </button>
+              {expandedPlans.has('pro') && (
+                <div className="space-y-3 mb-6">
+                  {PRO_FEATURES.map(f => (
+                    <div key={f} className="flex items-center gap-2 text-sm text-white/90">
+                      <Check className="w-4 h-4 text-white/70 flex-shrink-0" />
+                      {f}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="mt-auto pt-4">
+                {subIsLoading ? (
+                  <Button className="w-full bg-white/20 text-white font-semibold" disabled>
+                    Loading...
+                  </Button>
+                ) : isPro ? (
+                  <Button
+                    className="w-full bg-white text-orange-700 hover:bg-white/90 font-semibold"
+                    disabled
+                  >
+                    <Check className="w-4 h-4 mr-2" /> Current Plan
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full bg-white text-orange-700 hover:bg-white/90 font-semibold"
+                    onClick={handleUpgradePro}
+                    disabled={!!loading}
+                  >
+                    {loading === 'pro' ? (
+                      <span className="flex items-center gap-2">
+                        <Rocket className="w-4 h-4 animate-spin" /> Redirecting...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Rocket className="w-4 h-4" /> Upgrade to Pro — $19/mo
+                      </span>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <p className="text-center text-sm text-slate-400 mt-8">Secure payment via Stripe.</p>
         </div>
 
-        {isCancelled && periodEndDate && (
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-amber-900">
-                  Subscription Scheduled for Cancellation
-                </p>
-                <p className="text-sm text-amber-800 mt-1">
-                  Your current plan will remain active until{' '}
-                  <strong>
-                    {periodEndDate.toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </strong>
-                  . After that, you'll be downgraded to the Free plan.
-                </p>
+        {/* Downgrade Warning Modal */}
+        {showDowngradeToPlusWarning && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Downgrade to Plus</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">From Pro ($19/mo) → Plus ($9/mo)</p>
+                </div>
+                <button
+                  onClick={() => setShowDowngradeToPlusWarning(false)}
+                  className="ml-auto text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 space-y-3 text-sm text-amber-900">
+                <p className="font-semibold">Downgrading will affect your data and features:</p>
+                <ul className="space-y-2 list-none">
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-amber-500">•</span>
+                    <span>
+                      The AI Assistant and unlimited usage will{' '}
+                      <strong>no longer be available</strong> on Plus.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-amber-500">•</span>
+                    <span>
+                      Entries exceeding Plus plan limits will be <strong>locked</strong> until you
+                      upgrade again.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-amber-500">•</span>
+                    <span>The change takes effect immediately. No data is deleted.</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowDowngradeToPlusWarning(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+                  onClick={handleDowngradeToPlus}
+                  disabled={loading === 'downgrade-plus'}
+                >
+                  {loading === 'downgrade-plus' ? 'Processing...' : 'I understand, downgrade'}
+                </Button>
               </div>
             </div>
           </div>
         )}
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Free Plan */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-8 flex flex-col">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-                <Zap className="w-5 h-5 text-slate-500" />
+        {showDowngradeWarning && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Before you downgrade</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">Please read this carefully</p>
+                </div>
+                <button
+                  onClick={() => setShowDowngradeWarning(false)}
+                  className="ml-auto text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-slate-900">Free</h2>
-                <p className="text-slate-500 text-sm">Forever free</p>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 space-y-3 text-sm text-amber-900">
+                <p className="font-semibold">Downgrading will affect your data and features:</p>
+                <ul className="space-y-2 list-none">
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-amber-500">•</span>
+                    <span>
+                      Some features (e.g. AI Assistant, bank connections, analytics){' '}
+                      <strong>will no longer be available</strong> on your new plan.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-amber-500">•</span>
+                    <span>
+                      Any existing entries — goals, tasks, transactions, health records, workouts,
+                      etc. — that <strong>exceed the new plan's limits will be locked</strong>. They
+                      remain stored but cannot be viewed or edited until you upgrade again.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-amber-500">•</span>
+                    <span>No data is deleted — everything can be restored by upgrading.</span>
+                  </li>
+                </ul>
               </div>
-            </div>
-            <div className="mt-4 mb-4">
-              <span className="text-4xl font-bold text-slate-900">$0</span>
-              <span className="text-slate-500 ml-1">/ month</span>
-            </div>
-            <p className="text-sm text-slate-600 mb-4 leading-relaxed">
-              Get started with the essentials. Manage your goals, tasks, calendar, events, basic
-              finances, assets, health, fitness, and business areas with limited entries — perfect
-              for exploring LifeDesk.
-            </p>
-            <button
-              onClick={() => toggleFeatures('free')}
-              className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700 mb-4 transition-colors"
-            >
-              {expandedPlans.has('free') ? (
-                <>
-                  <ChevronUp className="w-3.5 h-3.5" /> Hide feature list
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-3.5 h-3.5" /> What's included
-                </>
-              )}
-            </button>
-            {expandedPlans.has('free') && (
-              <div className="space-y-3 mb-6">
-                {FREE_FEATURES.map(f => (
-                  <div key={f} className="flex items-center gap-2 text-sm text-slate-600">
-                    <Check className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                    {f}
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="mt-auto pt-4">
-              {subIsLoading ? (
-                <Button variant="outline" className="w-full" disabled>
-                  Loading...
-                </Button>
-              ) : !isPlus ? (
-                <Button variant="outline" className="w-full" disabled>
-                  Current Plan
-                </Button>
-              ) : (
+
+              <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  className="w-full"
-                  onClick={handleDowngradeClick}
-                  disabled={!!loading}
+                  className="flex-1"
+                  onClick={() => setShowDowngradeWarning(false)}
                 >
-                  {loading === 'downgrade' ? 'Redirecting...' : 'Downgrade'}
+                  Cancel
                 </Button>
-              )}
+                <Button
+                  className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+                  onClick={handleConfirmDowngrade}
+                  disabled={loading === 'downgrade'}
+                >
+                  {loading === 'downgrade' ? 'Redirecting...' : 'I understand, downgrade'}
+                </Button>
+              </div>
             </div>
           </div>
-
-          {/* Plus Plan */}
-          <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-8 text-white relative overflow-hidden shadow-xl flex flex-col">
-            <div className="absolute top-4 right-4">
-              <span className="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                POPULAR
-              </span>
-            </div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                <Crown className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold">Plus</h2>
-                <p className="text-white/70 text-sm">Everything you need</p>
-              </div>
-            </div>
-            <div className="mt-4 mb-4">
-              <span className="text-4xl font-bold">$9</span>
-              <span className="text-white/70 ml-1">/ month</span>
-            </div>
-            <p className="text-sm text-white/80 mb-4 leading-relaxed">
-              For users who want full personal organization and connected finance. Unlock higher
-              limits, connect real bank accounts, use automatic transaction categorization, and
-              manage vehicles, health, fitness, and private life in a much more complete way.
-            </p>
-            <button
-              onClick={() => toggleFeatures('plus')}
-              className="flex items-center gap-1 text-xs font-medium text-white/70 hover:text-white mb-4 transition-colors"
-            >
-              {expandedPlans.has('plus') ? (
-                <>
-                  <ChevronUp className="w-3.5 h-3.5" /> Hide feature list
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-3.5 h-3.5" /> See full feature list
-                </>
-              )}
-            </button>
-            {expandedPlans.has('plus') && (
-              <div className="space-y-3 mb-6">
-                {PLUS_FEATURES.map(f => (
-                  <div key={f} className="flex items-center gap-2 text-sm text-white/90">
-                    <Check className="w-4 h-4 text-white/70 flex-shrink-0" />
-                    {f}
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="mt-auto pt-4">
-              {subIsLoading ? (
-                <Button className="w-full bg-white/20 text-white font-semibold" disabled>
-                  Loading...
-                </Button>
-              ) : planName === 'plus' ? (
-                <Button
-                  className="w-full bg-white text-indigo-700 hover:bg-white/90 font-semibold"
-                  disabled
-                >
-                  <Check className="w-4 h-4 mr-2" /> Current Plan
-                </Button>
-              ) : isPro ? (
-                <Button
-                  className="w-full bg-white/20 text-white hover:bg-white/30 font-semibold border border-white/30"
-                  onClick={() => setShowDowngradeToPlusWarning(true)}
-                  disabled={!!loading}
-                >
-                  {loading === 'downgrade-plus' ? (
-                    <span className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 animate-spin" /> Processing...
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <Crown className="w-4 h-4" /> Downgrade to Plus
-                    </span>
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  className="w-full bg-white text-indigo-700 hover:bg-white/90 font-semibold"
-                  onClick={handleUpgrade}
-                  disabled={!!loading}
-                >
-                  {loading === 'plus' ? (
-                    <span className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 animate-spin" /> Redirecting...
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" /> Upgrade to Plus — $9/mo
-                    </span>
-                  )}
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Pro Plan */}
-          <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-8 text-white relative overflow-hidden shadow-xl flex flex-col">
-            <div className="absolute top-4 right-4">
-              <span className="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                BEST VALUE
-              </span>
-            </div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                <Rocket className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold">Pro</h2>
-                <p className="text-white/70 text-sm">Unlimited everything + AI</p>
-              </div>
-            </div>
-            <div className="mt-4 mb-4">
-              <span className="text-4xl font-bold">$19</span>
-              <span className="text-white/70 ml-1">/ month</span>
-            </div>
-            <p className="text-sm text-white/80 mb-4 leading-relaxed">
-              For power users, solopreneurs, and serious planners. Get unlimited usage across almost
-              all areas, full business transactions, and the AI Assistant with access to your
-              LifeDesk areas to answer questions and help create entries for you.
-            </p>
-            <button
-              onClick={() => toggleFeatures('pro')}
-              className="flex items-center gap-1 text-xs font-medium text-white/70 hover:text-white mb-4 transition-colors"
-            >
-              {expandedPlans.has('pro') ? (
-                <>
-                  <ChevronUp className="w-3.5 h-3.5" /> Hide feature list
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-3.5 h-3.5" /> See full feature list
-                </>
-              )}
-            </button>
-            {expandedPlans.has('pro') && (
-              <div className="space-y-3 mb-6">
-                {PRO_FEATURES.map(f => (
-                  <div key={f} className="flex items-center gap-2 text-sm text-white/90">
-                    <Check className="w-4 h-4 text-white/70 flex-shrink-0" />
-                    {f}
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="mt-auto pt-4">
-              {subIsLoading ? (
-                <Button className="w-full bg-white/20 text-white font-semibold" disabled>
-                  Loading...
-                </Button>
-              ) : isPro ? (
-                <Button
-                  className="w-full bg-white text-orange-700 hover:bg-white/90 font-semibold"
-                  disabled
-                >
-                  <Check className="w-4 h-4 mr-2" /> Current Plan
-                </Button>
-              ) : (
-                <Button
-                  className="w-full bg-white text-orange-700 hover:bg-white/90 font-semibold"
-                  onClick={handleUpgradePro}
-                  disabled={!!loading}
-                >
-                  {loading === 'pro' ? (
-                    <span className="flex items-center gap-2">
-                      <Rocket className="w-4 h-4 animate-spin" /> Redirecting...
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <Rocket className="w-4 h-4" /> Upgrade to Pro — $19/mo
-                    </span>
-                  )}
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <p className="text-center text-sm text-slate-400 mt-8">Secure payment via Stripe.</p>
+        )}
       </div>
-
-      {/* Downgrade Warning Modal */}
-      {showDowngradeToPlusWarning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">Downgrade to Plus</h3>
-                <p className="text-sm text-slate-500 mt-0.5">From Pro ($19/mo) → Plus ($9/mo)</p>
-              </div>
-              <button
-                onClick={() => setShowDowngradeToPlusWarning(false)}
-                className="ml-auto text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 space-y-3 text-sm text-amber-900">
-              <p className="font-semibold">Downgrading will affect your data and features:</p>
-              <ul className="space-y-2 list-none">
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5 text-amber-500">•</span>
-                  <span>
-                    The AI Assistant and unlimited usage will{' '}
-                    <strong>no longer be available</strong> on Plus.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5 text-amber-500">•</span>
-                  <span>
-                    Entries exceeding Plus plan limits will be <strong>locked</strong> until you
-                    upgrade again.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5 text-amber-500">•</span>
-                  <span>The change takes effect immediately. No data is deleted.</span>
-                </li>
-              </ul>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowDowngradeToPlusWarning(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
-                onClick={handleDowngradeToPlus}
-                disabled={loading === 'downgrade-plus'}
-              >
-                {loading === 'downgrade-plus' ? 'Processing...' : 'I understand, downgrade'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showDowngradeWarning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">Before you downgrade</h3>
-                <p className="text-sm text-slate-500 mt-0.5">Please read this carefully</p>
-              </div>
-              <button
-                onClick={() => setShowDowngradeWarning(false)}
-                className="ml-auto text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 space-y-3 text-sm text-amber-900">
-              <p className="font-semibold">Downgrading will affect your data and features:</p>
-              <ul className="space-y-2 list-none">
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5 text-amber-500">•</span>
-                  <span>
-                    Some features (e.g. AI Assistant, bank connections, analytics){' '}
-                    <strong>will no longer be available</strong> on your new plan.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5 text-amber-500">•</span>
-                  <span>
-                    Any existing entries — goals, tasks, transactions, health records, workouts,
-                    etc. — that <strong>exceed the new plan's limits will be locked</strong>. They
-                    remain stored but cannot be viewed or edited until you upgrade again.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5 text-amber-500">•</span>
-                  <span>No data is deleted — everything can be restored by upgrading.</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowDowngradeWarning(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
-                onClick={handleConfirmDowngrade}
-                disabled={loading === 'downgrade'}
-              >
-                {loading === 'downgrade' ? 'Redirecting...' : 'I understand, downgrade'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   )
 }

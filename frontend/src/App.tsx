@@ -5,7 +5,6 @@ import VisualEditAgent from '@/lib/VisualEditAgent'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/lib/AuthContext'
 import UserNotRegisteredError from '@/components/UserNotRegisteredError'
-import TermsAcceptanceGate from '@/components/auth/TermsAcceptanceGate'
 import OfflineSyncManager from '@/components/offline/OfflineSyncManager'
 import { backend } from '@/api/backend'
 import { type ReactNode } from 'react'
@@ -80,36 +79,33 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <TermsAcceptanceGate user={currentUser}>
-      <Routes>
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <LayoutWrapper currentPageName="Home">
+            <Home />
+          </LayoutWrapper>
+        }
+      />
+      {appRoutes.map(({ path, element: Page, name }) => (
         <Route
-          path="/"
+          key={path}
+          path={path}
           element={
-            <LayoutWrapper currentPageName="Home">
-              <Home />
+            <LayoutWrapper currentPageName={name}>
+              <Page />
             </LayoutWrapper>
           }
         />
-        {appRoutes.map(({ path, element: Page, name }) => (
-          <Route
-            key={path}
-            path={path}
-            element={
-              <LayoutWrapper currentPageName={name}>
-                <Page />
-              </LayoutWrapper>
-            }
-          />
-        ))}
-      </Routes>
-    </TermsAcceptanceGate>
+      ))}
+    </Routes>
   )
 }
 
 function App() {
   return (
     <HelmetProvider>
-      {' '}
       <AuthProvider>
         <QueryClientProvider client={queryClientInstance}>
           <Router>
@@ -143,7 +139,7 @@ function App() {
           <VisualEditAgent />
           <OfflineSyncManager />
         </QueryClientProvider>
-      </AuthProvider>{' '}
+      </AuthProvider>
     </HelmetProvider>
   )
 }

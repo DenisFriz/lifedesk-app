@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { offlineFirst, offlineCreate } from '@/hooks/useOfflineFirst'
+import { offlineFirst, offlineCreate, offlineUpdate } from '@/hooks/useOfflineFirst'
 import { useLayout } from '@/Layout'
 import { useSubscription } from '@/hooks/useSubscription'
 import UsageLimitGate from '@/components/subscription/UsageLimitGate'
@@ -61,6 +61,7 @@ import {
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { formatDateMedium } from '@/components/utils/formatters'
+import { TablePagination } from '../TablePagination'
 
 interface TaskTableProps {
   filterType?: 'all' | 'important' | 'category' | 'business'
@@ -149,7 +150,7 @@ export default function TaskTable({
   }
 
   const updateMutation = useMutation<any, any, { id: string; data: any }>({
-    mutationFn: ({ id, data }) => backend.entities.Task.update(id, data),
+    mutationFn: ({ id, data }) => offlineUpdate('tasks', backend.entities.Task, id, data),
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ['tasks'] })
       const previousTasks = queryClient.getQueryData(['tasks'])
@@ -1902,51 +1903,17 @@ export default function TaskTable({
                 </div>
 
                 {sortedTasks.length > 0 && (
-                  <div className="task-table-pagination flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 px-4 pb-4">
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                      <span className="text-sm text-slate-700">Show</span>
-                      <Select
-                        value={String(perPage)}
-                        onValueChange={value => {
-                          setPerPage(Number(value))
-                          setPage(1)
-                        }}
-                      >
-                        <SelectTrigger className="w-24 h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="20">20</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                          <SelectItem value="100">100</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <span className="text-sm text-slate-700">
-                        of {sortedTasks.length} entries
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                      >
-                        Previous
-                      </Button>
-                      <span className="text-sm text-slate-600">
-                        Page {page} of {totalPages}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                        disabled={page === totalPages}
-                      >
-                        Next
-                      </Button>
-                    </div>
-                  </div>
+                  <TablePagination
+                    totalItems={sortedTasks.length}
+                    page={page}
+                    perPage={perPage}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                    onPerPageChange={value => {
+                      setPerPage(value)
+                      setPage(1)
+                    }}
+                  />
                 )}
               </>
             )}

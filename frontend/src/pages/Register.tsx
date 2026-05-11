@@ -4,6 +4,7 @@ import { apiFetch, setToken } from '@/api/apiClient'
 import { Mail, Lock } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { Helmet } from 'react-helmet-async'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const InputClass = `
 flex w-full border px-3 py-2 ring-offset-background file:border-0 
@@ -19,14 +20,17 @@ type RegisterResponse = {
 
 export default function Register() {
   const navigate = useNavigate()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [accepted, setAccepted] = useState<boolean>(false)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
   const { login } = useAuth()
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
     setIsLoading(true)
@@ -44,9 +48,11 @@ export default function Register() {
 
       const data = await apiFetch<RegisterResponse>('POST', '/auth/register', {
         email,
-        password
+        password,
+        acceptedTerms: accepted
       })
 
+      console.log(data)
       await login(data.token)
       setToken(data.token)
       navigate('/Home', { replace: true })
@@ -56,6 +62,9 @@ export default function Register() {
       setIsLoading(false)
     }
   }
+
+  const isFormValid =
+    email.trim() !== '' && password.trim() !== '' && confirmPassword.trim() !== '' && accepted
 
   return (
     <>
@@ -165,9 +174,40 @@ export default function Register() {
                     />
                   </div>
                 </div>
+
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <Checkbox
+                    checked={accepted}
+                    onCheckedChange={checked => setAccepted(!!checked)}
+                    className="mt-0.5"
+                  />
+
+                  <span className="text-sm text-slate-700 leading-relaxed">
+                    I have read and agree to the{' '}
+                    <a
+                      href="https://lifedesk.me/terms-of-service"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-slate-900 hover:underline"
+                    >
+                      Terms of Service
+                    </a>{' '}
+                    and{' '}
+                    <a
+                      href="https://lifedesk.me/privacy-policy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-slate-900 hover:underline"
+                    >
+                      Privacy Policy
+                    </a>{' '}
+                    of lifedesk.
+                  </span>
+                </label>
+
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || !isFormValid}
                   className="inline-flex items-center justify-center gap-1 whitespace-nowrap text-sm 
                 ring-offset-background focus-visible:outline-none focus-visible:ring-2 
                 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none 

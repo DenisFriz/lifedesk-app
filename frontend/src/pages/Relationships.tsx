@@ -12,6 +12,7 @@ import RelationshipStats from '@/components/relationships/RelationshipStats'
 import ContactCard from '@/components/relationships/ContactCard'
 import ContactForm from '@/components/relationships/ContactForm'
 import OverLimitItem from '@/components/subscription/OverLimitItem'
+import { Helmet } from 'react-helmet-async'
 
 const FREQUENCY_DAYS = {
   weekly: 7,
@@ -182,177 +183,182 @@ export default function Relationships() {
   const overdueCount = contacts.filter(isOverdue).length
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {isScrolled && (
-          <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
-            <div className="py-3">
-              <h1 className="text-sm font-normal text-slate-900 text-center">
-                Relationships & Friends
-              </h1>
-            </div>
-          </div>
-        )}
-
-        <div
-          ref={headerRef}
-          className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 py-6 sm:py-8"
-        >
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2 flex items-center gap-3">
-              <Users className="w-8 h-8 sm:w-9 sm:h-9" />
-              Relationships & Friends
-            </h1>
-            <p className="text-sm sm:text-base text-slate-600">
-              Stay connected with the people who matter most
-            </p>
-          </div>
-          {atLimit ? (
-            <Link to="/Upgrade" className="w-full lg:w-auto">
-              <Button className="w-full bg-amber-500 hover:bg-amber-600">
-                <Lock className="w-4 h-4 mr-2" />
-                Limit reached ({contacts.length}/{relationshipsLimit})
-              </Button>
-            </Link>
-          ) : (
-            <Button
-              onClick={() => {
-                setEditingContact(null)
-                setShowForm(true)
-              }}
-              className="bg-indigo-600 hover:bg-indigo-700 w-full lg:w-auto"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Contact
-            </Button>
-          )}
-        </div>
-
-        <RelationshipStats contacts={contacts} />
-
-        {/* Upcoming Birthdays Banner */}
-        {upcomingBirthdays.length > 0 && (
-          <div className="bg-pink-50 border border-pink-200 rounded-xl p-4 mb-4 flex items-start gap-3">
-            <Gift className="w-5 h-5 text-pink-500 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-pink-800 mb-1">Upcoming Birthdays 🎂</p>
-              <div className="flex flex-wrap gap-2">
-                {upcomingBirthdays.map(c => {
-                  const today = new Date()
-                  const bday = parseISO(c.birthday)
-                  let next = new Date(today.getFullYear(), bday.getMonth(), bday.getDate())
-                  if (!isAfter(next, today)) next = addYears(next, 1)
-                  const days = differenceInDays(next, today)
-                  return (
-                    <span
-                      key={c.id}
-                      className="text-xs bg-white border border-pink-200 text-pink-700 px-2 py-0.5 rounded-full"
-                    >
-                      {c.name} —{' '}
-                      {days === 0 ? 'Today! 🎉' : `in ${days}d (${format(next, 'MMM d')})`}
-                    </span>
-                  )
-                })}
+    <>
+      <Helmet>
+        <title>Relationships</title>
+      </Helmet>
+      <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          {isScrolled && (
+            <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
+              <div className="py-3">
+                <h1 className="text-sm font-normal text-slate-900 text-center">
+                  Relationships & Friends
+                </h1>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl border border-slate-200 p-3 mb-4 flex gap-3 items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input
-              placeholder="Search contacts..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9 h-9"
-            />
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 mb-4 overflow-x-auto">
-          {REL_TABS.map(tab => {
-            const count =
-              tab.value === 'all'
-                ? contacts.length
-                : tab.value === 'overdue'
-                  ? overdueCount
-                  : contacts.filter(c => c.relationship === tab.value).length
-            return (
-              <button
-                key={tab.value}
-                onClick={() => setRelFilter(tab.value)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  relFilter === tab.value
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                {tab.label} ({count})
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Contact List */}
-        {sorted.length === 0 ? (
-          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-            <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500 mb-4">
-              {contacts.length === 0
-                ? 'Add your first contact to get started'
-                : 'No contacts match your filters'}
-            </p>
-            {contacts.length === 0 && !atLimit && (
+          <div
+            ref={headerRef}
+            className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 py-6 sm:py-8"
+          >
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2 flex items-center gap-3">
+                <Users className="w-8 h-8 sm:w-9 sm:h-9" />
+                Relationships & Friends
+              </h1>
+              <p className="text-sm sm:text-base text-slate-600">
+                Stay connected with the people who matter most
+              </p>
+            </div>
+            {atLimit ? (
+              <Link to="/Upgrade" className="w-full lg:w-auto">
+                <Button className="w-full bg-amber-500 hover:bg-amber-600">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Limit reached ({contacts.length}/{relationshipsLimit})
+                </Button>
+              </Link>
+            ) : (
               <Button
-                onClick={() => setShowForm(true)}
-                className="bg-indigo-600 hover:bg-indigo-700"
+                onClick={() => {
+                  setEditingContact(null)
+                  setShowForm(true)
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 w-full lg:w-auto"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Add Your First Contact
+                Add Contact
               </Button>
             )}
           </div>
-        ) : (
-          <div className="space-y-3 pb-8">
-            {sorted.map(contact => {
-              const contactIdx = contacts.indexOf(contact)
-              const overLimit = isOverLimit(contactIdx)
-              return overLimit ? (
-                <OverLimitItem key={contact.id}>
-                  <ContactCard
-                    contact={contact}
-                    onEdit={() => {}}
-                    onDelete={() => {}}
-                    onCheckedIn={() => {}}
-                  />
-                </OverLimitItem>
-              ) : (
-                <ContactCard
-                  key={contact.id}
-                  contact={contact}
-                  onEdit={handleEdit}
-                  onDelete={deleteMutation.mutate}
-                  onCheckedIn={handleCheckedIn}
-                />
+
+          <RelationshipStats contacts={contacts} />
+
+          {/* Upcoming Birthdays Banner */}
+          {upcomingBirthdays.length > 0 && (
+            <div className="bg-pink-50 border border-pink-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+              <Gift className="w-5 h-5 text-pink-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-pink-800 mb-1">Upcoming Birthdays 🎂</p>
+                <div className="flex flex-wrap gap-2">
+                  {upcomingBirthdays.map(c => {
+                    const today = new Date()
+                    const bday = parseISO(c.birthday)
+                    let next = new Date(today.getFullYear(), bday.getMonth(), bday.getDate())
+                    if (!isAfter(next, today)) next = addYears(next, 1)
+                    const days = differenceInDays(next, today)
+                    return (
+                      <span
+                        key={c.id}
+                        className="text-xs bg-white border border-pink-200 text-pink-700 px-2 py-0.5 rounded-full"
+                      >
+                        {c.name} —{' '}
+                        {days === 0 ? 'Today! 🎉' : `in ${days}d (${format(next, 'MMM d')})`}
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Filters */}
+          <div className="bg-white rounded-xl border border-slate-200 p-3 mb-4 flex gap-3 items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                placeholder="Search contacts..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9 h-9"
+              />
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-1 mb-4 overflow-x-auto">
+            {REL_TABS.map(tab => {
+              const count =
+                tab.value === 'all'
+                  ? contacts.length
+                  : tab.value === 'overdue'
+                    ? overdueCount
+                    : contacts.filter(c => c.relationship === tab.value).length
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => setRelFilter(tab.value)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    relFilter === tab.value
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {tab.label} ({count})
+                </button>
               )
             })}
           </div>
-        )}
 
-        <ContactForm
-          open={showForm}
-          onClose={() => {
-            setShowForm(false)
-            setEditingContact(null)
-          }}
-          onSubmit={handleSubmit}
-          contact={editingContact}
-          isLoading={createMutation.isPending || updateMutation.isPending}
-        />
+          {/* Contact List */}
+          {sorted.length === 0 ? (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <p className="text-slate-500 mb-4">
+                {contacts.length === 0
+                  ? 'Add your first contact to get started'
+                  : 'No contacts match your filters'}
+              </p>
+              {contacts.length === 0 && !atLimit && (
+                <Button
+                  onClick={() => setShowForm(true)}
+                  className="bg-indigo-600 hover:bg-indigo-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Contact
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3 pb-8">
+              {sorted.map(contact => {
+                const contactIdx = contacts.indexOf(contact)
+                const overLimit = isOverLimit(contactIdx)
+                return overLimit ? (
+                  <OverLimitItem key={contact.id}>
+                    <ContactCard
+                      contact={contact}
+                      onEdit={() => {}}
+                      onDelete={() => {}}
+                      onCheckedIn={() => {}}
+                    />
+                  </OverLimitItem>
+                ) : (
+                  <ContactCard
+                    key={contact.id}
+                    contact={contact}
+                    onEdit={handleEdit}
+                    onDelete={deleteMutation.mutate}
+                    onCheckedIn={handleCheckedIn}
+                  />
+                )
+              })}
+            </div>
+          )}
+
+          <ContactForm
+            open={showForm}
+            onClose={() => {
+              setShowForm(false)
+              setEditingContact(null)
+            }}
+            onSubmit={handleSubmit}
+            contact={editingContact}
+            isLoading={createMutation.isPending || updateMutation.isPending}
+          />
+        </div>
       </div>
-    </div>
+    </>
   )
 }

@@ -57,6 +57,7 @@ import { cn } from '@/lib/utils'
 import { formatDateMedium } from '@/components/utils/formatters'
 import { useSubscription } from '@/hooks/useSubscription'
 import UsageLimitGate from '@/components/subscription/UsageLimitGate'
+import { TablePagination } from '../TablePagination'
 
 export default function EventTable({
   category,
@@ -1669,51 +1670,17 @@ export default function EventTable({
                 </div>
 
                 {sortedEvents.length > 0 && (
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 px-4 pb-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-slate-700">Show</span>
-                      <Select
-                        value={String(perPage)}
-                        onValueChange={value => {
-                          setPerPage(Number(value))
-                          setPage(1)
-                        }}
-                      >
-                        <SelectTrigger className="w-20 h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="20">20</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                          <SelectItem value="100">100</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <span className="text-sm text-slate-700">
-                        of {sortedEvents.length} entries
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                      >
-                        Previous
-                      </Button>
-                      <span className="text-sm text-slate-600">
-                        Page {page} of {totalPages}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                        disabled={page === totalPages}
-                      >
-                        Next
-                      </Button>
-                    </div>
-                  </div>
+                  <TablePagination
+                    totalItems={sortedEvents.length}
+                    page={page}
+                    perPage={perPage}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                    onPerPageChange={value => {
+                      setPerPage(value)
+                      setPage(1)
+                    }}
+                  />
                 )}
               </>
             )}

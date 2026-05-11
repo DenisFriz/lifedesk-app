@@ -62,6 +62,7 @@ import { format } from 'date-fns'
 import confetti from 'canvas-confetti'
 import { formatDateMedium } from '@/components/utils/formatters'
 import GoalTaskRow from './GoalTaskRow'
+import { TablePagination } from '../TablePagination'
 
 function TasksToggleButton({
   goal,
@@ -271,8 +272,6 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
       }
     },
     onSuccess: () => {
-      setEditingField(null)
-      setEditValue('')
       setAnimatingGoal(null)
     }
   })
@@ -465,7 +464,23 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
 
   const startEdit = (goalId, field, currentValue, secondValue = null) => {
     if (editingField && editValue !== undefined) {
-      const [prevId, prevField] = editingField.split('-')
+      const knownSuffixes = [
+        '-target_date-time',
+        '-target_date',
+        '-description',
+        '-category',
+        '-due_date',
+        '-title'
+      ]
+      let prevId: string | null = null
+      let prevField: string | null = null
+      for (const suffix of knownSuffixes) {
+        if (editingField.endsWith(suffix)) {
+          prevId = editingField.slice(0, editingField.length - suffix.length)
+          prevField = suffix.slice(1).replace('-time', '')
+          break
+        }
+      }
       if (prevId && prevField) {
         const prevTask = allTasks.find(t => t.id === prevId)
         if (prevTask) {
@@ -2555,51 +2570,17 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                 </div>
 
                 {sortedGoals.length > 0 && (
-                  <div className="goal-table-pagination flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 px-4 pb-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-slate-700">Show</span>
-                      <Select
-                        value={String(perPage)}
-                        onValueChange={value => {
-                          setPerPage(Number(value))
-                          setPage(1)
-                        }}
-                      >
-                        <SelectTrigger className="w-24 h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="20">20</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                          <SelectItem value="100">100</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <span className="text-sm text-slate-700">
-                        of {sortedGoals.length} entries
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                      >
-                        Previous
-                      </Button>
-                      <span className="text-sm text-slate-600">
-                        Page {page} of {totalPages}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                        disabled={page === totalPages}
-                      >
-                        Next
-                      </Button>
-                    </div>
-                  </div>
+                  <TablePagination
+                    totalItems={sortedGoals.length}
+                    page={page}
+                    perPage={perPage}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                    onPerPageChange={value => {
+                      setPerPage(value)
+                      setPage(1)
+                    }}
+                  />
                 )}
               </>
             )}

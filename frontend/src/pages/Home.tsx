@@ -42,6 +42,7 @@ import MonthlyFinanceWidget from '@/components/widgets/MonthlyFinanceWidget'
 import ActiveGoalsWidget from '@/components/widgets/ActiveGoalsWidget'
 import WhatsNewWidget from '@/components/widgets/WhatsNewWidget'
 import { useLocalStorageState } from '@/hooks/useLocalStorage'
+import { Helmet } from 'react-helmet-async'
 
 const AVAILABLE_WIDGETS = [
   { id: 'upcoming-tasks', name: 'All Tasks & Events', component: UpcomingTasksWidget },
@@ -192,203 +193,208 @@ export default function Home() {
   )
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {isScrolled && (
-          <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
-            <div className="py-3">
-              <h1 className="home-sticky-title text-sm font-normal text-slate-900 text-center">
-                Home
-              </h1>
-            </div>
-          </div>
-        )}
-        {/* Hero */}
-        <div ref={headerRef} className="text-center py-6 sm:py-12">
-          <h1 className="home-hero-title text-4xl sm:text-5xl font-bold text-slate-900 mb-4">
-            Welcome to lifedesk
-          </h1>
-          <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
-            Organize every aspect of your life in one place. Track your health, manage your assets,
-            and grow your business.
-          </p>
-        </div>
-
-        {/* What's New */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">What's New</h2>
-            <button
-              onClick={() => toggleSection('whatsnew')}
-              className="hover:opacity-70 transition-opacity"
-            >
-              {expandedSections.whatsnew ? (
-                <ChevronUp className="w-5 h-5 text-slate-600" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-slate-600" />
-              )}
-            </button>
-          </div>
-          {expandedSections.whatsnew && (
-            <div className="mt-6">
-              <WhatsNewWidget />
+    <>
+      <Helmet>
+        <title>Home</title>
+      </Helmet>
+      <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {isScrolled && (
+            <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
+              <div className="py-3">
+                <h1 className="home-sticky-title text-sm font-normal text-slate-900 text-center">
+                  Home
+                </h1>
+              </div>
             </div>
           )}
-          {!expandedSections.whatsnew && <div className="h-0" />}
-        </div>
+          {/* Hero */}
+          <div ref={headerRef} className="text-center py-6 sm:py-12">
+            <h1 className="home-hero-title text-4xl sm:text-5xl font-bold text-slate-900 mb-4">
+              Welcome to lifedesk
+            </h1>
+            <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
+              Organize every aspect of your life in one place. Track your health, manage your
+              assets, and grow your business.
+            </p>
+          </div>
 
-        {/* Customizable Widgets */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="home-widgets-title text-2xl font-bold text-slate-900">
-              Dashboard Widgets
-            </h2>
-            <div className="flex items-center gap-3">
-              {expandedSections.widgets && (
-                <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Widget
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add Widget</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-2 mt-4">
-                      {availableToAdd.map(widget => (
-                        <button
-                          key={widget.id}
-                          onClick={() => addWidget(widget.id)}
-                          className="w-full text-left px-4 py-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
-                        >
-                          <span className="font-medium text-slate-900">{widget.name}</span>
-                        </button>
-                      ))}
-                      {availableToAdd.length === 0 && (
-                        <p className="text-sm text-slate-500 text-center py-4">
-                          All widgets are already added
-                        </p>
-                      )}
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
+          {/* What's New */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-slate-900">What's New</h2>
               <button
-                onClick={() => toggleSection('widgets')}
+                onClick={() => toggleSection('whatsnew')}
                 className="hover:opacity-70 transition-opacity"
               >
-                {expandedSections.widgets ? (
+                {expandedSections.whatsnew ? (
                   <ChevronUp className="w-5 h-5 text-slate-600" />
                 ) : (
                   <ChevronDown className="w-5 h-5 text-slate-600" />
                 )}
               </button>
             </div>
+            {expandedSections.whatsnew && (
+              <div className="mt-6">
+                <WhatsNewWidget />
+              </div>
+            )}
+            {!expandedSections.whatsnew && <div className="h-0" />}
           </div>
-          {expandedSections.widgets && (
-            <>
-              <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="widgets" direction="horizontal">
-                  {provided => (
-                    <div
-                      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                    >
-                      {widgets.map((widgetId, index) => {
-                        const widgetConfig = widgetMap[widgetId]
-                        if (!widgetConfig) return null
-                        const WidgetComponent = widgetConfig.component
-                        return (
-                          <Draggable key={widgetId} draggableId={widgetId} index={index}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={`relative bg-slate-50 rounded-xl p-6 border border-slate-200 transition-shadow ${snapshot.isDragging ? 'shadow-xl' : ''}`}
-                              >
-                                <div
-                                  className="absolute top-3 left-3"
-                                  {...provided.dragHandleProps}
-                                >
-                                  <GripVertical className="w-4 h-4 text-slate-400 cursor-grab active:cursor-grabbing" />
-                                </div>
-                                <button
-                                  onClick={() => removeWidget(widgetId)}
-                                  className="absolute top-3 right-3 p-1 rounded-md hover:bg-slate-200 transition-colors"
-                                >
-                                  <X className="w-4 h-4 text-slate-500" />
-                                </button>
-                                <div className="mt-4">
-                                  <WidgetComponent />
-                                </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        )
-                      })}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
-              {widgets.length === 0 && (
-                <div className="text-center py-12">
-                  <Settings className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-slate-500 mb-4">No widgets added yet</p>
-                  <Button onClick={() => setShowAddDialog(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Your First Widget
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-          {!expandedSections.widgets && <div className="h-0" />}
-        </div>
 
-        {/* Sections */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">Life Areas</h2>
-            <button
-              onClick={() => toggleSection('sections')}
-              className="hover:opacity-70 transition-opacity"
-            >
-              {expandedSections.sections ? (
-                <ChevronUp className="w-5 h-5 text-slate-600" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-slate-600" />
-              )}
-            </button>
-          </div>
-          {expandedSections.sections && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {cards.map(card => (
-                <Link key={card.title} to={createPageUrl(card.page)} className="group">
-                  <div className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-xl transition-all duration-300 h-full">
-                    <div
-                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
-                    >
-                      <card.icon className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="home-card-title text-xl font-bold text-slate-900 mb-2">
-                      {card.title}
-                    </h3>
-                    <p className="text-slate-600 mb-4">{card.description}</p>
-                    <div className="flex items-center text-indigo-600 font-medium group-hover:gap-2 transition-all">
-                      Get started
-                      <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </Link>
-              ))}
+          {/* Customizable Widgets */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="home-widgets-title text-2xl font-bold text-slate-900">
+                Dashboard Widgets
+              </h2>
+              <div className="flex items-center gap-3">
+                {expandedSections.widgets && (
+                  <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Widget
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Widget</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-2 mt-4">
+                        {availableToAdd.map(widget => (
+                          <button
+                            key={widget.id}
+                            onClick={() => addWidget(widget.id)}
+                            className="w-full text-left px-4 py-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
+                          >
+                            <span className="font-medium text-slate-900">{widget.name}</span>
+                          </button>
+                        ))}
+                        {availableToAdd.length === 0 && (
+                          <p className="text-sm text-slate-500 text-center py-4">
+                            All widgets are already added
+                          </p>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+                <button
+                  onClick={() => toggleSection('widgets')}
+                  className="hover:opacity-70 transition-opacity"
+                >
+                  {expandedSections.widgets ? (
+                    <ChevronUp className="w-5 h-5 text-slate-600" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-slate-600" />
+                  )}
+                </button>
+              </div>
             </div>
-          )}
+            {expandedSections.widgets && (
+              <>
+                <DragDropContext onDragEnd={handleDragEnd}>
+                  <Droppable droppableId="widgets" direction="horizontal">
+                    {provided => (
+                      <div
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                      >
+                        {widgets.map((widgetId, index) => {
+                          const widgetConfig = widgetMap[widgetId]
+                          if (!widgetConfig) return null
+                          const WidgetComponent = widgetConfig.component
+                          return (
+                            <Draggable key={widgetId} draggableId={widgetId} index={index}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={`relative bg-slate-50 rounded-xl p-6 border border-slate-200 transition-shadow ${snapshot.isDragging ? 'shadow-xl' : ''}`}
+                                >
+                                  <div
+                                    className="absolute top-3 left-3"
+                                    {...provided.dragHandleProps}
+                                  >
+                                    <GripVertical className="w-4 h-4 text-slate-400 cursor-grab active:cursor-grabbing" />
+                                  </div>
+                                  <button
+                                    onClick={() => removeWidget(widgetId)}
+                                    className="absolute top-3 right-3 p-1 rounded-md hover:bg-slate-200 transition-colors"
+                                  >
+                                    <X className="w-4 h-4 text-slate-500" />
+                                  </button>
+                                  <div className="mt-4">
+                                    <WidgetComponent />
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          )
+                        })}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+                {widgets.length === 0 && (
+                  <div className="text-center py-12">
+                    <Settings className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <p className="text-slate-500 mb-4">No widgets added yet</p>
+                    <Button onClick={() => setShowAddDialog(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Your First Widget
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+            {!expandedSections.widgets && <div className="h-0" />}
+          </div>
+
+          {/* Sections */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-slate-900">Life Areas</h2>
+              <button
+                onClick={() => toggleSection('sections')}
+                className="hover:opacity-70 transition-opacity"
+              >
+                {expandedSections.sections ? (
+                  <ChevronUp className="w-5 h-5 text-slate-600" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-slate-600" />
+                )}
+              </button>
+            </div>
+            {expandedSections.sections && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {cards.map(card => (
+                  <Link key={card.title} to={createPageUrl(card.page)} className="group">
+                    <div className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-xl transition-all duration-300 h-full">
+                      <div
+                        className={`w-12 h-12 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
+                      >
+                        <card.icon className="w-6 h-6 text-white" />
+                      </div>
+                      <h3 className="home-card-title text-xl font-bold text-slate-900 mb-2">
+                        {card.title}
+                      </h3>
+                      <p className="text-slate-600 mb-4">{card.description}</p>
+                      <div className="flex items-center text-indigo-600 font-medium group-hover:gap-2 transition-all">
+                        Get started
+                        <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

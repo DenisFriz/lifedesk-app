@@ -1,5 +1,5 @@
 import { db } from '@/lib/localDb'
-import { enqueueMutation, generateOptimisticId } from '@/lib/syncQueue'
+import { enqueueMutation, generateOptimisticId, isOptimisticId } from '@/lib/syncQueue'
 
 export async function offlineFirst<T>(
   storeName: string,
@@ -57,4 +57,21 @@ export async function offlineCreate<T extends Record<string, unknown>>(
   })
 
   return optimisticRecord
+}
+
+export async function offlineUpdate<T extends Record<string, unknown>>(
+  storeName: string,
+  entity: any,
+  id: string,
+  data: Partial<T>
+): Promise<T> {
+  if (navigator.onLine && !isOptimisticId(id)) {
+    return entity.update(id, data)
+  }
+
+  const current = (await (db as any)[storeName].get(id)) ?? {}
+  const updated = { ...current, ...data, updated_date: new Date().toISOString() }
+  await (db as any)[storeName].put(updated)
+  await enqueueMutation(storeName, 'update', { id, data })
+  return updated as T
 }

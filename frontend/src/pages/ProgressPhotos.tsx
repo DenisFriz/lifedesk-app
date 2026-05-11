@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
+import { Helmet } from 'react-helmet-async'
 
 export default function ProgressPhotos() {
   const [showUploadDialog, setShowUploadDialog] = useState(false)
@@ -183,319 +184,324 @@ export default function ProgressPhotos() {
   const currentPhoto = photos[selectedPhotoIndex]
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 flex items-center gap-3 mb-2">
-              <Camera className="w-9 h-9" />
-              Progress Photos
-            </h1>
-            <p className="text-sm sm:text-base text-slate-600">
-              Track your body transformation with photos
-            </p>
-          </div>
-          {atLimit ? (
-            <Link to="/Upgrade">
-              <Button className="bg-amber-500 hover:bg-amber-600">
-                <Lock className="w-4 h-4 mr-2" />
-                Limit reached ({photos.length}/{photoLimit})
-              </Button>
-            </Link>
-          ) : (
-            <Button
-              onClick={() => setShowUploadDialog(true)}
-              className="bg-indigo-600 hover:bg-indigo-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Upload Photo
-            </Button>
-          )}
-        </div>
-
-        {/* Tabs for Active/Archived */}
-        {photos.length > 0 && (
-          <div className="flex gap-4 mb-6 border-b border-slate-200">
-            <button
-              onClick={() => {
-                setShowArchived(false)
-                setSelectionMode(false)
-                setSelectedPhotos(new Set())
-              }}
-              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-                !showArchived
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Active Photos
-            </button>
-            <button
-              onClick={() => {
-                setShowArchived(true)
-                setSelectionMode(false)
-                setSelectedPhotos(new Set())
-              }}
-              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-                showArchived
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Archived ({photos.filter(p => p.is_archived).length})
-            </button>
-          </div>
-        )}
-
-        {filteredPhotos.length === 0 ? (
-          <div className="bg-white rounded-lg border border-slate-200 p-12 text-center">
-            <Camera className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-600 mb-4">
-              {showArchived ? 'No archived photos' : 'No progress photos yet'}
-            </p>
-            {!showArchived && !atLimit && (
-              <Button onClick={() => setShowUploadDialog(true)}>
+    <>
+      <Helmet>
+        <title>Progress Photos</title>
+      </Helmet>
+      <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 flex items-center gap-3 mb-2">
+                <Camera className="w-9 h-9" />
+                Progress Photos
+              </h1>
+              <p className="text-sm sm:text-base text-slate-600">
+                Track your body transformation with photos
+              </p>
+            </div>
+            {atLimit ? (
+              <Link to="/Upgrade">
+                <Button className="bg-amber-500 hover:bg-amber-600">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Limit reached ({photos.length}/{photoLimit})
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                onClick={() => setShowUploadDialog(true)}
+                className="bg-indigo-600 hover:bg-indigo-700"
+              >
                 <Plus className="w-4 h-4 mr-2" />
-                Upload Your First Photo
+                Upload Photo
               </Button>
             )}
           </div>
-        ) : showComparisonMode && comparisonPhotoIndex !== null ? (
-          <ProgressPhotoComparison
-            photo1={currentPhoto}
-            photo2={photos[comparisonPhotoIndex]}
-            onClose={() => setShowComparisonMode(false)}
-            photo1Label={`${format(new Date(currentPhoto.date), 'MMM d, yyyy')}`}
-            photo2Label={`${format(new Date(photos[comparisonPhotoIndex].date), 'MMM d, yyyy')}`}
-          />
-        ) : filteredPhotos.length > 0 ? (
-          <div className="space-y-6">
-            {/* Main Photo Display with Gallery Sidebar */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Current Photo - Smaller on desktop, full width on mobile */}
-              <div className="lg:col-span-2">
-                <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-                  <div
-                    className="relative bg-slate-100 w-full flex items-center justify-center"
-                    style={{ aspectRatio: '3/4', maxHeight: '80vh' }}
-                  >
-                    <img
-                      src={currentPhoto.image_url}
-                      alt="Progress photo"
-                      className="w-full h-full object-contain"
-                    />
-                    {filteredPhotos.length > 1 && (
-                      <>
-                        <button
-                          onClick={handlePrevPhoto}
-                          disabled={selectedPhotoIndex === 0}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                          <ChevronLeft className="w-6 h-6" />
-                        </button>
-                        <button
-                          onClick={handleNextPhoto}
-                          disabled={selectedPhotoIndex === filteredPhotos.length - 1}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                          <ChevronRight className="w-6 h-6" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <p className="text-sm text-slate-600 mb-1">
-                          {format(new Date(currentPhoto.date), 'MMMM d, yyyy')}
-                        </p>
-                        {currentPhoto.body_area && (
-                          <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
-                            {bodyAreaLabels[currentPhoto.body_area]}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        {showArchived ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => restoreMutation.mutate(currentPhoto.id)}
-                            className="text-blue-600 hover:bg-blue-50"
-                            title="Restore photo"
-                          >
-                            <Camera className="w-4 h-4" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => archiveMutation.mutate([currentPhoto.id])}
-                            className="text-amber-600 hover:bg-amber-50"
-                            title="Archive photo"
-                          >
-                            <Archive className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteMutation.mutate(currentPhoto.id)}
-                          className="text-red-600 hover:bg-red-50"
-                          title="Delete photo permanently"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    {currentPhoto.description && (
-                      <p className="text-slate-700">{currentPhoto.description}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
 
-              {/* Gallery Sidebar */}
-              <div className="lg:col-span-1">
-                <div className="bg-white rounded-lg border border-slate-200 p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-slate-900 text-sm">
-                      {showArchived ? 'Archived' : 'All'} ({filteredPhotos.length})
-                    </h3>
-                    {selectionMode && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectionMode(false)
-                          setSelectedPhotos(new Set())
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {filteredPhotos.map((photo, idx) => {
-                      const isSelected = selectedPhotos.has(photo.id)
-                      return (
-                        <button
-                          key={photo.id}
-                          onMouseDown={() => startLongPress(photo.id)}
-                          onMouseUp={() => cancelLongPress(photo.id)}
-                          onMouseLeave={() => cancelLongPress(photo.id)}
-                          onTouchStart={() => startLongPress(photo.id)}
-                          onTouchEnd={() => cancelLongPress(photo.id)}
-                          onClick={() => {
-                            if (selectionMode) {
-                              handlePhotoPress(photo.id)
-                            } else {
-                              setSelectedPhotoIndex(idx)
-                            }
-                          }}
-                          className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                            selectionMode && isSelected
-                              ? 'border-indigo-600 ring-2 ring-indigo-600'
-                              : !selectionMode && idx === selectedPhotoIndex
-                                ? 'border-indigo-600 ring-2 ring-indigo-600'
-                                : 'border-slate-200 hover:border-indigo-400'
-                          }`}
-                        >
-                          <img
-                            src={photo.image_url}
-                            alt={format(new Date(photo.date), 'MMM d')}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-1">
-                            <span className="text-xs text-white font-medium">
-                              {format(new Date(photo.date), 'MMM d')}
-                            </span>
-                          </div>
-                          {selectionMode && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                              <div
-                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                                  isSelected
-                                    ? 'bg-indigo-600 border-indigo-600'
-                                    : 'bg-white border-white'
-                                }`}
-                              >
-                                {isSelected && <Check className="w-4 h-4 text-white" />}
-                              </div>
-                            </div>
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                  {selectionMode && selectedPhotos.size > 0 && (
-                    <div className="mt-4 flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          archiveMutation.mutate(Array.from(selectedPhotos) as string[])
-                        }
-                        className="flex-1"
-                      >
-                        Archive
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() =>
-                          bulkDeleteMutation.mutate(Array.from(selectedPhotos) as string[])
-                        }
-                        className="flex-1"
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
+          {/* Tabs for Active/Archived */}
+          {photos.length > 0 && (
+            <div className="flex gap-4 mb-6 border-b border-slate-200">
+              <button
+                onClick={() => {
+                  setShowArchived(false)
+                  setSelectionMode(false)
+                  setSelectedPhotos(new Set())
+                }}
+                className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                  !showArchived
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Active Photos
+              </button>
+              <button
+                onClick={() => {
+                  setShowArchived(true)
+                  setSelectionMode(false)
+                  setSelectedPhotos(new Set())
+                }}
+                className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                  showArchived
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Archived ({photos.filter(p => p.is_archived).length})
+              </button>
             </div>
+          )}
 
-            {/* Comparison Tool */}
-            {!showArchived && filteredPhotos.length > 1 && (
-              <div className="bg-white rounded-lg border border-slate-200 p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Compare with other photo</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {filteredPhotos.map((photo, idx) => (
-                    <button
-                      key={photo.id}
-                      onClick={() => {
-                        setComparisonPhotoIndex(idx)
-                        setShowComparisonMode(true)
-                      }}
-                      disabled={idx === selectedPhotoIndex}
-                      className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-colors ${
-                        idx === selectedPhotoIndex
-                          ? 'border-slate-300 opacity-50 cursor-not-allowed'
-                          : 'border-slate-200 hover:border-indigo-600 cursor-pointer'
-                      }`}
+          {filteredPhotos.length === 0 ? (
+            <div className="bg-white rounded-lg border border-slate-200 p-12 text-center">
+              <Camera className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <p className="text-slate-600 mb-4">
+                {showArchived ? 'No archived photos' : 'No progress photos yet'}
+              </p>
+              {!showArchived && !atLimit && (
+                <Button onClick={() => setShowUploadDialog(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Upload Your First Photo
+                </Button>
+              )}
+            </div>
+          ) : showComparisonMode && comparisonPhotoIndex !== null ? (
+            <ProgressPhotoComparison
+              photo1={currentPhoto}
+              photo2={photos[comparisonPhotoIndex]}
+              onClose={() => setShowComparisonMode(false)}
+              photo1Label={`${format(new Date(currentPhoto.date), 'MMM d, yyyy')}`}
+              photo2Label={`${format(new Date(photos[comparisonPhotoIndex].date), 'MMM d, yyyy')}`}
+            />
+          ) : filteredPhotos.length > 0 ? (
+            <div className="space-y-6">
+              {/* Main Photo Display with Gallery Sidebar */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Current Photo - Smaller on desktop, full width on mobile */}
+                <div className="lg:col-span-2">
+                  <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                    <div
+                      className="relative bg-slate-100 w-full flex items-center justify-center"
+                      style={{ aspectRatio: '3/4', maxHeight: '80vh' }}
                     >
                       <img
-                        src={photo.image_url}
-                        alt={format(new Date(photo.date), 'MMM d')}
-                        className="w-full h-full object-cover"
+                        src={currentPhoto.image_url}
+                        alt="Progress photo"
+                        className="w-full h-full object-contain"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-2">
-                        <span className="text-xs text-white font-medium">
-                          {format(new Date(photo.date), 'MMM d')}
-                        </span>
+                      {filteredPhotos.length > 1 && (
+                        <>
+                          <button
+                            onClick={handlePrevPhoto}
+                            disabled={selectedPhotoIndex === 0}
+                            className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <ChevronLeft className="w-6 h-6" />
+                          </button>
+                          <button
+                            onClick={handleNextPhoto}
+                            disabled={selectedPhotoIndex === filteredPhotos.length - 1}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <ChevronRight className="w-6 h-6" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    <div className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <p className="text-sm text-slate-600 mb-1">
+                            {format(new Date(currentPhoto.date), 'MMMM d, yyyy')}
+                          </p>
+                          {currentPhoto.body_area && (
+                            <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
+                              {bodyAreaLabels[currentPhoto.body_area]}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          {showArchived ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => restoreMutation.mutate(currentPhoto.id)}
+                              className="text-blue-600 hover:bg-blue-50"
+                              title="Restore photo"
+                            >
+                              <Camera className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => archiveMutation.mutate([currentPhoto.id])}
+                              className="text-amber-600 hover:bg-amber-50"
+                              title="Archive photo"
+                            >
+                              <Archive className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteMutation.mutate(currentPhoto.id)}
+                            className="text-red-600 hover:bg-red-50"
+                            title="Delete photo permanently"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                    </button>
-                  ))}
+                      {currentPhoto.description && (
+                        <p className="text-slate-700">{currentPhoto.description}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gallery Sidebar */}
+                <div className="lg:col-span-1">
+                  <div className="bg-white rounded-lg border border-slate-200 p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-slate-900 text-sm">
+                        {showArchived ? 'Archived' : 'All'} ({filteredPhotos.length})
+                      </h3>
+                      {selectionMode && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectionMode(false)
+                            setSelectedPhotos(new Set())
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {filteredPhotos.map((photo, idx) => {
+                        const isSelected = selectedPhotos.has(photo.id)
+                        return (
+                          <button
+                            key={photo.id}
+                            onMouseDown={() => startLongPress(photo.id)}
+                            onMouseUp={() => cancelLongPress(photo.id)}
+                            onMouseLeave={() => cancelLongPress(photo.id)}
+                            onTouchStart={() => startLongPress(photo.id)}
+                            onTouchEnd={() => cancelLongPress(photo.id)}
+                            onClick={() => {
+                              if (selectionMode) {
+                                handlePhotoPress(photo.id)
+                              } else {
+                                setSelectedPhotoIndex(idx)
+                              }
+                            }}
+                            className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                              selectionMode && isSelected
+                                ? 'border-indigo-600 ring-2 ring-indigo-600'
+                                : !selectionMode && idx === selectedPhotoIndex
+                                  ? 'border-indigo-600 ring-2 ring-indigo-600'
+                                  : 'border-slate-200 hover:border-indigo-400'
+                            }`}
+                          >
+                            <img
+                              src={photo.image_url}
+                              alt={format(new Date(photo.date), 'MMM d')}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-1">
+                              <span className="text-xs text-white font-medium">
+                                {format(new Date(photo.date), 'MMM d')}
+                              </span>
+                            </div>
+                            {selectionMode && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                <div
+                                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                                    isSelected
+                                      ? 'bg-indigo-600 border-indigo-600'
+                                      : 'bg-white border-white'
+                                  }`}
+                                >
+                                  {isSelected && <Check className="w-4 h-4 text-white" />}
+                                </div>
+                              </div>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {selectionMode && selectedPhotos.size > 0 && (
+                      <div className="mt-4 flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            archiveMutation.mutate(Array.from(selectedPhotos) as string[])
+                          }
+                          className="flex-1"
+                        >
+                          Archive
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() =>
+                            bulkDeleteMutation.mutate(Array.from(selectedPhotos) as string[])
+                          }
+                          className="flex-1"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
-        ) : null}
 
-        <ProgressPhotoUploadDialog open={showUploadDialog} onOpenChange={setShowUploadDialog} />
+              {/* Comparison Tool */}
+              {!showArchived && filteredPhotos.length > 1 && (
+                <div className="bg-white rounded-lg border border-slate-200 p-6">
+                  <h3 className="font-semibold text-slate-900 mb-4">Compare with other photo</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {filteredPhotos.map((photo, idx) => (
+                      <button
+                        key={photo.id}
+                        onClick={() => {
+                          setComparisonPhotoIndex(idx)
+                          setShowComparisonMode(true)
+                        }}
+                        disabled={idx === selectedPhotoIndex}
+                        className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-colors ${
+                          idx === selectedPhotoIndex
+                            ? 'border-slate-300 opacity-50 cursor-not-allowed'
+                            : 'border-slate-200 hover:border-indigo-600 cursor-pointer'
+                        }`}
+                      >
+                        <img
+                          src={photo.image_url}
+                          alt={format(new Date(photo.date), 'MMM d')}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-2">
+                          <span className="text-xs text-white font-medium">
+                            {format(new Date(photo.date), 'MMM d')}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
+
+          <ProgressPhotoUploadDialog open={showUploadDialog} onOpenChange={setShowUploadDialog} />
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

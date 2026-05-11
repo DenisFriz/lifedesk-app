@@ -20,6 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { useNavigate } from 'react-router-dom'
 import { createPageUrl } from '@/utils'
+import { Helmet } from 'react-helmet-async'
 
 type WorkoutExercise = {
   name: string
@@ -146,154 +147,159 @@ export default function WorkoutPlans() {
   const dayIndices = [1, 2, 3, 4, 5, 6, 0] // Map display order to JS Date day indices
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 py-6 sm:py-8">
-          <div className="text-center lg:text-left w-full lg:w-auto">
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2 flex items-center justify-center lg:justify-start gap-3">
-              <CalendarIcon className="w-8 h-8 sm:w-9 sm:h-9" />
-              Workout Plans
-            </h1>
-            <p className="text-sm sm:text-base text-slate-600">
-              Create and schedule workout routines
-            </p>
-          </div>
-          {atLimit ? (
-            <Link to="/Upgrade" className="w-full lg:w-auto">
-              <Button className="w-full bg-amber-500 hover:bg-amber-600">
-                <Lock className="w-4 h-4 mr-2" />
-                Limit reached ({plans.length}/{planLimit})
+    <>
+      <Helmet>
+        <title>Workout Plans</title>
+      </Helmet>
+      <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 py-6 sm:py-8">
+            <div className="text-center lg:text-left w-full lg:w-auto">
+              <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2 flex items-center justify-center lg:justify-start gap-3">
+                <CalendarIcon className="w-8 h-8 sm:w-9 sm:h-9" />
+                Workout Plans
+              </h1>
+              <p className="text-sm sm:text-base text-slate-600">
+                Create and schedule workout routines
+              </p>
+            </div>
+            {atLimit ? (
+              <Link to="/Upgrade" className="w-full lg:w-auto">
+                <Button className="w-full bg-amber-500 hover:bg-amber-600">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Limit reached ({plans.length}/{planLimit})
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                onClick={() => setShowForm(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 w-full lg:w-auto"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Plan
               </Button>
-            </Link>
-          ) : (
-            <Button
-              onClick={() => setShowForm(true)}
-              className="bg-indigo-600 hover:bg-indigo-700 w-full lg:w-auto"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Plan
-            </Button>
-          )}
-        </div>
+            )}
+          </div>
 
-        <div className="grid gap-4">
-          {plans.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <CalendarIcon className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500 mb-4">No workout plans created yet</p>
-                {!atLimit && (
-                  <Button onClick={() => setShowForm(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Your First Plan
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            plans.map(plan => (
-              <Card key={plan.id}>
-                <CardHeader className="flex flex-row items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CardTitle>{plan.name}</CardTitle>
-                      <Badge className={workoutTypeColors[plan.type]}>
-                        {workoutTypeLabels[plan.type]}
-                      </Badge>
-                      {!plan.active && (
-                        <Badge variant="outline" className="text-slate-500">
-                          Inactive
+          <div className="grid gap-4">
+            {plans.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <CalendarIcon className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-500 mb-4">No workout plans created yet</p>
+                  {!atLimit && (
+                    <Button onClick={() => setShowForm(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Your First Plan
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              plans.map(plan => (
+                <Card key={plan.id}>
+                  <CardHeader className="flex flex-row items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CardTitle>{plan.name}</CardTitle>
+                        <Badge className={workoutTypeColors[plan.type]}>
+                          {workoutTypeLabels[plan.type]}
                         </Badge>
+                        {!plan.active && (
+                          <Badge variant="outline" className="text-slate-500">
+                            Inactive
+                          </Badge>
+                        )}
+                      </div>
+                      {plan.description && (
+                        <p className="text-sm text-slate-600 mb-2">{plan.description}</p>
+                      )}
+                      {plan.scheduled_days && plan.scheduled_days.length > 0 && (
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <CalendarIcon className="w-3 h-3 text-slate-500" />
+                          <span className="text-xs text-slate-500">Scheduled:</span>
+                          {plan.scheduled_days
+                            .sort((a, b) => {
+                              const indexA = dayIndices.indexOf(a)
+                              const indexB = dayIndices.indexOf(b)
+                              return indexA - indexB
+                            })
+                            .map(day => (
+                              <Badge key={day} variant="outline" className="text-xs">
+                                {dayNames[dayIndices.indexOf(day)]}
+                              </Badge>
+                            ))}
+                        </div>
                       )}
                     </div>
-                    {plan.description && (
-                      <p className="text-sm text-slate-600 mb-2">{plan.description}</p>
-                    )}
-                    {plan.scheduled_days && plan.scheduled_days.length > 0 && (
-                      <div className="flex items-center gap-1 flex-wrap">
-                        <CalendarIcon className="w-3 h-3 text-slate-500" />
-                        <span className="text-xs text-slate-500">Scheduled:</span>
-                        {plan.scheduled_days
-                          .sort((a, b) => {
-                            const indexA = dayIndices.indexOf(a)
-                            const indexB = dayIndices.indexOf(b)
-                            return indexA - indexB
-                          })
-                          .map(day => (
-                            <Badge key={day} variant="outline" className="text-xs">
-                              {dayNames[dayIndices.indexOf(day)]}
-                            </Badge>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => startWorkout(plan)}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <Play className="w-3 h-3 mr-1" />
-                      Start
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setEditingPlan(plan)
-                        setShowForm(true)
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteMutation.mutate(plan.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-rose-500" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                {plan.exercises && plan.exercises.length > 0 && (
-                  <CardContent>
-                    <p className="text-xs font-semibold text-slate-600 mb-2">
-                      {plan.exercises.length} Exercise{plan.exercises.length !== 1 ? 's' : ''}
-                    </p>
-                    <div className="space-y-2">
-                      {plan.exercises.map((exercise, idx) => (
-                        <div key={idx} className="bg-slate-50 rounded-lg p-2">
-                          <p className="font-medium text-sm">{exercise.name}</p>
-                          <div className="flex flex-wrap gap-3 mt-1 text-xs text-slate-600">
-                            {exercise.sets && <span>{exercise.sets} sets</span>}
-                            {exercise.reps && <span>{exercise.reps} reps</span>}
-                            {exercise.weight && <span>{exercise.weight} kg</span>}
-                            {exercise.distance && <span>{exercise.distance} km</span>}
-                            {exercise.duration && <span>{exercise.duration} min</span>}
-                            {exercise.rest_seconds && <span>Rest: {exercise.rest_seconds}s</span>}
-                          </div>
-                        </div>
-                      ))}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => startWorkout(plan)}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <Play className="w-3 h-3 mr-1" />
+                        Start
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setEditingPlan(plan)
+                          setShowForm(true)
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteMutation.mutate(plan.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-rose-500" />
+                      </Button>
                     </div>
-                  </CardContent>
-                )}
-              </Card>
-            ))
-          )}
-        </div>
+                  </CardHeader>
+                  {plan.exercises && plan.exercises.length > 0 && (
+                    <CardContent>
+                      <p className="text-xs font-semibold text-slate-600 mb-2">
+                        {plan.exercises.length} Exercise{plan.exercises.length !== 1 ? 's' : ''}
+                      </p>
+                      <div className="space-y-2">
+                        {plan.exercises.map((exercise, idx) => (
+                          <div key={idx} className="bg-slate-50 rounded-lg p-2">
+                            <p className="font-medium text-sm">{exercise.name}</p>
+                            <div className="flex flex-wrap gap-3 mt-1 text-xs text-slate-600">
+                              {exercise.sets && <span>{exercise.sets} sets</span>}
+                              {exercise.reps && <span>{exercise.reps} reps</span>}
+                              {exercise.weight && <span>{exercise.weight} kg</span>}
+                              {exercise.distance && <span>{exercise.distance} km</span>}
+                              {exercise.duration && <span>{exercise.duration} min</span>}
+                              {exercise.rest_seconds && <span>Rest: {exercise.rest_seconds}s</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              ))
+            )}
+          </div>
 
-        <WorkoutPlanForm
-          open={showForm}
-          onClose={() => {
-            setShowForm(false)
-            setEditingPlan(null)
-          }}
-          onSubmit={handleSubmit}
-          plan={editingPlan}
-          isLoading={createMutation.isPending || updateMutation.isPending}
-        />
+          <WorkoutPlanForm
+            open={showForm}
+            onClose={() => {
+              setShowForm(false)
+              setEditingPlan(null)
+            }}
+            onSubmit={handleSubmit}
+            plan={editingPlan}
+            isLoading={createMutation.isPending || updateMutation.isPending}
+          />
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

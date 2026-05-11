@@ -7,6 +7,7 @@ import { Plus, Search, CheckCircle2, Clock, Flame } from 'lucide-react'
 import TaskForm, { TaskFormData } from '@/components/tasks/TaskForm'
 import TaskTable from '@/components/tasks/TaskTable'
 import { Task } from '@/types/entities'
+import { Helmet } from 'react-helmet-async'
 
 export default function Tasks() {
   const [showForm, setShowForm] = useState(false)
@@ -137,110 +138,115 @@ export default function Tasks() {
   }, [tasks])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">Tasks</h1>
-          <p className="text-slate-500 mt-2">Stay focused and get things done</p>
-        </div>
+    <>
+      <Helmet>
+        <title>Tasks</title>
+      </Helmet>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">Tasks</h1>
+            <p className="text-slate-500 mt-2">Stay focused and get things done</p>
+          </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-                <Clock className="w-5 h-5 text-slate-600" />
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-slate-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+                  <p className="text-sm text-slate-500">Total</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
-                <p className="text-sm text-slate-500">Total</p>
+            </div>
+            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{stats.pending}</p>
+                  <p className="text-sm text-slate-500">Pending</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{stats.completed}</p>
+                  <p className="text-sm text-slate-500">Done</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-rose-50 rounded-lg flex items-center justify-center">
+                  <Flame className="w-5 h-5 text-rose-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{stats.highPriority}</p>
+                  <p className="text-sm text-slate-500">High Priority</p>
+                </div>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
-                <Clock className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{stats.pending}</p>
-                <p className="text-sm text-slate-500">Pending</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{stats.completed}</p>
-                <p className="text-sm text-slate-500">Done</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-rose-50 rounded-lg flex items-center justify-center">
-                <Flame className="w-5 h-5 text-rose-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{stats.highPriority}</p>
-                <p className="text-sm text-slate-500">High Priority</p>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Actions Bar */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder="Search tasks..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="pl-10 h-11 border-slate-200 bg-white focus:border-indigo-500 focus:ring-indigo-500"
+          {/* Actions Bar */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search tasks..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-10 h-11 border-slate-200 bg-white focus:border-indigo-500 focus:ring-indigo-500"
+              />
+            </div>
+            <Button
+              onClick={() => setShowForm(true)}
+              className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Task
+            </Button>
+          </div>
+
+          {/* Table */}
+          {isLoading ? (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                <p className="text-slate-500">Loading tasks...</p>
+              </div>
+            </div>
+          ) : (
+            <TaskTable
+              tasks={filteredAndSortedTasks}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onToggleComplete={handleToggleComplete}
+              sortConfig={sortConfig}
+              onSort={handleSort}
             />
-          </div>
-          <Button
-            onClick={() => setShowForm(true)}
-            className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Task
-          </Button>
-        </div>
+          )}
 
-        {/* Table */}
-        {isLoading ? (
-          <div className="bg-white rounded-xl border border-slate-200 p-12 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-              <p className="text-slate-500">Loading tasks...</p>
-            </div>
-          </div>
-        ) : (
-          <TaskTable
-            tasks={filteredAndSortedTasks}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onToggleComplete={handleToggleComplete}
-            sortConfig={sortConfig}
-            onSort={handleSort}
+          {/* Form Modal */}
+          <TaskForm
+            open={showForm}
+            onClose={handleCloseForm}
+            onSubmit={handleSubmit}
+            task={editingTask}
+            isLoading={createMutation.isPending || updateMutation.isPending}
           />
-        )}
-
-        {/* Form Modal */}
-        <TaskForm
-          open={showForm}
-          onClose={handleCloseForm}
-          onSubmit={handleSubmit}
-          task={editingTask}
-          isLoading={createMutation.isPending || updateMutation.isPending}
-        />
+        </div>
       </div>
-    </div>
+    </>
   )
 }

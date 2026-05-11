@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react'
+import { type ReactNode, useEffect } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery } from '@tanstack/react-query'
 
 interface Props {
-  children: React.ReactNode
+  children: ReactNode
 }
 
 export default function ProtectedRoute({ children }: Props) {
