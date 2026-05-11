@@ -9,9 +9,7 @@ async function startServer() {
     await connectDB();
 
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📍 API Base URL: http://localhost:${PORT}`);
-      console.log(`🧠 Process ID: ${process.pid}`);
+      console.log(`API Base URL: http://localhost:${PORT}`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

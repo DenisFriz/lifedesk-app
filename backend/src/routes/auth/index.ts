@@ -37,10 +37,17 @@ const router = Router();
 router.post(
   '/register',
   asyncHandler(async (req: Request, res: Response) => {
-    const { email, password } = req.body as RegisterDTO;
+    const { email, password, acceptedTerms } = req.body as RegisterDTO;
+
+    if (!acceptedTerms) {
+      throw new AppError(
+        'You must accept Terms of Service and Privacy Policy',
+        400,
+      );
+    }
 
     if (!email || !password) {
-      throw new AppError('Email andpassword are required', 400);
+      throw new AppError('Email and password are required', 400);
     }
 
     const existing = await User.findOne({ email });
@@ -54,6 +61,8 @@ router.post(
     const user = new User({
       email,
       passwordHash,
+      terms_accepted_at: new Date().toISOString(),
+      terms_accepted_version: '1.0',
     });
 
     await user.save();
