@@ -29,6 +29,8 @@ export interface IUser {
   deleted_at: string | null;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface IUserPlan {

@@ -95,7 +95,7 @@ export async function backfillSubscriptions(
                 : sub.customer?.id;
 
             await Subscription.create({
-              user_id: user?._id ?? null,
+              user_id: user?._id?.toString(),
               ...subscriptionData,
               stripe_customer_id: stripeCustomerId,
             });

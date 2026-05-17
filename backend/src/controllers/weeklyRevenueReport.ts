@@ -18,7 +18,7 @@ export async function weeklyRevenueReport(req: Request, res: Response) {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const newUsers = filteredUsers.filter(
-      (u) => new Date(u.created_at) >= sevenDaysAgo,
+      (u) => u.createdAt && u.createdAt >= sevenDaysAgo,
     );
 
     let monthlyRevenue = 0;
