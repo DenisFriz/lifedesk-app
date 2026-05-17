@@ -107,7 +107,6 @@ export default function Login() {
                     onError={() => setError('Google login failed')}
                     disabled={isLoading}
                   />
-
                   <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
                     {/* Error */}
                     {error && (
