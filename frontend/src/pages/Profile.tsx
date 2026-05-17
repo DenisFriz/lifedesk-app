@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -38,6 +39,15 @@ const tierConfig = {
   enterprise: { icon: Crown, color: 'bg-amber-100 text-amber-700', label: 'Enterprise' }
 }
 
+const statusColors: Record<string, string> = {
+  new: 'bg-slate-100 text-slate-700',
+  under_review: 'bg-blue-100 text-blue-700',
+  planned: 'bg-purple-100 text-purple-700',
+  in_progress: 'bg-amber-100 text-amber-700',
+  implemented: 'bg-green-100 text-green-700',
+  rejected: 'bg-red-100 text-red-700'
+}
+
 export default function Profile() {
   const queryClient = useQueryClient()
   const [isEditing, setIsEditing] = useState(false)
@@ -58,7 +68,6 @@ export default function Profile() {
     queryKey: ['currentUser'],
     queryFn: async () => {
       const userData = await backend.auth.me()
-      setFullName(userData.full_name || '')
       return userData
     }
   })
@@ -107,11 +116,14 @@ export default function Profile() {
       return
     }
     setUploadingImage(true)
-    const result = await backend.integrations.Core.UploadFile({ file })
-    const file_url = (result as any).file_url
-    await backend.auth.updateMe({ profile_image: file_url })
-    queryClient.invalidateQueries({ queryKey: ['currentUser'] })
-    setUploadingImage(false)
+    try {
+      const result = await backend.integrations.Core.UploadFile({ file })
+      const file_url = (result as any).file_url
+      await backend.auth.updateMe({ profile_image: file_url })
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+    } finally {
+      setUploadingImage(false)
+    }
   }
 
   const handleDeleteProfileImage = async () => {
@@ -181,15 +193,6 @@ export default function Profile() {
   const [ideasPage, setIdeasPage] = useState(1)
   const [commentsPage, setCommentsPage] = useState(1)
   const PAGE_SIZE = 5
-
-  const statusColors = {
-    new: 'bg-slate-100 text-slate-700',
-    under_review: 'bg-blue-100 text-blue-700',
-    planned: 'bg-purple-100 text-purple-700',
-    in_progress: 'bg-amber-100 text-amber-700',
-    implemented: 'bg-green-100 text-green-700',
-    rejected: 'bg-red-100 text-red-700'
-  }
 
   if (isLoading) {
     return (
@@ -296,7 +299,14 @@ export default function Profile() {
                   ) : (
                     <div className="mt-1 flex items-center justify-between">
                       <span className="text-slate-600">{user?.full_name || 'Not set'}</span>
-                      <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setFullName(user?.full_name || '')
+                          setIsEditing(true)
+                        }}
+                      >
                         Edit
                       </Button>
                     </div>
@@ -356,19 +366,17 @@ export default function Profile() {
                   <button
                     key={plan}
                     onClick={() => setSelectedPlan(plan)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition
-        ${
-          selectedPlan === plan
-            ? 'bg-indigo-600 text-white border-indigo-600'
-            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-        }
-      `}
+                    className={cn(
+                      'px-4 py-2 rounded-lg text-sm font-medium border transition',
+                      selectedPlan === plan
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                    )}
                   >
                     {plan.charAt(0).toUpperCase() + plan.slice(1)}
                   </button>
                 ))}
 
-                {/* BUTTON */}
                 <button
                   onClick={() => updateSubscription.mutate(selectedPlan)}
                   disabled={updateSubscription.isPending || selectedPlan === planName}

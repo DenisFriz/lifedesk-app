@@ -26,10 +26,10 @@ export default function DeleteAccountDialog({
   userEmail
 }: DeleteAccountDialogProps) {
   const [step, setStep] = useState<Step>('confirm')
+  const [authRequired, setAuthRequired] = useState<null | 'local' | 'google'>(null)
   const [password, setPassword] = useState<string>('')
   const [error, setError] = useState<string>('')
   const [isDeleting, setIsDeleting] = useState<boolean>(false)
-  const [provider, setProvider] = useState<'local' | 'google' | null>(null)
 
   useEffect(() => {
     if (!isOpen) return
@@ -38,17 +38,13 @@ export default function DeleteAccountDialog({
       try {
         const res = await backend.auth.deleteRequest()
 
-        setProvider(res.provider)
-
-        if (res.requiresReauth && res.provider === 'google') {
-          setStep('google')
+        if (res.requiresReauth) {
+          setAuthRequired(res.provider)
+        } else {
+          setAuthRequired(null)
         }
-
-        if (res.requiresReauth && res.provider === 'local') {
-          setStep('password')
-        }
-      } catch (err) {
-        console.error(err)
+      } catch (e) {
+        console.error(e)
       }
     }
 
@@ -63,12 +59,12 @@ export default function DeleteAccountDialog({
   }
 
   const handleConfirmDelete = (): void => {
-    if (provider === 'google') {
+    if (authRequired === 'google') {
       setStep('google')
       return
     }
 
-    if (provider === 'local') {
+    if (authRequired === 'local') {
       setStep('password')
       return
     }
@@ -129,14 +125,14 @@ export default function DeleteAccountDialog({
         const accessToken = tokenResponse.access_token
 
         if (!accessToken) {
-          setError('Google access token missing')
+          setError('Google access token missing. Please try again.')
           return
         }
 
         const response = await backend.auth.googleReauth(accessToken)
 
         if (!response.success) {
-          setError('Reauthentication failed')
+          setError('Google re-authentication failed. Please try again.')
           return
         }
 
@@ -155,12 +151,15 @@ export default function DeleteAccountDialog({
         }
       } catch (e) {
         console.error(e)
-        setError('Google reauthentication failed')
+        setError('Google re-authentication failed. Please try again.')
       }
     },
 
-    onError: () => {
-      setError('Google reauthentication failed')
+    onError: errorResponse => {
+      console.error('Google OAuth error:', errorResponse)
+      setError(
+        'Google sign-in was cancelled or blocked. Please disable any popup blockers and try again.'
+      )
     }
   })
 
@@ -311,6 +310,12 @@ export default function DeleteAccountDialog({
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5 text-sm text-blue-900">
               To delete your account, please sign in again with Google.
             </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+                {error}
+              </div>
+            )}
 
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={handleClose}>
