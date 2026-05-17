@@ -8,7 +8,7 @@ type ValidateStorageUploadBody = {
 };
 
 export function validateStorageUpload(
-  req: Request<{}, {}, ValidateStorageUploadBody>,
+  req: Request<object, object, ValidateStorageUploadBody>,
   res: Response,
 ) {
   try {

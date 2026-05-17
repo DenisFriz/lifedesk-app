@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { useLayout } from '@/Layout'
+import { useSound } from '@/contexts/SoundContext'
 
 type EventItem = {
   id: string
@@ -47,7 +47,8 @@ export default function EventNotifications() {
     queryFn: async () => (await backend.entities.Goal.list()) as GoalItem[]
   })
 
-  const { playAudio } = useLayout()
+  const { playSound } = useSound()
+
   const notifiedEvents = useRef(new Set())
   const permissionRequested = useRef(false)
 
@@ -149,7 +150,7 @@ export default function EventNotifications() {
                 }
 
                 // Play notification sound
-                playAudio('notification')
+                playSound('notification')
 
                 console.log('✅ Browser notification created successfully')
               } catch (error) {

@@ -32,7 +32,7 @@ type PlaidRequestBody = {
 };
 
 export async function plaid(
-  req: Request<{}, {}, PlaidRequestBody>,
+  req: Request<object, object, PlaidRequestBody>,
   res: Response,
 ) {
   try {

@@ -22,7 +22,7 @@ type BackfillSubscriptionsBody = {
 };
 
 export async function backfillSubscriptions(
-  req: Request<{}, {}, BackfillSubscriptionsBody>,
+  req: Request<unknown, unknown, BackfillSubscriptionsBody>,
   res: Response,
 ) {
   try {

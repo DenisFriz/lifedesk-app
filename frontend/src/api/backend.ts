@@ -24,13 +24,48 @@ const entitiesProxy = new Proxy({} as Record<string, EntityApi>, {
   }
 })
 
+export type UsageKey =
+  | 'goals'
+  | 'tasks'
+  | 'calendarEntries'
+  | 'events'
+  | 'assets'
+  | 'bankAccounts'
+  | 'workouts'
+  | 'projects'
+
+type UsageMap = Record<UsageKey, number>
+type LimitsMap = Record<UsageKey, number | null>
+type RemainingMap = Record<UsageKey, number | null>
+
+export type UserUsageResponse = {
+  usage: UsageMap
+  limits: LimitsMap
+  remaining: RemainingMap
+}
+
+type DeleteRequestResponse = {
+  requiresReauth: boolean
+  provider: 'local' | 'google'
+}
+
+type ReauthResponse = {
+  success: boolean
+  reauthToken: string
+}
+
 export const backend = {
   auth: {
     me: () => apiFetch<User>('GET', '/auth/me'),
+    usage: () => apiFetch<UserUsageResponse>('GET', '/auth/usage'),
     updateMe: (data: Record<string, unknown>) => apiFetch('PUT', '/auth/me', data),
-    logout: () => {
+    logout: async () => {
       clearToken()
-      window.location.href = '/Login'
+      try {
+        await apiFetch('POST', '/auth/logout')
+      } finally {
+        window.location.href = '/Login'
+      }
     },
     redirectToLogin: (returnUrl?: string) => {
       window.location.href = `/Login?from=${encodeURIComponent(returnUrl || '/')}`
@@ -43,7 +78,24 @@ export const backend = {
       } catch {
         return false
       }
-    }
+    },
+    reauthPassword: (password: string) =>
+      apiFetch<ReauthResponse>('POST', '/auth/reauth/password', { password }),
+    googleReauth: (credential: string) =>
+      apiFetch<ReauthResponse>('POST', '/auth/google/reauth', {
+        credential
+      }),
+    deleteRequest: () => apiFetch<DeleteRequestResponse>('GET', '/auth/delete/request'),
+    changeSubscription: (subscription: 'free' | 'plus' | 'pro') =>
+      apiFetch<DeleteRequestResponse>('POST', '/auth/change-subscription', {
+        subscription
+      })
+  },
+  email: {
+    sendEmailVerificationCode: () =>
+      apiFetch<{ message: string }>('POST', '/email/send-email-verification-code'),
+    verifyEmailCode: (code: string) =>
+      apiFetch<{ message: string }>('POST', '/email/verify-email-code', { code })
   },
   entities: entitiesProxy,
   functions: {

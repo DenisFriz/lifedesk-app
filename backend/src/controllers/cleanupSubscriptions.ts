@@ -34,8 +34,6 @@ export async function cleanupSubscriptions(req: Request, res: Response) {
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
         );
 
-        const toKeep = sorted[0];
-
         const idsToDelete = sorted.slice(1).map((s) => s._id);
 
         if (idsToDelete.length > 0) {

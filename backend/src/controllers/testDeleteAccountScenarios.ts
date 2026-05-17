@@ -8,7 +8,7 @@ type TestDeleteAccountScenariosBody = {
 };
 
 export async function testDeleteAccountScenarios(
-  req: Request<{}, {}, TestDeleteAccountScenariosBody>,
+  req: Request<object, object, TestDeleteAccountScenariosBody>,
   res: Response,
 ) {
   try {

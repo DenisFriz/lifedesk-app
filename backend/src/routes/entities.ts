@@ -1,5 +1,8 @@
+import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits.js';
 import { modelMap } from '@/models/index.js';
+import { UsageKey, UserUsage } from '@/models/UserUsage.js';
 import { Router, type Request, type Response } from 'express';
+import { Types } from 'mongoose';
 
 const router = Router();
 
@@ -67,7 +70,7 @@ router.get('/:entity', async (req: Request, res: Response) => {
       return res.status(400).json({ error: `Unknown entity: ${entity}` });
     }
 
-    const records = await Model.find({ created_by: req.user!.id });
+    const records = await Model.find({ created_by: req.user._id });
 
     res.json(records);
   } catch (err: any) {
@@ -137,11 +140,9 @@ router.get('/:entity/:id', async (req: Request, res: Response) => {
 router.post('/:entity', async (req: Request, res: Response) => {
   try {
     const entityParam = req.params.entity;
-
     const entity = Array.isArray(entityParam) ? entityParam[0] : entityParam;
 
     const modelKey = entity.toLowerCase();
-
     const Model = modelMap[modelKey];
 
     if (!Model) {
@@ -150,21 +151,94 @@ router.post('/:entity', async (req: Request, res: Response) => {
       });
     }
 
+    const user = req.user;
+    const userId = user._id;
+
+    const tier = user.subscription_tier;
+    const limits = SUBSCRIPTION_LIMITS[tier];
+
+    // unlimited plan
+    if (limits.unlimited) {
+      const record = await Model.create({
+        ...sanitizeInput(req.body),
+        created_by: userId,
+      });
+
+      return res.status(201).json(record);
+    }
+
+    const entityToLimitKey: Record<string, keyof typeof limits> = {
+      task: 'tasks',
+      goal: 'goals',
+      event: 'events',
+      project: 'projects',
+      asset: 'assets',
+      bankaccount: 'bankAccounts',
+      workout: 'workouts',
+      calendarentry: 'calendarEntries',
+    };
+
+    const limitKey = entityToLimitKey[modelKey] as UsageKey;
+
+    if (!limitKey) {
+      return res.status(400).json({
+        error: `Unknown limit key for ${modelKey}`,
+      });
+    }
+
+    const limit = limits[limitKey];
+
+    // no limit
+    if (typeof limit !== 'number') {
+      const record = await Model.create({
+        ...sanitizeInput(req.body),
+        created_by: userId,
+      });
+
+      return res.status(201).json(record);
+    }
+
+    const usage = await UserUsage.findOne({ user_id: userId });
+
+    if (!usage) {
+      return res.status(404).json({
+        error: 'Usage not found',
+      });
+    }
+
+    const used = usage[limitKey] ?? 0;
+
+    if (used >= limit) {
+      console.log('reached limit');
+      return res.status(403).json({
+        error: `Limit reached for ${modelKey}. Upgrade your plan.`,
+      });
+    }
+
     const record = await Model.create({
       ...sanitizeInput(req.body),
-      created_by: req.user!.id,
+      created_by: userId,
     });
 
-    res.status(201).json(record);
+    await UserUsage.updateOne({ user_id: userId }, { $inc: { [limitKey]: 1 } });
+
+    return res.status(201).json(record);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 });
 
 router.put('/:entity/:id', async (req: Request, res: Response) => {
   try {
     const entityParam = req.params.entity;
-    const id = req.params.id;
+    const idParam = req.params.id;
+    const id = Array.isArray(idParam) ? idParam[0] : idParam;
+
+    if (!Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid ObjectId',
+      });
+    }
 
     const entity = Array.isArray(entityParam) ? entityParam[0] : entityParam;
 
@@ -178,22 +252,19 @@ router.put('/:entity/:id', async (req: Request, res: Response) => {
       });
     }
 
-    const record = await Model.findOne({ id });
+    const record = await Model.findOne({ _id: id });
 
     if (!record) {
-      return res.status(404).json({ error: 'Not found' });
-    }
-
-    if ((record as any).created_by !== req.user!.id) {
-      return res.status(403).json({ error: 'Forbidden' });
+      return res.status(404).json({
+        error: 'Not found or forbidden',
+      });
     }
 
     const updated = await Model.findOneAndUpdate(
-      { id },
+      { _id: id },
       {
         $set: {
           ...sanitizeInput(req.body),
-          updated_at: new Date().toISOString(),
         },
       },
       { new: true },
@@ -208,10 +279,18 @@ router.put('/:entity/:id', async (req: Request, res: Response) => {
 router.delete('/:entity/:id', async (req: Request, res: Response) => {
   try {
     const entityParam = req.params.entity;
-    const id = req.params.id;
+    const idParam = req.params.id;
+    const userId = req.user._id;
+
+    if (!Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        error: 'Invalid user id (not ObjectId)',
+      });
+    }
+
+    const id = Array.isArray(idParam) ? idParam[0] : idParam;
 
     const entity = Array.isArray(entityParam) ? entityParam[0] : entityParam;
-
     const modelKey = entity.toLowerCase();
 
     const Model = modelMap[modelKey];
@@ -222,21 +301,44 @@ router.delete('/:entity/:id', async (req: Request, res: Response) => {
       });
     }
 
-    const record = await Model.findOne({ id });
+    const record = await Model.findOneAndDelete({
+      _id: id,
+      created_by: userId,
+    });
 
     if (!record) {
-      return res.status(404).json({ error: 'Not found' });
+      return res.status(404).json({
+        error: 'Not found or forbidden',
+      });
     }
 
-    if ((record as any).created_by !== req.user!.id) {
-      return res.status(403).json({ error: 'Forbidden' });
+    const entityToLimitKey: Record<string, string> = {
+      task: 'tasks',
+      goal: 'goals',
+      event: 'events',
+      project: 'projects',
+      asset: 'assets',
+      bankaccount: 'bankAccounts',
+      workout: 'workouts',
+      calendarentry: 'calendarEntries',
+    };
+
+    const limitKey = entityToLimitKey[modelKey];
+
+    if (limitKey) {
+      await UserUsage.updateOne(
+        { user_id: userId },
+        {
+          $inc: {
+            [limitKey]: -1,
+          },
+        },
+      );
     }
 
-    await Model.deleteOne({ id });
-
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 });
 

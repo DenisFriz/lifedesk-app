@@ -18,13 +18,25 @@ import {
   Camera,
   Trash2,
   AlertTriangle,
-  ShieldOff
+  ShieldOff,
+  MailCheck
 } from 'lucide-react'
 import DeleteAccountDialog from '@/components/account/DeleteAccountDialog'
 import { format } from 'date-fns'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useSubscription } from '@/hooks/useSubscription'
 import { Helmet } from 'react-helmet-async'
+import { useSound } from '@/contexts/SoundContext'
+import { Switch } from '@/components/ui/switch'
+import EmailVerificationModal from '@/components/EmailVerificationModal'
+
+const tierConfig = {
+  free: { icon: Zap, color: 'bg-slate-100 text-slate-700', label: 'Free' },
+  starter: { icon: Zap, color: 'bg-blue-100 text-blue-700', label: 'Starter' },
+  plus: { icon: Zap, color: 'bg-indigo-100 text-indigo-700', label: 'Plus' },
+  pro: { icon: Crown, color: 'bg-purple-100 text-purple-700', label: 'Pro' },
+  enterprise: { icon: Crown, color: 'bg-amber-100 text-amber-700', label: 'Enterprise' }
+}
 
 export default function Profile() {
   const queryClient = useQueryClient()
@@ -32,9 +44,15 @@ export default function Profile() {
   const [fullName, setFullName] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false)
+  const [verifyModalOpen, setVerifyModalOpen] = useState(false)
+  const [verifying, setVerifying] = useState(false)
+
   const [searchParams] = useSearchParams()
   const checkoutStatus = searchParams.get('checkout')
   const { planName, subscription } = useSubscription()
+  const navigate = useNavigate()
+
+  const { soundEnabled, setSoundEnabled } = useSound()
 
   const { data: user, isLoading } = useQuery({
     queryKey: ['currentUser'],
@@ -61,8 +79,13 @@ export default function Profile() {
     }
   })
 
-  const handleLogout = () => {
-    backend.auth.logout()
+  const handleLogout = async () => {
+    try {
+      await backend.auth.logout()
+      navigate('/login')
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   const handleSave = () => {
@@ -96,12 +119,29 @@ export default function Profile() {
     queryClient.invalidateQueries({ queryKey: ['currentUser'] })
   }
 
-  const tierConfig = {
-    free: { icon: Zap, color: 'bg-slate-100 text-slate-700', label: 'Free' },
-    starter: { icon: Zap, color: 'bg-blue-100 text-blue-700', label: 'Starter' },
-    plus: { icon: Zap, color: 'bg-indigo-100 text-indigo-700', label: 'Plus' },
-    pro: { icon: Crown, color: 'bg-purple-100 text-purple-700', label: 'Pro' },
-    enterprise: { icon: Crown, color: 'bg-amber-100 text-amber-700', label: 'Enterprise' }
+  const handleSendVerificationCode = async () => {
+    try {
+      await backend.email.sendEmailVerificationCode()
+      setVerifyModalOpen(true)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const handleVerifyCode = async (code: string) => {
+    try {
+      setVerifying(true)
+
+      await backend.email.verifyEmailCode(code)
+
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+
+      setVerifyModalOpen(false)
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setVerifying(false)
+    }
   }
 
   const currentTier = tierConfig[user?.subscription_tier || 'free'] ?? tierConfig.free
@@ -119,6 +159,23 @@ export default function Profile() {
     queryFn: () =>
       backend.entities.CommunityComment.filter({ created_by: user.email }, '-created_date'),
     enabled: !!user?.email
+  })
+
+  const [selectedPlan, setSelectedPlan] = useState<'free' | 'plus' | 'pro'>('free')
+
+  useEffect(() => {
+    if (user?.subscription_tier) {
+      setSelectedPlan(user.subscription_tier)
+    }
+  }, [user?.subscription_tier])
+
+  const updateSubscription = useMutation({
+    mutationFn: (subscription: 'free' | 'plus' | 'pro') =>
+      backend.auth.changeSubscription(subscription),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['usage'] })
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+    }
   })
 
   const [ideasPage, setIdeasPage] = useState(1)
@@ -150,13 +207,19 @@ export default function Profile() {
       <Helmet>
         <title>Profile</title>
       </Helmet>
+      <EmailVerificationModal
+        open={verifyModalOpen}
+        onClose={() => setVerifyModalOpen(false)}
+        loading={verifying}
+        onSubmit={handleVerifyCode}
+      />
+
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="mb-8">
             <h1 className="profile-page-title text-4xl font-bold text-slate-900 mb-2">Profile</h1>
             <p className="text-slate-600">Manage your account settings</p>
           </div>
-
           <div className="space-y-6">
             {/* Account Info */}
             <div className="bg-white rounded-xl border border-slate-200 p-6">
@@ -239,6 +302,39 @@ export default function Profile() {
                     </div>
                   )}
                 </div>
+                <div>
+                  <Label>Email Verification</Label>
+                  <div className="mt-1 flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                          user?.email_verified
+                            ? 'bg-green-100 text-green-600'
+                            : 'bg-amber-100 text-amber-600'
+                        }`}
+                      >
+                        <MailCheck className="w-4 h-4" />
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">
+                          {user?.email_verified ? 'Email verified' : 'Email not verified'}
+                        </p>
+
+                        <p className="text-xs text-slate-500">
+                          {user?.email_verified
+                            ? 'Your email address is confirmed'
+                            : 'Please confirm your email address'}
+                        </p>
+                      </div>
+                    </div>
+                    {!user?.email_verified && (
+                      <Button size="sm" onClick={handleSendVerificationCode}>
+                        Verify Email
+                      </Button>
+                    )}
+                  </div>
+                </div>
                 {user?.role === 'admin' && (
                   <div>
                     <Label>Role</Label>
@@ -254,6 +350,34 @@ export default function Profile() {
 
             {/* Subscription */}
             <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <p>For testing purpose only</p>
+              <div className="mt-4 flex items-center gap-2">
+                {(['free', 'plus', 'pro'] as const).map(plan => (
+                  <button
+                    key={plan}
+                    onClick={() => setSelectedPlan(plan)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition
+        ${
+          selectedPlan === plan
+            ? 'bg-indigo-600 text-white border-indigo-600'
+            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+        }
+      `}
+                  >
+                    {plan.charAt(0).toUpperCase() + plan.slice(1)}
+                  </button>
+                ))}
+
+                {/* BUTTON */}
+                <button
+                  onClick={() => updateSubscription.mutate(selectedPlan)}
+                  disabled={updateSubscription.isPending || selectedPlan === planName}
+                  className="ml-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium disabled:opacity-50"
+                >
+                  {updateSubscription.isPending ? 'Updating...' : 'Update plan'}
+                </button>
+              </div>
+              <div className="w-full h-1 bg-red-600 mb-5 mt-2"></div>
               <h2 className="profile-subscription-title text-lg font-semibold text-slate-900 mb-4">
                 Subscription
               </h2>
@@ -313,6 +437,17 @@ export default function Profile() {
               <h2 className="profile-actions-title text-lg font-semibold text-slate-900 mb-4">
                 Actions
               </h2>
+
+              <div className="mt-3 mb-3 flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-900">Sound</p>
+
+                  <p className="text-xs text-slate-500">Enable interface sounds</p>
+                </div>
+
+                <Switch checked={soundEnabled} onCheckedChange={setSoundEnabled} />
+              </div>
+
               <Button
                 variant="outline"
                 onClick={handleLogout}

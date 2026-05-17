@@ -37,11 +37,11 @@ export default [
     },
     rules: {
       'no-unused-vars': 'off',
-      'react/jsx-uses-vars': 'error',
-      'react/jsx-uses-react': 'error',
+
       'unused-imports/no-unused-imports': 'error',
+
       'unused-imports/no-unused-vars': [
-        'warn',
+        'error',
         {
           vars: 'all',
           varsIgnorePattern: '^_',
@@ -49,10 +49,19 @@ export default [
           argsIgnorePattern: '^_'
         }
       ],
+
+      // React safety
+      'react/jsx-uses-vars': 'error',
+      'react/jsx-uses-react': 'error',
       'react/prop-types': 'off',
       'react/react-in-jsx-scope': 'off',
-      'react/no-unknown-property': ['error', { ignore: ['cmdk-input-wrapper', 'toast-close'] }],
-      'react-hooks/rules-of-hooks': 'error'
+
+      // hooks safety
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+
+      // optional strictness
+      'no-unused-expressions': 'error'
     }
   },
   prettier

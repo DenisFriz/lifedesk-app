@@ -1,6 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
-import { backend } from '@/api/backend'
-import { useQuery } from '@tanstack/react-query'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import TaskTable from '@/components/sections/TaskTable'
 import { useLayout } from '@/Layout'
@@ -18,20 +16,73 @@ type FilterType = 'all' | 'important' | 'category' | 'business'
 
 type TabConfig = {
   value: string
+  label: string
   filterType: FilterType
   category?: string
+  section?: string
 }
 
 const tabs: TabConfig[] = [
-  { value: 'all', filterType: 'all' },
-  { value: 'important', filterType: 'important' },
-  { value: 'finances', filterType: 'category', category: 'finances' },
-  { value: 'assets', filterType: 'category', category: 'assets' },
-  { value: 'health', filterType: 'category', category: 'health_body' },
-  { value: 'fitness', filterType: 'category', category: 'fitness' },
-  { value: 'hobbies', filterType: 'category', category: 'hobbies' },
-  { value: 'learning', filterType: 'category', category: 'learning' },
-  { value: 'relationships', filterType: 'category', category: 'relationships' }
+  {
+    value: 'all',
+    label: 'All Goals',
+    filterType: 'all'
+  },
+  {
+    value: 'important',
+    label: 'Important',
+    filterType: 'important'
+  },
+
+  {
+    value: 'finances',
+    label: 'Finance',
+    filterType: 'category',
+    category: 'finances',
+    section: 'Private > Finance'
+  },
+  {
+    value: 'assets',
+    label: 'Assets',
+    filterType: 'category',
+    category: 'assets',
+    section: 'Private > Assets'
+  },
+  {
+    value: 'health',
+    label: 'Health',
+    filterType: 'category',
+    category: 'health_body',
+    section: 'Private > Health'
+  },
+  {
+    value: 'fitness',
+    label: 'Fitness',
+    filterType: 'category',
+    category: 'fitness',
+    section: 'Private > Fitness'
+  },
+  {
+    value: 'hobbies',
+    label: 'Hobbies',
+    filterType: 'category',
+    category: 'hobbies',
+    section: 'Private > Hobbies'
+  },
+  {
+    value: 'learning',
+    label: 'Learning',
+    filterType: 'category',
+    category: 'learning',
+    section: 'Private > Learning & Development'
+  },
+  {
+    value: 'relationships',
+    label: 'Relationships',
+    filterType: 'category',
+    category: 'relationships',
+    section: 'Private > Relationships'
+  }
 ]
 
 export default function MainTasks() {
@@ -46,109 +97,46 @@ export default function MainTasks() {
   const tabsRef = useRef(null)
   const headerRef = useRef(null)
 
-  const { data: businesses = [] } = useQuery({
-    queryKey: ['businesses'],
-    queryFn: () => backend.entities.Business.filter({ is_deleted: false }, 'order')
-  })
-
-  const getOrderedCategories = () => {
-    const categories = [
-      { key: 'finances', name: 'Finance', section: 'Private > Finance' },
-      { key: 'assets', name: 'Assets', section: 'Private > Assets' },
-      { key: 'health', name: 'Health', section: 'Private > Health' },
-      { key: 'fitness', name: 'Fitness', section: 'Private > Fitness' },
-      { key: 'hobbies', name: 'Hobbies', section: 'Private > Hobbies' },
-      { key: 'learning', name: 'Learning', section: 'Private > Learning & Development' },
-      { key: 'relationships', name: 'Relationships', section: 'Private > Relationships' }
-    ]
-
+  const getOrderedTabs = useCallback(() => {
     const saved = localStorage.getItem('subsectionOrder')
     const subsectionOrder = saved ? JSON.parse(saved) : {}
+
     const privateOrder = subsectionOrder['Private'] || []
 
-    if (privateOrder.length === 0) return categories
+    return [...tabs]
+      .sort((a, b) => {
+        if (!a.section || !b.section) return 0
 
-    return [...categories].sort((a, b) => {
-      const nameA = a.section.replace('Private > ', '')
-      const nameB = b.section.replace('Private > ', '')
-      const indexA = privateOrder.indexOf(nameA)
-      const indexB = privateOrder.indexOf(nameB)
+        const nameA = a.section.replace('Private > ', '')
+        const nameB = b.section.replace('Private > ', '')
 
-      if (indexA === -1 && indexB === -1) return 0
-      if (indexA === -1) return 1
-      if (indexB === -1) return -1
+        const indexA = privateOrder.indexOf(nameA)
+        const indexB = privateOrder.indexOf(nameB)
 
-      return indexA - indexB
-    })
-  }
+        if (indexA === -1 && indexB === -1) return 0
+        if (indexA === -1) return 1
+        if (indexB === -1) return -1
 
-  const getOrderedBusinesses = () => {
-    const saved = localStorage.getItem('subsectionOrder')
-    const subsectionOrder = saved ? JSON.parse(saved) : {}
-    const businessOrder = subsectionOrder['Business'] || []
-
-    if (businessOrder.length === 0) return businesses
-
-    return [...businesses].sort((a, b) => {
-      const indexA = businessOrder.indexOf(a.name)
-      const indexB = businessOrder.indexOf(b.name)
-
-      if (indexA === -1 && indexB === -1) return 0
-      if (indexA === -1) return 1
-      if (indexB === -1) return -1
-
-      return indexA - indexB
-    })
-  }
-
-  const orderedCategories = getOrderedCategories()
-  const orderedBusinesses = getOrderedBusinesses()
-
-  // Determine order of Business vs Private based on sidebar section order
-  const getSectionOrder = () => {
-    const saved = localStorage.getItem('sectionOrder')
-    return saved ? JSON.parse(saved) : []
-  }
-
-  const sectionOrder = getSectionOrder()
-  const businessIndex = sectionOrder.indexOf('Business')
-  const privateIndex = sectionOrder.indexOf('Private')
-  const businessBeforePrivate =
-    businessIndex !== -1 && privateIndex !== -1 && businessIndex < privateIndex
-
-  const privateTabs = orderedCategories.map(cat => ({
-    value: cat.key,
-    label: cat.name,
-    section: cat.section
-  }))
-  const businessTabs = orderedBusinesses.map(business => ({
-    value: `business-${business.id}`,
-    label: business.name,
-    section: `Business > ${business.name}`
-  }))
-
-  const allTabs = useMemo(() => {
-    return [
-      { value: 'all', label: 'All Tasks' },
-      { value: 'important', label: 'Important' },
-      ...(businessBeforePrivate
-        ? [...businessTabs, ...privateTabs]
-        : [...privateTabs, ...businessTabs])
-    ].filter(tab => !('section' in tab) || !isHidden((tab as any).section))
-  }, [businesses.length])
+        return indexA - indexB
+      })
+      .filter(tab => !tab.section || !isHidden(tab.section))
+  }, [isHidden])
 
   useEffect(() => {
     const calculateVisibleTabs = () => {
       // On mobile/tablet, show first 12 tabs (roughly 3 rows), rest in dropdown
       const maxVisible = window.innerWidth < 640 ? 6 : window.innerWidth < 1024 ? 9 : 12
-      setVisibleTabs(allTabs.slice(0, maxVisible))
-      setOverflowTabs(allTabs.slice(maxVisible))
+
+      const orderedTabs = getOrderedTabs()
+
+      setVisibleTabs(orderedTabs.slice(0, maxVisible))
+      setOverflowTabs(orderedTabs.slice(maxVisible))
     }
 
     calculateVisibleTabs()
     window.addEventListener('resize', calculateVisibleTabs)
     return () => window.removeEventListener('resize', calculateVisibleTabs)
-  }, [allTabs])
+  }, [getOrderedTabs])
 
   useEffect(() => {
     if (!headerRef.current) return
@@ -266,20 +254,6 @@ export default function MainTasks() {
                   </TabsContent>
                 )
             )}
-
-            {orderedBusinesses.map(business => (
-              <TabsContent
-                key={business.id}
-                value={`business-${business.id}`}
-                className={`all-tasks-content-business-${business.id}`}
-              >
-                <TaskTable
-                  filterType="business"
-                  businessId={business.id}
-                  isActive={activeTab === `business-${business.id}`}
-                />
-              </TabsContent>
-            ))}
           </Tabs>
         </div>
       </div>

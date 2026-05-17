@@ -2,7 +2,6 @@ import type { Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import { validateUrl } from '@/utils/validateUrl.js';
 
-import { User } from '@/models/index.js';
 import { MedicalDocument } from '@/models/index.js';
 import { Problem } from '@/models/index.js';
 import { Workout } from '@/models/index.js';

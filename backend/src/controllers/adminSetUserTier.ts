@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { User } from '@/models/index.js';
 
-type SubscriptionTier = 'free' | 'plus' | 'pro' | 'enterprise';
+type SubscriptionTier = 'free' | 'plus' | 'pro';
 
 type AdminSetUserTierBody = {
   user_email: string;
@@ -10,7 +10,7 @@ type AdminSetUserTierBody = {
 };
 
 export async function adminSetUserTier(
-  req: Request<{}, {}, AdminSetUserTierBody>,
+  req: Request<unknown, unknown, AdminSetUserTierBody>,
   res: Response,
 ) {
   try {
@@ -32,7 +32,6 @@ export async function adminSetUserTier(
 
     if (terms_accepted_at) {
       user.terms_accepted_at = terms_accepted_at;
-      user.terms_accepted_version = '1.0';
     }
 
     await user.save();

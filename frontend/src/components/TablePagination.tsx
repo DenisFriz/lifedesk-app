@@ -34,9 +34,11 @@ export function TablePagination({
           </SelectTrigger>
 
           <SelectContent>
-            <SelectItem value="20">20</SelectItem>
-            <SelectItem value="50">50</SelectItem>
-            <SelectItem value="100">100</SelectItem>
+            {[20, 50, 100].map(value => (
+              <SelectItem key={value} value={value.toString()}>
+                {value}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 

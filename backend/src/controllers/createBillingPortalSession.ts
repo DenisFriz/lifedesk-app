@@ -9,7 +9,7 @@ type CreateBillingPortalSessionBody = {
 };
 
 export async function createBillingPortalSession(
-  req: Request<{}, {}, CreateBillingPortalSessionBody>,
+  req: Request<unknown, unknown, CreateBillingPortalSessionBody>,
   res: Response,
 ) {
   try {

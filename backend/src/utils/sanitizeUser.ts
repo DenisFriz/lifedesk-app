@@ -1,4 +1,4 @@
-export const sanitizeUser = (user: any) => {
+export const sanitizeUser = (user: Record<string, any>) => {
   const userObj =
     typeof user.toObject === 'function' ? user.toObject() : { ...user };
 

@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/AuthContext'
 import { Helmet } from 'react-helmet-async'
+import GoogleAuth from '@/components/GoogleAuth'
 
 type LoginResponse = {
-  token: string
+  accessToken: string
 }
 
 export default function Login() {
   const navigate = useNavigate()
-  /*  const [searchParams] = useSearchParams() */
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -29,13 +29,34 @@ export default function Login() {
         email,
         password
       })
-      setToken(data.token)
+      setToken(data.accessToken)
 
-      await login(data.token)
+      await login(data.accessToken)
 
       navigate('/Home', { replace: true })
     } catch (err) {
       setError(err.message || 'Login failed')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = async (credentialResponse: any) => {
+    try {
+      setError('')
+      setIsLoading(true)
+
+      const data = await apiFetch<LoginResponse>('POST', '/auth/google', {
+        credential: credentialResponse.credential
+      })
+
+      setToken(data.accessToken)
+
+      await login(data.accessToken)
+
+      navigate('/Home', { replace: true })
+    } catch (err: any) {
+      setError(err.message || 'Google login failed')
     } finally {
       setIsLoading(false)
     }
@@ -81,6 +102,12 @@ export default function Login() {
 
                 {/* Form */}
                 <div className="w-full">
+                  <GoogleAuth
+                    onSuccess={handleGoogleLogin}
+                    onError={() => setError('Google login failed')}
+                    disabled={isLoading}
+                  />
+
                   <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
                     {/* Error */}
                     {error && (

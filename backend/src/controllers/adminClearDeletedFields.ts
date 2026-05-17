@@ -6,7 +6,7 @@ type AdminClearDeletedFieldsBody = {
 };
 
 export async function adminClearDeletedFields(
-  req: Request<{}, {}, AdminClearDeletedFieldsBody>,
+  req: Request<unknown, unknown, AdminClearDeletedFieldsBody>,
   res: Response,
 ) {
   try {

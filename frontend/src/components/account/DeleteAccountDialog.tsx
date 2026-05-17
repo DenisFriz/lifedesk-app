@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { backend } from '@/api/backend'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, Loader2, X } from 'lucide-react'
+import { useGoogleLogin } from '@react-oauth/google'
 
 type DeleteAccountResponse = {
   data: any
@@ -9,7 +10,7 @@ type DeleteAccountResponse = {
   error?: string
 }
 
-type Step = 'confirm' | 'password' | 'loading' | 'error'
+type Step = 'confirm' | 'password' | 'loading' | 'error' | 'local' | 'google'
 
 interface DeleteAccountDialogProps {
   isOpen: boolean
@@ -28,6 +29,31 @@ export default function DeleteAccountDialog({
   const [password, setPassword] = useState<string>('')
   const [error, setError] = useState<string>('')
   const [isDeleting, setIsDeleting] = useState<boolean>(false)
+  const [provider, setProvider] = useState<'local' | 'google' | null>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    const load = async () => {
+      try {
+        const res = await backend.auth.deleteRequest()
+
+        setProvider(res.provider)
+
+        if (res.requiresReauth && res.provider === 'google') {
+          setStep('google')
+        }
+
+        if (res.requiresReauth && res.provider === 'local') {
+          setStep('password')
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    load()
+  }, [isOpen])
 
   const handleClose = (): void => {
     setStep('confirm')
@@ -37,8 +63,17 @@ export default function DeleteAccountDialog({
   }
 
   const handleConfirmDelete = (): void => {
-    setStep('password')
-    setError('')
+    if (provider === 'google') {
+      setStep('google')
+      return
+    }
+
+    if (provider === 'local') {
+      setStep('password')
+      return
+    }
+
+    setStep('error')
   }
 
   const handleDeleteAccount = async (): Promise<void> => {
@@ -51,13 +86,19 @@ export default function DeleteAccountDialog({
     setError('')
 
     try {
-      // Call backend function with password for validation
+      const response = await backend.auth.reauthPassword(password)
+
+      if (!response.success) {
+        setError('Reauthentication failed')
+        return
+      }
+
       const res = await backend.functions.invoke<DeleteAccountResponse>('deleteAccount', {
-        password
+        reauthToken: response.reauthToken
       })
-      if (res.data?.success) {
+
+      if (res.success) {
         setStep('loading')
-        // Give user a moment to see success message, then logout
         setTimeout(() => {
           backend.auth.logout()
         }, 1500)
@@ -78,6 +119,50 @@ export default function DeleteAccountDialog({
       setIsDeleting(false)
     }
   }
+
+  const googleReauth = useGoogleLogin({
+    scope: 'openid email profile',
+    prompt: 'select_account',
+
+    onSuccess: async tokenResponse => {
+      try {
+        const accessToken = tokenResponse.access_token
+
+        if (!accessToken) {
+          setError('Google access token missing')
+          return
+        }
+
+        const response = await backend.auth.googleReauth(accessToken)
+
+        if (!response.success) {
+          setError('Reauthentication failed')
+          return
+        }
+
+        const res = await backend.functions.invoke<DeleteAccountResponse>('deleteAccount', {
+          reauthToken: response.reauthToken
+        })
+
+        if (res.success) {
+          setStep('loading')
+          setTimeout(() => {
+            backend.auth.logout()
+          }, 1500)
+        } else {
+          setError(res.data?.error || 'Failed to delete account. Please try again.')
+          setIsDeleting(false)
+        }
+      } catch (e) {
+        console.error(e)
+        setError('Google reauthentication failed')
+      }
+    },
+
+    onError: () => {
+      setError('Google reauthentication failed')
+    }
+  })
 
   if (!isOpen) return null
 
@@ -198,6 +283,45 @@ export default function DeleteAccountDialog({
                 ) : (
                   'Confirm & Delete'
                 )}
+              </Button>
+            </div>
+          </>
+        )}
+
+        {/* Google Confirmation Step */}
+        {step === 'google' && (
+          <>
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-blue-600" />
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Confirm with Google</h3>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  Re-authentication required for Google accounts
+                </p>
+              </div>
+
+              <button onClick={handleClose} className="ml-auto text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5 text-sm text-blue-900">
+              To delete your account, please sign in again with Google.
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={handleClose}>
+                Cancel
+              </Button>
+
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => googleReauth()}
+              >
+                Continue with Google
               </Button>
             </div>
           </>

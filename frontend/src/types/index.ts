@@ -5,10 +5,11 @@ export interface User {
   email: string
   full_name: string
   profile_image?: string
-  subscription_tier: 'free' | 'plus' | 'pro' | 'enterprise'
+  subscription_tier: 'free' | 'plus' | 'pro'
   role: string
   is_deleted?: boolean
   terms_accepted_at?: string
+  email_verified: boolean
 }
 
 export interface AuthError {
@@ -21,7 +22,7 @@ export interface AuthContextValue {
   isAuthenticated: boolean
   isLoadingAuth: boolean
   authError: AuthError | null
-  logout: (shouldRedirect?: boolean) => void
+  logout: () => void
   login: (token: string) => Promise<void>
   checkAppState: () => Promise<void>
 }
@@ -31,7 +32,6 @@ export interface AuthContextValue {
 export interface LayoutContextValue {
   hiddenSections: string[]
   isHidden: (name: string) => boolean
-  playAudio: (soundName: string) => void
 }
 
 export interface NavItem {

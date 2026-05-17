@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react'
 import { backend } from '@/api/backend'
+import { setToken } from '@/api/apiClient'
 import type { User, AuthContextValue, AuthError } from '@/types'
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -68,20 +69,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }
 
-  const logout = (shouldRedirect = true) => {
+  const logout = () => {
     setUser(null)
     setIsAuthenticated(false)
-
-    if (shouldRedirect) {
-      backend.auth.logout()
-    } else {
-      backend.auth.logout()
-    }
+    backend.auth.logout()
   }
 
   const login = async (token: string) => {
-    await backend.auth.redirectToLogin(token) // or localStorage
-    await checkAppState() // re-sync auth state
+    setToken(token)
+    await checkAppState()
   }
 
   return (

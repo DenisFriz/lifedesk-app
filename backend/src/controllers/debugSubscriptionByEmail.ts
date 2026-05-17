@@ -9,7 +9,7 @@ type DebugSubscriptionByEmailBody = {
 };
 
 export async function debugSubscriptionByEmail(
-  req: Request<{}, {}, DebugSubscriptionByEmailBody>,
+  req: Request<unknown, unknown, DebugSubscriptionByEmailBody>,
   res: Response,
 ) {
   try {

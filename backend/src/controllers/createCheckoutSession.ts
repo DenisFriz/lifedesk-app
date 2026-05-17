@@ -23,7 +23,7 @@ type CreateCheckoutSessionBody = {
 };
 
 export async function createCheckoutSession(
-  req: Request<{}, {}, CreateCheckoutSessionBody>,
+  req: Request<unknown, unknown, CreateCheckoutSessionBody>,
   res: Response,
 ) {
   try {
@@ -67,7 +67,6 @@ export async function createCheckoutSession(
           if (activeSubs.data.length > 0) {
             stripeSubscriptionId = activeSubs.data[0].id;
             const priceOnSub = activeSubs.data[0].items?.data?.[0]?.price?.id;
-            const plusPriceId = priceIdMap.plus;
             const proPriceId = priceIdMap.pro;
             let currentPlanName = 'plus';
             if (priceOnSub === proPriceId) currentPlanName = 'pro';

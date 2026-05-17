@@ -1,0 +1,85 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email Verification</title>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f6f7f9;
+        margin: 0;
+        padding: 0;
+      }
+
+      .code-box {
+        font-size: 34px;
+        font-weight: bold;
+        letter-spacing: 10px;
+        background: #f3f4f6;
+        padding: 20px 30px;
+        border-radius: 8px;
+        display: inline-block;
+        margin: 20px 0;
+        color: #111827;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 40px;
+      }
+
+      .muted {
+        color: #6b7280;
+        font-size: 14px;
+      }
+
+      .title {
+        font-size: 20px;
+        margin-bottom: 10px;
+        color: #111827;
+      }
+
+      .text {
+        font-size: 16px;
+        color: #111827;
+        line-height: 1.5;
+      }
+
+      .footer {
+        margin-top: 30px;
+        font-size: 12px;
+        color: #9ca3af;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="title">Verify your email</div>
+
+      <p class="text">Hey {{NAME}},</p>
+
+      <p class="text">
+        We received a request to verify your email address. Use the code below
+        to complete verification:
+      </p>
+
+      <!-- CODE BLOCK -->
+      <div style="text-align: center">
+        <div class="code-box">{{CODE}}</div>
+      </div>
+
+      <p class="text">This code is valid for <b>10 minutes</b>.</p>
+
+      <p class="muted">
+        If you didn’t request this, you can safely ignore this email.
+      </p>
+
+      <div class="footer">The LifeDesk Team</div>
+    </div>
+  </body>
+</html>

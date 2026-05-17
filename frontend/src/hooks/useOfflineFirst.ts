@@ -31,7 +31,11 @@ export async function offlineCreate<T extends Record<string, unknown>>(
   if (navigator.onLine) {
     const serverRecord = await entity.create(data)
     if (serverRecord) {
-      await (db as any)[storeName].put(serverRecord)
+      try {
+        await (db as any)[storeName].put(serverRecord)
+      } catch {
+        // local cache write failure must not block mutation success
+      }
     }
     return serverRecord
   }

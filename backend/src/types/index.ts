@@ -1,3 +1,5 @@
+import { Types } from 'mongoose';
+
 export interface IPlaidConnection {
   item_id: string;
   access_token: string;
@@ -6,22 +8,25 @@ export interface IPlaidConnection {
 }
 
 export interface IUser {
-  _id?: any;
+  _id: Types.ObjectId;
   id: string;
   email: string;
-  passwordHash: string;
+  passwordHash: string | null;
   full_name: string;
   role: 'user' | 'admin';
-  subscription_tier: 'free' | 'plus' | 'pro' | 'enterprise';
+  subscription_tier: 'free' | 'plus' | 'pro';
   storage_used: number;
   image_count: number;
+  auth_provider: 'local' | 'google';
+  google_id: string | null;
+  google_avatar_url: string | null;
+  email_verified: boolean;
+  emailVerificationCode: string | null;
+  emailVerificationExpires: Date | null;
   plaid_connections: IPlaidConnection[];
   terms_accepted_at: string | null;
-  terms_accepted_version: string | null;
   is_deleted: boolean;
   deleted_at: string | null;
-  created_at: string;
-  updated_at: string;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
 }
@@ -99,9 +104,8 @@ export interface IUserPlan {
 }
 
 export interface ITask {
-  _id?: any;
-  id: string;
-  created_by: string;
+  _id?: Types.ObjectId;
+  created_by: Types.ObjectId;
   title: string;
   description: string | null;
   category: string | null;
@@ -132,9 +136,8 @@ export interface ITask {
 }
 
 export interface IGoal {
-  _id?: any;
-  id: string;
-  created_by: string;
+  _id?: Types.ObjectId;
+  created_by: Types.ObjectId;
   title: string;
   description: string | null;
   category: string | null;
@@ -164,7 +167,7 @@ export interface IGoal {
 }
 
 export interface IProblem {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   title: string;
@@ -185,7 +188,7 @@ export interface IProblem {
 }
 
 export interface IEvent {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   title: string;
@@ -217,7 +220,7 @@ export interface IEvent {
 }
 
 export interface IBusiness {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   name: string;
@@ -233,7 +236,7 @@ export interface IBusiness {
 }
 
 export interface IProject {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   name: string;
@@ -253,7 +256,7 @@ export interface IProject {
 }
 
 export interface IClient {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   name: string;
@@ -272,7 +275,7 @@ export interface IClient {
 }
 
 export interface IHobby {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   title: string;
@@ -293,7 +296,7 @@ export interface IHobby {
 }
 
 export interface ILearningItem {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   title: string;
@@ -341,7 +344,7 @@ export interface ICommunityIdea {
 }
 
 export interface IContact {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   name: string;
@@ -364,7 +367,7 @@ export interface IContact {
 }
 
 export interface INote {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   title: string;
@@ -378,7 +381,7 @@ export interface INote {
 }
 
 export interface IWorkoutPlan {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   name: string;
@@ -395,7 +398,7 @@ export interface IWorkoutPlan {
 }
 
 export interface IOfflineAccount {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   name: string;
@@ -410,7 +413,7 @@ export interface IOfflineAccount {
 }
 
 export interface IMarketingStrategy {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   name: string;
@@ -435,7 +438,7 @@ export interface IMarketingStrategy {
 }
 
 export interface IMarketingCampaign {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   name: string;
@@ -458,7 +461,7 @@ export interface IMarketingCampaign {
 }
 
 export interface IIdea {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   title: string;
@@ -476,7 +479,7 @@ export interface IIdea {
 }
 
 export interface IContentIdea {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   title: string;
@@ -498,7 +501,7 @@ export interface IContentIdea {
 }
 
 export interface ICommunityComment {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   idea_id: string | null;
@@ -509,7 +512,7 @@ export interface ICommunityComment {
 }
 
 export interface IIncome {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   amount: number | null;
@@ -525,7 +528,7 @@ export interface IIncome {
 }
 
 export interface IExpense {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   amount: number | null;
@@ -541,7 +544,7 @@ export interface IExpense {
 }
 
 export interface IRecurringIncome {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   title: string;
@@ -561,7 +564,7 @@ export interface IRecurringIncome {
 }
 
 export interface IRecurringExpense {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   title: string;
@@ -581,7 +584,7 @@ export interface IRecurringExpense {
 }
 
 export interface IBodyMeasurement {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   weight: number | null;
@@ -597,7 +600,7 @@ export interface IBodyMeasurement {
 }
 
 export interface IWorkout {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   type: string | null;
@@ -613,7 +616,7 @@ export interface IWorkout {
 }
 
 export interface IProgressPhoto {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   url: string | null;
@@ -627,7 +630,7 @@ export interface IProgressPhoto {
 }
 
 export interface IMedicalDocument {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   title: string | null;
@@ -644,7 +647,7 @@ export interface IMedicalDocument {
 }
 
 export interface ITangibleAsset {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   title: string;
@@ -662,7 +665,7 @@ export interface ITangibleAsset {
 }
 
 export interface IBankBalanceSnapshot {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   date: string | null;
@@ -677,7 +680,7 @@ export interface IBankBalanceSnapshot {
 }
 
 export interface ITimeEntry {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   created_by: string;
   project_id: string | null;
@@ -694,7 +697,7 @@ export interface ITimeEntry {
 }
 
 export interface ISubscription {
-  _id?: any;
+  _id?: Types.ObjectId;
   id: string;
   user_id: string;
   user_email: string;

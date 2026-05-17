@@ -1,11 +1,14 @@
 import mongoose, { Schema, Model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
 import { IGoal } from '@/types/index.js';
 
 const goalSchema = new Schema<IGoal>(
   {
-    id: { type: String, default: () => uuidv4(), unique: true, index: true },
-    created_by: { type: String, index: true, required: true },
+    created_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
     title: { type: String, required: true },
     description: { type: String, default: null },
     category: { type: String, default: null },
@@ -30,14 +33,8 @@ const goalSchema = new Schema<IGoal>(
     is_deleted: { type: Boolean, default: false },
     deleted_at: { type: String, default: null },
     deleted_by_process: { type: String, default: null },
-    created_at: { type: String, default: () => new Date().toISOString() },
-    updated_at: { type: String, default: () => new Date().toISOString() },
   },
-  { timestamps: false, versionKey: false },
+  { timestamps: true, versionKey: false },
 );
-
-goalSchema.pre<IGoal>('save', function (this: IGoal) {
-  this.updated_at = new Date().toISOString();
-});
 
 export const Goal: Model<IGoal> = mongoose.model<IGoal>('Goal', goalSchema);

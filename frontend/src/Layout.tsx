@@ -26,8 +26,6 @@ import LayoutContent from './layouts/default-layout'
 
 export const LayoutContext = createContext<LayoutContextValue | null>(null)
 
-const audioCache: Record<string, HTMLAudioElement> = {}
-
 export const useLayout = (): LayoutContextValue => {
   const context = useContext(LayoutContext)
   if (!context) {
@@ -138,43 +136,7 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
     localStorage.setItem('aiChatMessages', JSON.stringify(aiChatMessages))
   }, [aiChatMessages])
 
-  const playAudio = useCallback((soundName: string) => {
-    const soundMap: Record<string, string> = {
-      'task-done': 'https://data.lifedesk.me/audio/task-done.mp3',
-      delete: 'https://data.lifedesk.me/audio/delete.mp3',
-      archived: 'https://data.lifedesk.me/audio/archived.mp3',
-      'goal-achieved': 'https://data.lifedesk.me/audio/goal-achieved.mp3',
-      notification: 'https://data.lifedesk.me/audio/notification.mp3'
-    }
-
-    const url = soundMap[soundName]
-    if (!url) return
-
-    if (!audioCache[soundName]) {
-      audioCache[soundName] = new Audio(url)
-      audioCache[soundName].load()
-    }
-
-    audioCache[soundName].currentTime = 0
-    audioCache[soundName].play().catch(() => {})
-  }, [])
-
   useEffect(() => {
-    const soundNames = ['task-done', 'delete', 'archived', 'goal-achieved', 'notification']
-    soundNames.forEach(name => {
-      const soundMap: Record<string, string> = {
-        'task-done': 'https://data.lifedesk.me/audio/task-done.mp3',
-        delete: 'https://data.lifedesk.me/audio/delete.mp3',
-        archived: 'https://data.lifedesk.me/audio/archived.mp3',
-        'goal-achieved': 'https://data.lifedesk.me/audio/goal-achieved.mp3',
-        notification: 'https://data.lifedesk.me/audio/notification.mp3'
-      }
-      if (!audioCache[name]) {
-        audioCache[name] = new Audio(soundMap[name])
-        audioCache[name].load()
-      }
-    })
-
     const link = document.createElement('link')
     link.rel = 'stylesheet'
     link.href = 'https://data.lifedesk.me/CSS/app-styles 2.css'
@@ -201,6 +163,8 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
 
   const [hiddenSections, setHiddenSections] = useState<string[]>(() => {
     const saved = localStorage.getItem('hiddenSections')
+    console.log('hidden sections')
+    console.log(saved)
     return saved ? JSON.parse(saved) : []
   })
   const [sectionOrder, setSectionOrder] = useState<string[]>(() => {
@@ -685,6 +649,8 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
     })
   }, [])
 
+  console.log(hiddenTools)
+
   const getOrderedSubsections = useCallback(
     (parentItem: NavItemType): NavItemType[] => {
       if (!parentItem.children) return []
@@ -784,8 +750,7 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
               if (hiddenSections.includes(parentPath)) return true
             }
             return false
-          },
-          playAudio
+          }
         }}
       >
         <EventNotifications />

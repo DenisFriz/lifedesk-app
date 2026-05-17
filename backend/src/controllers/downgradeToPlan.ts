@@ -9,7 +9,7 @@ type DowngradeToPlanBody = {
 };
 
 export async function downgradeToPlan(
-  req: Request<{}, {}, DowngradeToPlanBody>,
+  req: Request<unknown, unknown, DowngradeToPlanBody>,
   res: Response,
 ) {
   try {

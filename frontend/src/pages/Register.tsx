@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { apiFetch, setToken } from '@/api/apiClient'
+import { apiFetch } from '@/api/apiClient'
 import { Mail, Lock } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { Helmet } from 'react-helmet-async'
 import { Checkbox } from '@/components/ui/checkbox'
+import GoogleAuth from '@/components/GoogleAuth'
 
 const InputClass = `
 flex w-full border px-3 py-2 ring-offset-background file:border-0 
@@ -15,7 +16,7 @@ focus:border-slate-400 focus:ring-slate-400 rounded-xl placeholder:text-slate-40
 `
 
 type RegisterResponse = {
-  token: string
+  accessToken: string
 }
 
 export default function Register() {
@@ -52,16 +53,47 @@ export default function Register() {
         acceptedTerms: accepted
       })
 
-      console.log(data)
-      await login(data.token)
-      setToken(data.token)
+      await login(data.accessToken)
       navigate('/Home', { replace: true })
     } catch (err) {
-      setError(err.message || 'Registration failed')
+      setError(err.data.message || err.message || 'Registration failed')
     } finally {
       setIsLoading(false)
     }
   }
+
+  const handleGoogleLogin = async (credentialResponse: any) => {
+    try {
+      setError('')
+      setIsLoading(true)
+
+      const data = await apiFetch<RegisterResponse>('POST', '/auth/google', {
+        credential: credentialResponse.credential
+      })
+
+      await login(data.accessToken)
+
+      navigate('/Home', { replace: true })
+    } catch (err: any) {
+      setError(err?.data?.message || err.message || 'Google login failed')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const getPasswordRules = (password: string) => {
+    return {
+      minLength: password.length >= 8,
+      hasLetter: /[a-zA-Z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSpecial: /[^a-zA-Z0-9]/.test(password)
+    }
+  }
+
+  const passwordRules = useMemo(() => {
+    if (!password) return null
+    return getPasswordRules(password)
+  }, [password])
 
   const isFormValid =
     email.trim() !== '' && password.trim() !== '' && confirmPassword.trim() !== '' && accepted
@@ -99,9 +131,15 @@ export default function Register() {
                 </svg>
                 Back to sign in
               </button>
-              <div className="text-center space-y-1 mt-4">
+              <div className="text-center space-y-1 my-4 ">
                 <h1 className="text-2xl font-bold text-slate-900">Create your account</h1>
               </div>
+
+              <GoogleAuth
+                onSuccess={handleGoogleLogin}
+                onError={() => setError('Google login failed')}
+                disabled={isLoading}
+              />
 
               <form onSubmit={handleSubmit} className="mt-4 space-y-3 sm:space-y-4">
                 {error && (
@@ -151,6 +189,22 @@ export default function Register() {
                       id="password"
                     />
                   </div>
+                  {password && passwordRules && (
+                    <div className="self-start mt-2 text-xs space-y-1 text-slate-500">
+                      <p className={passwordRules.minLength ? 'text-green-600' : 'text-red-500'}>
+                        • At least 8 characters
+                      </p>
+                      <p className={passwordRules.hasLetter ? 'text-green-600' : 'text-red-500'}>
+                        • At least 1 letter
+                      </p>
+                      <p className={passwordRules.hasNumber ? 'text-green-600' : 'text-red-500'}>
+                        • At least 1 number
+                      </p>
+                      <p className={passwordRules.hasSpecial ? 'text-green-600' : 'text-red-500'}>
+                        • At least 1 special character
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5 flex flex-col items-center">

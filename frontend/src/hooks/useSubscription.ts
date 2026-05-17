@@ -36,7 +36,9 @@ export function useSubscription(): SubscriptionReturn {
       if (!user?.email) return null
       try {
         const subs = (await backend.entities.Subscription.list()) as Subscription[]
+
         const userSub = subs.find(s => s.user_email === user.email)
+
         return userSub || null
       } catch (err) {
         console.error('[useSubscription] Error fetching subscription:', err)
@@ -52,7 +54,7 @@ export function useSubscription(): SubscriptionReturn {
   })
 
   const subscription = subscriptions
-  const planName = user?.subscription_tier ?? subscription?.plan_name ?? 'free'
+  const planName = user?.subscription_tier ?? 'free'
   const planData = plans?.find(p => p.plan_name === planName)
   const features = planData?.features ?? {}
 
@@ -66,7 +68,7 @@ export function useSubscription(): SubscriptionReturn {
   const limit = (limitKey: string): number => {
     if (!planData) return 0
     const val = features[limitKey]
-    if (val === null || val === undefined) return Infinity
+    if (val === null || val === undefined) return undefined
     return val as number
   }
 

@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useLayout } from '@/Layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -26,13 +25,6 @@ import {
   ListChecks,
   ChevronDown,
   ChevronUp,
-  Wallet,
-  Heart,
-  Dumbbell,
-  Smile,
-  Brain,
-  Users,
-  Briefcase,
   Rows3,
   GripVertical,
   Copy,
@@ -45,19 +37,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { formatDateMedium } from '@/components/utils/formatters'
 import { useSubscription } from '@/hooks/useSubscription'
 import UsageLimitGate from '@/components/subscription/UsageLimitGate'
 import { TablePagination } from '../TablePagination'
+import { CategorySelectDialog } from '../CategorySelectDialog'
+import { useSound } from '@/contexts/SoundContext'
 
 export default function EventTable({
   category,
@@ -90,7 +77,8 @@ export default function EventTable({
   const queryClient = useQueryClient()
   const blurTimeoutRef = React.useRef(null)
   const tableRef = React.useRef(null)
-  const { playAudio } = useLayout()
+
+  const { playSound } = useSound()
 
   const { data: allEvents = [] } = useQuery<any[]>({
     queryKey: ['events', category, businessId],
@@ -168,7 +156,7 @@ export default function EventTable({
 
   const deleteMutation = useMutation<void, any, string>({
     mutationFn: id => {
-      playAudio('delete')
+      playSound('delete')
       return backend.entities.Event.delete(id)
     },
     onSuccess: () => {
@@ -193,7 +181,7 @@ export default function EventTable({
 
   const bulkDeleteMutation = useMutation<void, any, string[]>({
     mutationFn: async ids => {
-      playAudio('delete')
+      playSound('delete')
       await Promise.all(ids.map(id => backend.entities.Event.delete(id)))
     },
     onSuccess: () => {
@@ -205,7 +193,7 @@ export default function EventTable({
   const bulkUpdateMutation = useMutation<void, any, { ids: string[]; data: Record<string, any> }>({
     mutationFn: async ({ ids, data }) => {
       if (data.status === 'archived') {
-        playAudio('archived')
+        playSound('archived')
       }
       await Promise.all(ids.map(id => backend.entities.Event.update(id, data)))
     },
@@ -319,7 +307,7 @@ export default function EventTable({
   }
 
   const archiveEvent = event => {
-    playAudio('archived')
+    playSound('archived')
     updateMutation.mutate({ id: event.id, data: { status: 'archived' } })
   }
 
@@ -403,89 +391,14 @@ export default function EventTable({
 
   return (
     <>
-      <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Choose a category</DialogTitle>
-            <DialogDescription>Please choose a category for the new event.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-3 py-4">
-            <Button
-              variant="outline"
-              className="justify-start h-auto py-3"
-              onClick={() => handleCategorySelect('assets')}
-            >
-              <Wallet className="w-5 h-5 mr-3 flex-shrink-0 text-slate-600" />
-              <div className="text-left">
-                <div className="font-medium">Assets</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto py-3"
-              onClick={() => handleCategorySelect('health_body')}
-            >
-              <Heart className="w-5 h-5 mr-3 flex-shrink-0 text-slate-600" />
-              <div className="text-left">
-                <div className="font-medium">Health</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto py-3"
-              onClick={() => handleCategorySelect('fitness')}
-            >
-              <Dumbbell className="w-5 h-5 mr-3 flex-shrink-0 text-slate-600" />
-              <div className="text-left">
-                <div className="font-medium">Fitness</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto py-3"
-              onClick={() => handleCategorySelect('hobbies')}
-            >
-              <Smile className="w-5 h-5 mr-3 flex-shrink-0 text-slate-600" />
-              <div className="text-left">
-                <div className="font-medium">Hobbies</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto py-3"
-              onClick={() => handleCategorySelect('learning')}
-            >
-              <Brain className="w-5 h-5 mr-3 flex-shrink-0 text-slate-600" />
-              <div className="text-left">
-                <div className="font-medium">Learning</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto py-3"
-              onClick={() => handleCategorySelect('relationships')}
-            >
-              <Users className="w-5 h-5 mr-3 flex-shrink-0 text-slate-600" />
-              <div className="text-left">
-                <div className="font-medium">Relationships</div>
-              </div>
-            </Button>
-            {businesses.map(business => (
-              <Button
-                key={business.id}
-                variant="outline"
-                className="justify-start h-auto py-3"
-                onClick={() => handleCategorySelect('business', business.id)}
-              >
-                <Briefcase className="w-5 h-5 mr-3 flex-shrink-0 text-slate-600" />
-                <div className="text-left">
-                  <div className="font-medium">{business.name}</div>
-                </div>
-              </Button>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <CategorySelectDialog
+        open={showCategoryDialog}
+        onOpenChange={setShowCategoryDialog}
+        businesses={businesses}
+        onSelect={handleCategorySelect}
+        title="Choose a category"
+        description="Please choose a category for the new event."
+      />
 
       <div className="bg-white rounded-xl overflow-hidden mb-6">
         <Tabs value={currentTab} onValueChange={setCurrentTab}>

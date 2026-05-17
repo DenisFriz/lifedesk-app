@@ -29,6 +29,39 @@ import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { Helmet } from 'react-helmet-async'
 
+const placeholderPhotos = [
+  {
+    id: 'placeholder-1',
+    image_url: '/progress-photo-1.jpg',
+    date: '2026-01-15',
+    body_area: 'full_body',
+    description: 'Week 1 - Starting point',
+    is_archived: false,
+    created_by: 'system'
+  },
+  {
+    id: 'placeholder-2',
+    image_url: '/progress-photo-2.jpg',
+    date: '2026-02-25',
+    body_area: 'full_body',
+    description: 'Month 2 - Visible transformation',
+    is_archived: false,
+    created_by: 'system'
+  }
+] as const
+
+const bodyAreaLabels = {
+  front: 'Front',
+  back: 'Back',
+  side: 'Side',
+  full_body: 'Full Body',
+  arms: 'Arms',
+  chest: 'Chest',
+  legs: 'Legs',
+  core: 'Core',
+  other: 'Other'
+} as const
+
 export default function ProgressPhotos() {
   const [showUploadDialog, setShowUploadDialog] = useState(false)
   const [showComparisonMode, setShowComparisonMode] = useState(false)
@@ -48,34 +81,7 @@ export default function ProgressPhotos() {
     queryFn: async () => {
       const existing = await backend.entities.ProgressPhoto.list('-date')
 
-      // Add placeholder photos if none exist
-      if (existing.length === 0) {
-        const placeholderPhotos = [
-          {
-            id: 'placeholder-1',
-            image_url:
-              'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/backend-prod/public/6936bdceacd0ea51ef56c9fd/fae539cb2_placeholder-fit-prog-1.jpg',
-            date: '2026-01-15',
-            body_area: 'full_body',
-            description: 'Week 1 - Starting point',
-            is_archived: false,
-            created_by: 'system'
-          },
-          {
-            id: 'placeholder-2',
-            image_url:
-              'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/backend-prod/public/6936bdceacd0ea51ef56c9fd/e98e3a206_placeholder-fit-prog-2.jpg',
-            date: '2026-02-25',
-            body_area: 'full_body',
-            description: 'Month 2 - Visible transformation',
-            is_archived: false,
-            created_by: 'system'
-          }
-        ]
-        return placeholderPhotos
-      }
-
-      return existing
+      return existing.length ? existing : placeholderPhotos
     }
   })
 
@@ -163,18 +169,6 @@ export default function ProgressPhotos() {
 
   const handleNextPhoto = () => {
     setSelectedPhotoIndex(Math.min(photos.length - 1, selectedPhotoIndex + 1))
-  }
-
-  const bodyAreaLabels = {
-    front: 'Front',
-    back: 'Back',
-    side: 'Side',
-    full_body: 'Full Body',
-    arms: 'Arms',
-    chest: 'Chest',
-    legs: 'Legs',
-    core: 'Core',
-    other: 'Other'
   }
 
   if (isLoading) {

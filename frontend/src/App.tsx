@@ -1,24 +1,18 @@
 import { Toaster } from '@/components/ui/toaster'
-import { QueryClientProvider, useQuery } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import VisualEditAgent from '@/lib/VisualEditAgent'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/lib/AuthContext'
 import UserNotRegisteredError from '@/components/UserNotRegisteredError'
 import OfflineSyncManager from '@/components/offline/OfflineSyncManager'
-import { backend } from '@/api/backend'
-import { type ReactNode } from 'react'
-import Layout from './Layout'
-import { appRoutes, authRoutes } from './routes'
-import { Navigate } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 
+import Layout from './Layout'
+import { appRoutes, authRoutes } from './routes'
 import Home from './pages/Home'
-
-interface LayoutWrapperProps {
-  children: ReactNode
-  currentPageName: string
-}
+import { ReactNode } from 'react'
+import { UserLimitProvider } from './contexts/UserLimitContext'
 
 const LoadingAuth = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -26,45 +20,27 @@ const LoadingAuth = () => (
   </div>
 )
 
-const LayoutWrapper = ({ children, currentPageName }: LayoutWrapperProps) =>
-  Layout ? <Layout currentPageName={currentPageName}>{children}</Layout> : <>{children}</>
-
-const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+const RequireAuth = () => {
   const { isAuthenticated, isLoadingAuth } = useAuth()
 
-  if (isLoadingAuth) {
-    return <LoadingAuth />
-  }
+  if (isLoadingAuth) return <LoadingAuth />
 
-  if (isAuthenticated) {
-    return <Navigate to="/Home" replace />
-  }
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+
+  return <Outlet />
+}
+
+const RequireGuest = ({ children }: { children: ReactNode }) => {
+  const { isAuthenticated, isLoadingAuth } = useAuth()
+
+  if (isLoadingAuth) return <LoadingAuth />
+  if (isAuthenticated) return <Navigate to="/" replace />
 
   return children
 }
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoadingAuth } = useAuth()
-
-  if (isLoadingAuth) {
-    return <LoadingAuth />
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
-  return children
-}
-
-const AuthenticatedApp = () => {
-  const { isAuthenticated, authError } = useAuth()
-
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => backend.auth.me(),
-    enabled: isAuthenticated
-  })
+const AppLayout = () => {
+  const { authError } = useAuth()
 
   if (authError) {
     if (authError.type === 'user_not_registered') {
@@ -79,27 +55,11 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          <LayoutWrapper currentPageName="Home">
-            <Home />
-          </LayoutWrapper>
-        }
-      />
-      {appRoutes.map(({ path, element: Page, name }) => (
-        <Route
-          key={path}
-          path={path}
-          element={
-            <LayoutWrapper currentPageName={name}>
-              <Page />
-            </LayoutWrapper>
-          }
-        />
-      ))}
-    </Routes>
+    <UserLimitProvider>
+      <Layout currentPageName="Home">
+        <Outlet />
+      </Layout>
+    </UserLimitProvider>
   )
 }
 
@@ -108,7 +68,11 @@ function App() {
     <HelmetProvider>
       <AuthProvider>
         <QueryClientProvider client={queryClientInstance}>
-          <Router>
+          <BrowserRouter
+            future={{
+              v7_startTransition: true
+            }}
+          >
             <Routes>
               {/* PUBLIC ROUTES */}
               {authRoutes.map(({ path, element: Page }) => (
@@ -116,24 +80,27 @@ function App() {
                   key={path}
                   path={path}
                   element={
-                    <PublicRoute>
+                    <RequireGuest>
                       <Page />
-                    </PublicRoute>
+                    </RequireGuest>
                   }
                 />
               ))}
 
               {/* PROTECTED ROUTES */}
-              <Route
-                path="/*"
-                element={
-                  <ProtectedRoute>
-                    <AuthenticatedApp />
-                  </ProtectedRoute>
-                }
-              />
+              <Route element={<RequireAuth />}>
+                <Route element={<AppLayout />}>
+                  {/* HOME */}
+                  <Route path="/" element={<Home />} />
+
+                  {/* OTHER APP ROUTES */}
+                  {appRoutes.map(({ path, element: Page }) => (
+                    <Route key={path} path={path} element={<Page />} />
+                  ))}
+                </Route>
+              </Route>
             </Routes>
-          </Router>
+          </BrowserRouter>
 
           <Toaster />
           <VisualEditAgent />

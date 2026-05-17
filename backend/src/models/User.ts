@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Model, HydratedDocument } from 'mongoose';
+import mongoose, { Schema, Model, HydratedDocument } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { encryptNullable, decryptNullable } from '@/utils/encryption.js';
 import { IUser } from '@/types/index.js';
@@ -19,23 +19,56 @@ const UserSchema = new Schema<IUserDocument>(
   {
     id: { type: String, default: () => uuidv4(), unique: true, index: true },
     email: { type: String, required: true, unique: true, index: true },
-    passwordHash: { type: String, required: true },
-    full_name: { type: String },
-    role: { type: String, default: 'user' },
-    subscription_tier: { type: String, default: 'free' },
+    passwordHash: { type: String },
+    full_name: { type: String, default: null },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
+    subscription_tier: {
+      type: String,
+      enum: ['free', 'plus', 'pro'],
+      default: 'free',
+    },
     storage_used: { type: Number, default: 0 },
     image_count: { type: Number, default: 0 },
+    auth_provider: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local',
+    },
+    google_id: {
+      type: String,
+      default: null,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+    google_avatar_url: {
+      type: String,
+      default: null,
+    },
+    email_verified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationCode: {
+      type: String,
+      default: null,
+    },
+    emailVerificationExpires: {
+      type: Date,
+      default: null,
+    },
     plaid_connections: [PlaidConnectionSchema],
     terms_accepted_at: { type: String, default: null },
-    terms_accepted_version: { type: String, default: null },
     is_deleted: { type: Boolean, default: false, index: true },
     deleted_at: { type: String, default: null },
-    created_at: { type: String, default: () => new Date().toISOString() },
-    updated_at: { type: String, default: () => new Date().toISOString() },
     resetPasswordToken: { type: String, default: null },
     resetPasswordExpires: { type: Date, default: null },
   },
-  { timestamps: false, versionKey: false },
+  { timestamps: true, versionKey: false },
 );
 
 UserSchema.pre('save', async function (this: HydratedDocument<IUser>) {
@@ -45,7 +78,6 @@ UserSchema.pre('save', async function (this: HydratedDocument<IUser>) {
       access_token: encryptNullable(conn.access_token) ?? conn.access_token,
     }));
   }
-  this.updated_at = new Date().toISOString();
 });
 
 UserSchema.post<IUserDocument>(['find', 'findOne'], function (result: any) {

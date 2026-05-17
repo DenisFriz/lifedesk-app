@@ -1,4 +1,3 @@
-import React from 'react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -39,7 +38,7 @@ export default function GoalTaskRow({
   saveTaskEdit,
   updateTaskMutation,
   updateTaskOrderMutation,
-  playAudio,
+  playSound,
   queryClient,
   getGoalTasks
 }) {
@@ -87,7 +86,7 @@ export default function GoalTaskRow({
                   id: task.id,
                   data: { status: checked ? 'completed' : 'pending' }
                 })
-                if (checked) playAudio('task-done')
+                if (checked) playSound('task-done')
               }}
               className={cn(
                 task.status === 'completed' && 'border-green-500 data-[state=checked]:bg-green-500'
@@ -385,7 +384,7 @@ export default function GoalTaskRow({
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => {
-                        playAudio('archived')
+                        playSound('archived')
                         updateTaskMutation.mutate({
                           id: task.id,
                           data: { status: 'archived' }
@@ -406,7 +405,7 @@ export default function GoalTaskRow({
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => {
-                        playAudio('delete')
+                        playSound('delete')
                         backend.entities.Task.delete(task.id).then(() => {
                           queryClient.invalidateQueries({ queryKey: ['tasks'] })
                         })

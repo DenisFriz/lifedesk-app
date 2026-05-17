@@ -1,6 +1,8 @@
 import ReactDOM from 'react-dom/client'
 import App from '@/App'
 import { StrictMode } from 'react'
+import { GoogleOAuthProvider } from '@react-oauth/google'
+import { SoundProvider } from './contexts/SoundContext'
 
 import './index.css'
 
@@ -12,6 +14,10 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <SoundProvider>
+        <App />
+      </SoundProvider>
+    </GoogleOAuthProvider>
   </StrictMode>
 )

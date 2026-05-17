@@ -250,9 +250,12 @@ const LayoutContent = memo(
       const isExpanded = expandedSections[item.section]
       const urlParams = new URLSearchParams(location.search)
       const currentBusinessId = urlParams.get('businessId')
+      const itemPath = createPageUrl(item.page)
+
       const isActive =
-        currentPageName === item.page &&
+        location.pathname === itemPath &&
         (!item.businessId || String(item.businessId) === String(currentBusinessId))
+
       const hasChildren = item.children && item.children.length > 0
       const uniqueName = parentName ? `${parentName} > ${item.name}` : item.name
       const hidden = isHidden(uniqueName)
@@ -490,12 +493,6 @@ const LayoutContent = memo(
       const handleLinkClick = () => {
         const scrollPos = (navRef.current as any)?.getScrollTop() || 0
         if (navRef.current) localStorage.setItem('sidebarScrollPosition', scrollPos.toString())
-        requestAnimationFrame(() => {
-          if (navRef.current) (navRef.current as any).scrollTop(scrollPos)
-          setTimeout(() => {
-            if (navRef.current) (navRef.current as any).scrollTop(scrollPos)
-          }, 0)
-        })
         if (onNavigate) onNavigate()
       }
 
@@ -664,13 +661,7 @@ const LayoutContent = memo(
             )}
           >
             <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200">
-              {!collapsed && (
-                <img
-                  src="https://data.lifedesk.me/images/lifedesk-manage-life-business-health-finance-tasks-logo-32.webp"
-                  alt="lifedesk"
-                  className="h-8"
-                />
-              )}
+              {!collapsed && <img src="logo.webp" alt="lifedesk" className="h-8" />}
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
@@ -726,6 +717,7 @@ const LayoutContent = memo(
                 >
                   {tools.map(tool => {
                     const Icon = tool.icon
+                    console.log(tool.id)
                     const toolHidden = hiddenTools.includes(tool.id)
                     if (toolHidden && !editMode) return null
                     return (
@@ -743,6 +735,7 @@ const LayoutContent = memo(
                             className="h-7 w-7 hover:bg-slate-200 flex-shrink-0"
                             onClick={() => toggleToolVisibility(tool.id)}
                           >
+                            alextest
                             {toolHidden ? (
                               <EyeOff className="w-3 h-3" />
                             ) : (
@@ -919,8 +912,7 @@ const LayoutContent = memo(
                         {user?.full_name || user?.email?.split('@')[0] || 'User'}
                       </p>
                       <div className="flex items-center gap-1">
-                        {(user?.subscription_tier === 'pro' ||
-                          user?.subscription_tier === 'enterprise') && (
+                        {user?.subscription_tier === 'pro' && (
                           <Rocket className="w-3 h-3 text-orange-500" />
                         )}
                         {user?.subscription_tier === 'plus' && (
@@ -960,22 +952,28 @@ const LayoutContent = memo(
             </div>
           </aside>
 
-          <main className="flex-1 overflow-hidden w-full page-bg" style={{ minWidth: 0 }}>
+          <main className="flex-1 w-full page-bg min-w-0 overflow-x-hidden overflow-y-hidden">
             <Scrollbars
               autoHide
               autoHideTimeout={1000}
               autoHideDuration={200}
+              renderView={({ style, ...props }) => (
+                <div
+                  {...props}
+                  style={{
+                    ...style,
+                    overflowX: 'hidden',
+                    overflowY: 'auto'
+                  }}
+                />
+              )}
               renderThumbVertical={({ style, ...props }) => (
                 <div {...props} style={{ ...style, display: 'none' }} />
               )}
             >
-              <div className="lg:hidden sticky top-0 z-30 bg-white px-4 py-3 flex items-center justify-between">
+              <div className="lg:hidden sticky top-0 z-30 bg-white px-4 py-3 flex items-center justify-between ">
                 <div className="w-12" />
-                <img
-                  src="https://data.lifedesk.me/images/lifedesk-manage-life-business-health-finance-tasks-logo-32.webp"
-                  alt="lifedesk"
-                  className="h-8"
-                />
+                <img src="logo.webp" alt="lifedesk" className="h-8" />
                 <Button
                   variant="ghost"
                   size="icon"

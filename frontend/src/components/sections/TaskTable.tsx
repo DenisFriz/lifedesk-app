@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { offlineFirst, offlineCreate, offlineUpdate } from '@/hooks/useOfflineFirst'
-import { useLayout } from '@/Layout'
+import { offlineFirst, offlineUpdate } from '@/hooks/useOfflineFirst'
 import { useSubscription } from '@/hooks/useSubscription'
 import UsageLimitGate from '@/components/subscription/UsageLimitGate'
 import { Button } from '@/components/ui/button'
@@ -31,13 +30,6 @@ import {
   ListChecks,
   ChevronDown,
   ChevronUp,
-  Wallet,
-  Heart,
-  Dumbbell,
-  Smile,
-  Brain,
-  Users,
-  Briefcase,
   Rows3,
   GripVertical,
   Copy,
@@ -51,17 +43,12 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
-import { format } from 'date-fns'
 import { formatDateMedium } from '@/components/utils/formatters'
 import { TablePagination } from '../TablePagination'
+import { CategorySelectDialog } from '../CategorySelectDialog'
+import { useSound } from '@/contexts/SoundContext'
+import { useUserLimit } from '@/contexts/UserLimitContext'
 
 interface TaskTableProps {
   filterType?: 'all' | 'important' | 'category' | 'business'
@@ -95,7 +82,6 @@ export default function TaskTable({
   const [showReminders, setShowReminders] = useState<Record<string, boolean>>({})
   const [reminderValues, setReminderValues] = useState<ReminderValues>({})
   const [selectOpen, setSelectOpen] = useState<boolean>(false)
-  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({})
   const [selectedTasks, setSelectedTasks] = useState<string[]>([])
   const [bulkMode, setBulkMode] = useState<boolean>(false)
   const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({})
@@ -107,15 +93,19 @@ export default function TaskTable({
   const [searchQuery, setSearchQuery] = useState<string>('')
   const queryClient = useQueryClient()
   const tableRef = React.useRef(null)
-  const { playAudio } = useLayout()
+
+  const { playSound } = useSound()
+
   const { limit } = useSubscription()
+
+  const { canCreate } = useUserLimit()
 
   const tasksLimit = limit('home_tasks_limit')
 
   const { data: allTasks = [] } = useQuery<any[]>({
     queryKey: ['tasks'],
     queryFn: async () => {
-      const data = await offlineFirst('tasks', () => backend.entities.Task.list('-created_date'))
+      const data = await backend.entities.Task.list('-created_date')
       return (data as any[]).filter(r => !r.is_deleted)
     },
     enabled: isActive
@@ -156,7 +146,7 @@ export default function TaskTable({
       const previousTasks = queryClient.getQueryData(['tasks'])
       queryClient.setQueryData(['tasks'], (oldTasks: any) => {
         if (!oldTasks) return oldTasks
-        return oldTasks.map((task: any) => (task.id === id ? { ...task, ...data } : task))
+        return oldTasks.map((task: any) => (task._id === id ? { ...task, ...data } : task))
       })
       return { previousTasks }
     },
@@ -168,7 +158,7 @@ export default function TaskTable({
     onSuccess: (updatedTask, variables) => {
       queryClient.setQueryData(['tasks'], (oldTasks: any) =>
         oldTasks
-          ? oldTasks.map((task: any) => (task.id === updatedTask.id ? updatedTask : task))
+          ? oldTasks.map((task: any) => (task._id === updatedTask.id ? updatedTask : task))
           : oldTasks
       )
       setTaskValues(prev => {
@@ -185,20 +175,23 @@ export default function TaskTable({
   })
 
   const createMutation = useMutation<any, any, any>({
-    mutationFn: data => offlineCreate('tasks', backend.entities.Task, data),
+    mutationFn: async data => {
+      return backend.entities.Task.create(data)
+    },
     onMutate: async data => {
       await queryClient.cancelQueries({ queryKey: ['tasks'] })
-      const previousTasks = queryClient.getQueryData(['tasks'])
-      return { previousTasks }
+      return { previousTasks: queryClient.getQueryData(['tasks']) }
     },
     onSuccess: (newTask: any) => {
       queryClient.setQueryData(['tasks'], (oldTasks: any) => {
         if (!oldTasks) return [newTask]
-        const exists = oldTasks.find((t: any) => t.id === newTask.id)
+        const exists = oldTasks.find((t: any) => t._id === newTask._id)
         return exists
-          ? oldTasks.map((t: any) => (t.id === newTask.id ? newTask : t))
+          ? oldTasks.map((t: any) => (t._id === newTask._id ? newTask : t))
           : [newTask, ...oldTasks]
       })
+
+      queryClient.invalidateQueries({ queryKey: ['usage'] })
     },
     onError: (err, variables, context: any) => {
       if (context?.previousTasks) {
@@ -209,7 +202,7 @@ export default function TaskTable({
 
   const deleteMutation = useMutation<void, any, string>({
     mutationFn: id => {
-      playAudio('delete')
+      playSound('delete')
       return backend.entities.Task.delete(id)
     },
     onSuccess: () => {
@@ -234,7 +227,7 @@ export default function TaskTable({
 
   const bulkDeleteMutation = useMutation<void, any, string[]>({
     mutationFn: async ids => {
-      playAudio('delete')
+      playSound('delete')
       await Promise.all(ids.map(id => backend.entities.Task.delete(id)))
     },
     onSuccess: () => {
@@ -246,7 +239,7 @@ export default function TaskTable({
   const bulkUpdateMutation = useMutation<void, any, { ids: string[]; data: any }>({
     mutationFn: async ({ ids, data }) => {
       if (data.status === 'archived') {
-        playAudio('archived')
+        playSound('archived')
       }
       await Promise.all(ids.map(id => backend.entities.Task.update(id, data)))
     },
@@ -318,7 +311,7 @@ export default function TaskTable({
     queryClient.setQueryData(['tasks'], (oldTasks: any) => {
       if (!oldTasks) return oldTasks
       return oldTasks.map((task: any) => {
-        const itemIndex = items.findIndex(item => item.id === task.id)
+        const itemIndex = items.findIndex(item => item.id === task._id)
         if (itemIndex !== -1) {
           return { ...task, order: itemIndex }
         }
@@ -327,7 +320,7 @@ export default function TaskTable({
     })
 
     items.forEach((task: any, index: number) => {
-      updateMutation.mutate({ id: task.id, data: { order: index } })
+      updateMutation.mutate({ id: task._id, data: { order: index } })
     })
   }
 
@@ -339,7 +332,7 @@ export default function TaskTable({
   const totalPages = Math.ceil(sortedTasks.length / perPage)
 
   const toggleImportant = (task: any): void => {
-    updateMutation.mutate({ id: task.id, data: { important: !task.important } })
+    updateMutation.mutate({ id: task._id, data: { important: !task.important } })
   }
 
   const getTaskValue = (taskId: string, field: string, defaultValue?: any): any => {
@@ -354,41 +347,41 @@ export default function TaskTable({
   }
 
   const handleTaskBlur = (task: any, field: string): void => {
-    const value = taskValues[`${task.id}-${field}`]
+    const value = taskValues[`${task._id}-${field}`]
     if (value !== undefined && value !== task[field]) {
-      updateMutation.mutate({ id: task.id, data: { [field]: value } })
+      updateMutation.mutate({ id: task._id, data: { [field]: value } })
     }
   }
 
   const toggleComplete = (task: any): void => {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed'
     if (newStatus === 'completed') {
-      setAnimatingTask(task.id)
-      playAudio('task-done')
+      setAnimatingTask(task._id)
+      playSound('task-done')
 
       const updateData: any = { status: newStatus }
       if (!task.category) {
         updateData.category = 'assets'
       }
       setTimeout(() => {
-        updateMutation.mutate({ id: task.id, data: updateData })
+        updateMutation.mutate({ id: task._id, data: updateData })
       }, 800)
     } else {
       const updateData: any = { status: newStatus }
       if (!task.category) {
         updateData.category = 'assets'
       }
-      updateMutation.mutate({ id: task.id, data: updateData })
+      updateMutation.mutate({ id: task._id, data: updateData })
     }
   }
 
   const archiveTask = (task: any): void => {
-    playAudio('archived')
-    updateMutation.mutate({ id: task.id, data: { status: 'archived' } })
+    playSound('archived')
+    updateMutation.mutate({ id: task._id, data: { status: 'archived' } })
   }
 
   const unarchiveTask = (task: any): void => {
-    updateMutation.mutate({ id: task.id, data: { status: 'pending' } })
+    updateMutation.mutate({ id: task._id, data: { status: 'pending' } })
   }
 
   const handleAddNew = (): void => {
@@ -469,113 +462,14 @@ export default function TaskTable({
 
   return (
     <>
-      <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Choose a category</DialogTitle>
-            <DialogDescription>Please choose a category for the new task.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-3 py-4">
-            <Button
-              variant="outline"
-              className="justify-start h-auto py-3"
-              onClick={() => handleCategorySelect('finances')}
-            >
-              <Wallet className="w-5 h-5 mr-3 flex-shrink-0 text-slate-600" />
-              <div className="text-left">
-                <div className="font-medium">Finance</div>
-                <div className="text-xs text-slate-500 hidden lg:block">
-                  Financial Goals & Tasks
-                </div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto py-3"
-              onClick={() => handleCategorySelect('assets')}
-            >
-              <Wallet className="w-5 h-5 mr-3 flex-shrink-0 text-slate-600" />
-              <div className="text-left">
-                <div className="font-medium">Assets</div>
-                <div className="text-xs text-slate-500 hidden lg:block">
-                  Physical Assets & Wealth
-                </div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto py-3"
-              onClick={() => handleCategorySelect('health_body')}
-            >
-              <Heart className="w-5 h-5 mr-3 flex-shrink-0 text-slate-600" />
-              <div className="text-left">
-                <div className="font-medium">Health</div>
-                <div className="text-xs text-slate-500 hidden lg:block">Body & Health</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto py-3"
-              onClick={() => handleCategorySelect('fitness')}
-            >
-              <Dumbbell className="w-5 h-5 mr-3 flex-shrink-0 text-slate-600" />
-              <div className="text-left">
-                <div className="font-medium">Fitness</div>
-                <div className="text-xs text-slate-500 hidden lg:block">Workouts & Training</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto py-3"
-              onClick={() => handleCategorySelect('hobbies')}
-            >
-              <Smile className="w-5 h-5 mr-3 flex-shrink-0 text-slate-600" />
-              <div className="text-left">
-                <div className="font-medium">Hobbies</div>
-                <div className="text-xs text-slate-500 hidden lg:block">Leisure & Interests</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto py-3"
-              onClick={() => handleCategorySelect('learning')}
-            >
-              <Brain className="w-5 h-5 mr-3 flex-shrink-0 text-slate-600" />
-              <div className="text-left">
-                <div className="font-medium">Learning</div>
-                <div className="text-xs text-slate-500 hidden lg:block">Learning & Development</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto py-3"
-              onClick={() => handleCategorySelect('relationships')}
-            >
-              <Users className="w-5 h-5 mr-3 flex-shrink-0 text-slate-600" />
-              <div className="text-left">
-                <div className="font-medium">Relationships</div>
-                <div className="text-xs text-slate-500 hidden lg:block">
-                  Relationships & Friendships
-                </div>
-              </div>
-            </Button>
-            {businesses.map(business => (
-              <Button
-                key={business.id}
-                variant="outline"
-                className="justify-start h-auto py-3"
-                onClick={() => handleCategorySelect('business', business.id)}
-              >
-                <Briefcase className="w-5 h-5 mr-3 flex-shrink-0 text-slate-600" />
-                <div className="text-left">
-                  <div className="font-medium">{business.name}</div>
-                  <div className="text-xs text-slate-500 hidden lg:block">Business</div>
-                </div>
-              </Button>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <CategorySelectDialog
+        open={showCategoryDialog}
+        onOpenChange={setShowCategoryDialog}
+        businesses={businesses}
+        onSelect={handleCategorySelect}
+        title="Choose a category"
+        description="Please choose a category for the new task."
+      />
 
       <div className="task-table-container bg-white rounded-xl overflow-hidden mb-6">
         <Tabs
@@ -607,6 +501,7 @@ export default function TaskTable({
               <div className="relative hidden lg:block">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 <Input
+                  id="tasks-search"
                   placeholder="Search tasks..."
                   value={searchQuery}
                   onChange={e => {
@@ -616,12 +511,7 @@ export default function TaskTable({
                   className="pl-8 h-9 w-48 text-sm"
                 />
               </div>
-              <UsageLimitGate
-                current={allTasks.length}
-                max={limit('home_tasks_limit')}
-                label="tasks"
-                inline
-              >
+              <UsageLimitGate allowed={canCreate('tasks')} label="goals">
                 <Button
                   onClick={handleAddNew}
                   size="sm"
@@ -765,8 +655,8 @@ export default function TaskTable({
                                 tasksLimit !== Infinity && allTasks.indexOf(task) >= tasksLimit
                               return (
                                 <Draggable
-                                  key={task.id}
-                                  draggableId={task.id}
+                                  key={task._id}
+                                  draggableId={`task-${task._id}`}
                                   index={index}
                                   isDragDisabled={!!sortBy || taskOverLimit}
                                 >
@@ -776,12 +666,10 @@ export default function TaskTable({
                                       {...provided.draggableProps}
                                       className={cn(
                                         'task-table-row border-b border-slate-100 hover:bg-slate-50',
-                                        animatingTask === task.id &&
+                                        animatingTask === task._id &&
                                           'animate-[wiggle_0.3s_ease-in-out]',
                                         compactView && 'h-12',
-                                        snapshot.isDragging && 'opacity-50',
-                                        taskOverLimit &&
-                                          'opacity-50 pointer-events-none select-none'
+                                        snapshot.isDragging && 'opacity-50'
                                       )}
                                     >
                                       {!sortBy && (
@@ -820,13 +708,14 @@ export default function TaskTable({
                                       >
                                         <Checkbox
                                           checked={
-                                            task.status === 'completed' || animatingTask === task.id
+                                            task.status === 'completed' ||
+                                            animatingTask === task._id
                                           }
                                           onCheckedChange={() => toggleComplete(task)}
                                           className={cn(
                                             'mx-auto',
                                             (task.status === 'completed' ||
-                                              animatingTask === task.id) &&
+                                              animatingTask === task._id) &&
                                               'border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500'
                                           )}
                                         />
@@ -839,8 +728,8 @@ export default function TaskTable({
                                           )}
                                         >
                                           <Checkbox
-                                            checked={selectedTasks.includes(task.id)}
-                                            onCheckedChange={() => toggleSelectTask(task.id)}
+                                            checked={selectedTasks.includes(task._id)}
+                                            onCheckedChange={() => toggleSelectTask(task._id)}
                                           />
                                         </td>
                                       )}
@@ -851,9 +740,10 @@ export default function TaskTable({
                                         )}
                                       >
                                         <Input
-                                          value={getTaskValue(task.id, 'title', task.title)}
+                                          id={`task-title-${task._id}`}
+                                          value={getTaskValue(task._id, 'title', task.title)}
                                           onChange={e =>
-                                            handleTaskChange(task.id, 'title', e.target.value)
+                                            handleTaskChange(task._id, 'title', e.target.value)
                                           }
                                           onBlur={() => handleTaskBlur(task, 'title')}
                                           maxLength={200}
@@ -870,13 +760,18 @@ export default function TaskTable({
                                         )}
                                       >
                                         <Textarea
+                                          id={`task-description-${task._id}`}
                                           value={getTaskValue(
-                                            task.id,
+                                            task._id,
                                             'description',
                                             task.description
                                           )}
                                           onChange={e =>
-                                            handleTaskChange(task.id, 'description', e.target.value)
+                                            handleTaskChange(
+                                              task._id,
+                                              'description',
+                                              e.target.value
+                                            )
                                           }
                                           onBlur={() => handleTaskBlur(task, 'description')}
                                           placeholder="Add description..."
@@ -915,7 +810,7 @@ export default function TaskTable({
                                                 updateData.business_id = null
                                               }
                                               updateMutation.mutate({
-                                                id: task.id,
+                                                id: task._id,
                                                 data: updateData
                                               })
                                             }}
@@ -973,7 +868,10 @@ export default function TaskTable({
                                             const updateData = {
                                               goal_id: value === 'none' ? null : value
                                             }
-                                            updateMutation.mutate({ id: task.id, data: updateData })
+                                            updateMutation.mutate({
+                                              id: task._id,
+                                              data: updateData
+                                            })
                                           }}
                                         >
                                           <SelectTrigger className="h-8 text-sm border-0 shadow-none focus:ring-1 focus:ring-indigo-500 bg-transparent hover:bg-slate-100 [&>span]:truncate [&>svg]:flex-shrink-0">
@@ -1008,16 +906,16 @@ export default function TaskTable({
                                           compactView ? 'py-1' : 'py-3'
                                         )}
                                       >
-                                        {taskValues[`${task.id}-due_date-editing`] ? (
+                                        {taskValues[`${task._id}-due_date-editing`] ? (
                                           <div
                                             className="task-duedate-wrapper space-y-1"
                                             onBlur={e => {
                                               if (selectOpen) return
                                               if (!e.currentTarget.contains(e.relatedTarget)) {
                                                 const timeInput = document.querySelector(
-                                                  `input[data-time-for="${task.id}"]`
+                                                  `input[data-time-for="${task._id}"]`
                                                 ) as HTMLInputElement | null
-                                                const reminders = reminderValues[task.id] || []
+                                                const reminders = reminderValues[task._id] || []
                                                 handleTaskBlur(task, 'due_date')
                                                 if (
                                                   timeInput?.value !== task.due_time ||
@@ -1025,7 +923,7 @@ export default function TaskTable({
                                                     JSON.stringify(task.reminders || [])
                                                 ) {
                                                   updateMutation.mutate({
-                                                    id: task.id,
+                                                    id: task._id,
                                                     data: {
                                                       due_time: timeInput?.value || null,
                                                       reminders
@@ -1036,7 +934,7 @@ export default function TaskTable({
                                                 setReminderValues({})
                                                 setTaskValues(prev => ({
                                                   ...prev,
-                                                  [`${task.id}-due_date-editing`]: false
+                                                  [`${task._id}-due_date-editing`]: false
                                                 }))
                                               }
                                             }}
@@ -1044,13 +942,13 @@ export default function TaskTable({
                                             <Input
                                               type="date"
                                               value={getTaskValue(
-                                                task.id,
+                                                task._id,
                                                 'due_date',
                                                 task.due_date
                                               )}
                                               onChange={e =>
                                                 handleTaskChange(
-                                                  task.id,
+                                                  task._id,
                                                   'due_date',
                                                   e.target.value
                                                 )
@@ -1062,7 +960,7 @@ export default function TaskTable({
                                               <Input
                                                 type="time"
                                                 defaultValue={task.due_time || ''}
-                                                data-time-for={task.id}
+                                                data-time-for={task._id}
                                                 className="h-8 text-xs flex-1 border-0 shadow-none px-2 py-1 focus-visible:ring-1 focus-visible:ring-indigo-500 bg-transparent hover:bg-slate-100 focus:bg-white"
                                                 placeholder="Time"
                                               />
@@ -1074,12 +972,12 @@ export default function TaskTable({
                                                 onClick={() => {
                                                   setShowReminders(prev => ({
                                                     ...prev,
-                                                    [task.id]: !prev[task.id]
+                                                    [task._id]: !prev[task._id]
                                                   }))
-                                                  if (!reminderValues[task.id]) {
+                                                  if (!reminderValues[task._id]) {
                                                     setReminderValues(prev => ({
                                                       ...prev,
-                                                      [task.id]: task.reminders || []
+                                                      [task._id]: task.reminders || []
                                                     }))
                                                   }
                                                 }}
@@ -1087,12 +985,12 @@ export default function TaskTable({
                                                 <Bell className="w-4 h-4" />
                                               </Button>
                                             </div>
-                                            {showReminders[task.id] && (
+                                            {showReminders[task._id] && (
                                               <div className="space-y-1 mt-2">
                                                 <div className="text-xs text-slate-600 font-medium">
                                                   Reminders:
                                                 </div>
-                                                {(reminderValues[task.id] || []).map(
+                                                {(reminderValues[task._id] || []).map(
                                                   (totalMinutes, idx) => {
                                                     let value = totalMinutes
                                                     let unit = 'minutes'
@@ -1139,12 +1037,12 @@ export default function TaskTable({
                                                             const newMinutes = newValue * multiplier
 
                                                             const newReminders = [
-                                                              ...(reminderValues[task.id] || [])
+                                                              ...(reminderValues[task._id] || [])
                                                             ]
                                                             newReminders[idx] = newMinutes
                                                             setReminderValues(prev => ({
                                                               ...prev,
-                                                              [task.id]: newReminders
+                                                              [task._id]: newReminders
                                                             }))
                                                           }}
                                                           className="h-8 text-xs w-20 flex-1"
@@ -1167,12 +1065,12 @@ export default function TaskTable({
                                                             const newMinutes = value * multiplier
 
                                                             const newReminders = [
-                                                              ...(reminderValues[task.id] || [])
+                                                              ...(reminderValues[task._id] || [])
                                                             ]
                                                             newReminders[idx] = newMinutes
                                                             setReminderValues(prev => ({
                                                               ...prev,
-                                                              [task.id]: newReminders
+                                                              [task._id]: newReminders
                                                             }))
                                                           }}
                                                         >
@@ -1205,19 +1103,19 @@ export default function TaskTable({
                                                     size="sm"
                                                     onClick={() => {
                                                       const newReminders = [
-                                                        ...(reminderValues[task.id] || []),
+                                                        ...(reminderValues[task._id] || []),
                                                         30
                                                       ]
                                                       setReminderValues(prev => ({
                                                         ...prev,
-                                                        [task.id]: newReminders
+                                                        [task._id]: newReminders
                                                       }))
                                                     }}
                                                     className="flex-1 text-xs"
                                                   >
                                                     Add reminder
                                                   </Button>
-                                                  {(reminderValues[task.id] || []).length > 0 && (
+                                                  {(reminderValues[task._id] || []).length > 0 && (
                                                     <Button
                                                       type="button"
                                                       variant="ghost"
@@ -1226,11 +1124,11 @@ export default function TaskTable({
                                                       onClick={e => {
                                                         e.stopPropagation()
                                                         const newReminders = reminderValues[
-                                                          task.id
+                                                          task._id
                                                         ].slice(0, -1)
                                                         setReminderValues(prev => ({
                                                           ...prev,
-                                                          [task.id]: newReminders
+                                                          [task._id]: newReminders
                                                         }))
                                                       }}
                                                     >
@@ -1246,14 +1144,14 @@ export default function TaskTable({
                                             onClick={() => {
                                               setTaskValues(prev => ({
                                                 ...prev,
-                                                [`${task.id}-due_date-editing`]: true
+                                                [`${task._id}-due_date-editing`]: true
                                               }))
                                               setReminderValues(prev => ({
                                                 ...prev,
-                                                [task.id]: task.reminders || []
+                                                [task._id]: task.reminders || []
                                               }))
                                             }}
-                                            onMouseEnter={() => setHoveredDueDate(task.id)}
+                                            onMouseEnter={() => setHoveredDueDate(task._id)}
                                             onMouseLeave={() => setHoveredDueDate(null)}
                                             className="cursor-text text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded"
                                           >
@@ -1273,14 +1171,14 @@ export default function TaskTable({
                                                     </div>
                                                   )}
                                                 {compactView &&
-                                                  hoveredDueDate === task.id &&
+                                                  hoveredDueDate === task._id &&
                                                   task.due_time && (
                                                     <div className="text-xs text-slate-500 mt-0.5">
                                                       {task.due_time}
                                                     </div>
                                                   )}
                                                 {compactView &&
-                                                  hoveredDueDate === task.id &&
+                                                  hoveredDueDate === task._id &&
                                                   task.reminders &&
                                                   task.reminders.length > 0 && (
                                                     <div className="text-xs text-slate-500 mt-0.5">
@@ -1357,7 +1255,7 @@ export default function TaskTable({
                                                   variant="ghost"
                                                   size="icon"
                                                   className="h-8 w-8"
-                                                  onClick={() => deleteMutation.mutate(task.id)}
+                                                  onClick={() => deleteMutation.mutate(task._id)}
                                                 >
                                                   <Trash2 className="h-4 w-4 text-rose-600" />
                                                 </Button>
@@ -1387,8 +1285,8 @@ export default function TaskTable({
                         <div {...provided.droppableProps} ref={provided.innerRef}>
                           {paginatedTasks.map((task, index) => (
                             <Draggable
-                              key={task.id}
-                              draggableId={task.id}
+                              key={task._id}
+                              draggableId={task._id}
                               index={index}
                               isDragDisabled={!!sortBy}
                             >
@@ -1399,7 +1297,7 @@ export default function TaskTable({
                                   className={cn(
                                     'task-card p-4 space-y-3 border-b-[10px]',
                                     index === 0 && 'border-t-[10px]',
-                                    animatingTask === task.id &&
+                                    animatingTask === task._id &&
                                       'animate-[wiggle_0.3s_ease-in-out]',
                                     snapshot.isDragging && 'opacity-50',
                                     tasksLimit !== Infinity &&
@@ -1423,8 +1321,8 @@ export default function TaskTable({
                                     )}
                                     {bulkMode && (
                                       <Checkbox
-                                        checked={selectedTasks.includes(task.id)}
-                                        onCheckedChange={() => toggleSelectTask(task.id)}
+                                        checked={selectedTasks.includes(task._id)}
+                                        onCheckedChange={() => toggleSelectTask(task._id)}
                                         className="flex-shrink-0 mt-1"
                                       />
                                     )}
@@ -1443,9 +1341,9 @@ export default function TaskTable({
                                     </button>
                                     <div className="flex-1 min-w-0">
                                       <Input
-                                        value={getTaskValue(task.id, 'title', task.title)}
+                                        value={getTaskValue(task._id, 'title', task.title)}
                                         onChange={e =>
-                                          handleTaskChange(task.id, 'title', e.target.value)
+                                          handleTaskChange(task._id, 'title', e.target.value)
                                         }
                                         onBlur={() => handleTaskBlur(task, 'title')}
                                         maxLength={200}
@@ -1454,13 +1352,13 @@ export default function TaskTable({
                                     </div>
                                     <Checkbox
                                       checked={
-                                        task.status === 'completed' || animatingTask === task.id
+                                        task.status === 'completed' || animatingTask === task._id
                                       }
                                       onCheckedChange={() => toggleComplete(task)}
                                       className={cn(
                                         'flex-shrink-0 mt-1',
                                         (task.status === 'completed' ||
-                                          animatingTask === task.id) &&
+                                          animatingTask === task._id) &&
                                           'border-emerald-500 data-[state=checked]:bg-emerald-500'
                                       )}
                                     />
@@ -1469,10 +1367,10 @@ export default function TaskTable({
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => toggleExpandTask(task.id)}
+                                    onClick={() => toggleExpandTask(task._id)}
                                     className="w-full justify-start gap-2 text-slate-600"
                                   >
-                                    {expandedTasks[task.id] ? (
+                                    {expandedTasks[task._id] ? (
                                       <>
                                         <ChevronUp className="w-4 h-4" />
                                         <span className="text-xs">Hide details</span>
@@ -1485,16 +1383,16 @@ export default function TaskTable({
                                     )}
                                   </Button>
 
-                                  {expandedTasks[task.id] && (
+                                  {expandedTasks[task._id] && (
                                     <>
                                       <Textarea
                                         value={getTaskValue(
-                                          task.id,
+                                          task._id,
                                           'description',
                                           task.description
                                         )}
                                         onChange={e =>
-                                          handleTaskChange(task.id, 'description', e.target.value)
+                                          handleTaskChange(task._id, 'description', e.target.value)
                                         }
                                         onBlur={() => handleTaskBlur(task, 'description')}
                                         placeholder="Add description..."
@@ -1527,7 +1425,7 @@ export default function TaskTable({
                                                   updateData.business_id = null
                                                 }
                                                 updateMutation.mutate({
-                                                  id: task.id,
+                                                  id: task._id,
                                                   data: updateData
                                                 })
                                               }}
@@ -1568,7 +1466,7 @@ export default function TaskTable({
                                                 goal_id: value === 'none' ? null : value
                                               }
                                               updateMutation.mutate({
-                                                id: task.id,
+                                                id: task._id,
                                                 data: updateData
                                               })
                                             }}
@@ -1600,7 +1498,7 @@ export default function TaskTable({
                                           <label className="text-xs text-slate-500 block mb-1">
                                             Due Date
                                           </label>
-                                          {taskValues[`${task.id}-due_date-editing-mobile`] ? (
+                                          {taskValues[`${task._id}-due_date-editing-mobile`] ? (
                                             <div
                                               className="task-card-duedate space-y-1"
                                               onBlur={e => {
@@ -1611,9 +1509,9 @@ export default function TaskTable({
                                                   )
                                                 ) {
                                                   const timeInput = document.querySelector(
-                                                    `input[data-time-for-mobile="${task.id}"]`
+                                                    `input[data-time-for-mobile="${task._id}"]`
                                                   ) as HTMLInputElement | null
-                                                  const reminders = reminderValues[task.id] || []
+                                                  const reminders = reminderValues[task._id] || []
                                                   handleTaskBlur(task, 'due_date')
                                                   if (
                                                     timeInput?.value !== task.due_time ||
@@ -1621,7 +1519,7 @@ export default function TaskTable({
                                                       JSON.stringify(task.reminders || [])
                                                   ) {
                                                     updateMutation.mutate({
-                                                      id: task.id,
+                                                      id: task._id,
                                                       data: {
                                                         due_time: timeInput?.value || null,
                                                         reminders
@@ -1632,7 +1530,7 @@ export default function TaskTable({
                                                   setReminderValues({})
                                                   setTaskValues(prev => ({
                                                     ...prev,
-                                                    [`${task.id}-due_date-editing-mobile`]: false
+                                                    [`${task._id}-due_date-editing-mobile`]: false
                                                   }))
                                                 }
                                               }}
@@ -1640,13 +1538,13 @@ export default function TaskTable({
                                               <Input
                                                 type="date"
                                                 value={getTaskValue(
-                                                  task.id,
+                                                  task._id,
                                                   'due_date',
                                                   task.due_date
                                                 )}
                                                 onChange={e =>
                                                   handleTaskChange(
-                                                    task.id,
+                                                    task._id,
                                                     'due_date',
                                                     e.target.value
                                                   )
@@ -1657,16 +1555,16 @@ export default function TaskTable({
                                               <Input
                                                 type="time"
                                                 defaultValue={task.due_time || ''}
-                                                data-time-for-mobile={task.id}
+                                                data-time-for-mobile={task._id}
                                                 className="h-9 text-sm"
                                                 placeholder="Time"
                                               />
-                                              {showReminders[task.id] && (
+                                              {showReminders[task._id] && (
                                                 <div className="space-y-1 mt-2">
                                                   <div className="text-xs text-slate-600 font-medium">
                                                     Reminders:
                                                   </div>
-                                                  {(reminderValues[task.id] || []).map(
+                                                  {(reminderValues[task._id] || []).map(
                                                     (totalMinutes, idx) => {
                                                       let value = totalMinutes
                                                       let unit = 'minutes'
@@ -1714,12 +1612,12 @@ export default function TaskTable({
                                                                 newValue * multiplier
 
                                                               const newReminders = [
-                                                                ...(reminderValues[task.id] || [])
+                                                                ...(reminderValues[task._id] || [])
                                                               ]
                                                               newReminders[idx] = newMinutes
                                                               setReminderValues(prev => ({
                                                                 ...prev,
-                                                                [task.id]: newReminders
+                                                                [task._id]: newReminders
                                                               }))
                                                             }}
                                                             className="h-8 text-xs w-20 flex-1"
@@ -1742,12 +1640,12 @@ export default function TaskTable({
                                                               const newMinutes = value * multiplier
 
                                                               const newReminders = [
-                                                                ...(reminderValues[task.id] || [])
+                                                                ...(reminderValues[task._id] || [])
                                                               ]
                                                               newReminders[idx] = newMinutes
                                                               setReminderValues(prev => ({
                                                                 ...prev,
-                                                                [task.id]: newReminders
+                                                                [task._id]: newReminders
                                                               }))
                                                             }}
                                                           >
@@ -1780,19 +1678,20 @@ export default function TaskTable({
                                                       size="sm"
                                                       onClick={() => {
                                                         const newReminders = [
-                                                          ...(reminderValues[task.id] || []),
+                                                          ...(reminderValues[task._id] || []),
                                                           30
                                                         ]
                                                         setReminderValues(prev => ({
                                                           ...prev,
-                                                          [task.id]: newReminders
+                                                          [task._id]: newReminders
                                                         }))
                                                       }}
                                                       className="flex-1 text-xs"
                                                     >
                                                       Add reminder
                                                     </Button>
-                                                    {(reminderValues[task.id] || []).length > 0 && (
+                                                    {(reminderValues[task._id] || []).length >
+                                                      0 && (
                                                       <Button
                                                         type="button"
                                                         variant="ghost"
@@ -1801,11 +1700,11 @@ export default function TaskTable({
                                                         onClick={e => {
                                                           e.stopPropagation()
                                                           const newReminders = reminderValues[
-                                                            task.id
+                                                            task._id
                                                           ].slice(0, -1)
                                                           setReminderValues(prev => ({
                                                             ...prev,
-                                                            [task.id]: newReminders
+                                                            [task._id]: newReminders
                                                           }))
                                                         }}
                                                       >
@@ -1821,11 +1720,11 @@ export default function TaskTable({
                                               onClick={() => {
                                                 setTaskValues(prev => ({
                                                   ...prev,
-                                                  [`${task.id}-due_date-editing-mobile`]: true
+                                                  [`${task._id}-due_date-editing-mobile`]: true
                                                 }))
                                                 setReminderValues(prev => ({
                                                   ...prev,
-                                                  [task.id]: task.reminders || []
+                                                  [task._id]: task.reminders || []
                                                 }))
                                               }}
                                               className="cursor-text text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded"
@@ -1880,7 +1779,7 @@ export default function TaskTable({
                                               Duplicate
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
-                                              onClick={() => deleteMutation.mutate(task.id)}
+                                              onClick={() => deleteMutation.mutate(task._id)}
                                               className="text-rose-600"
                                             >
                                               <Trash2 className="h-4 w-4 mr-2" />
