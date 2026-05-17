@@ -13,7 +13,6 @@ export default function GoogleAuth({ onSuccess, onError, disabled }: Props) {
         <div
           className={`
             w-full max-w-[320px] sm:max-w-[320px]
-            ${disabled ? 'pointer-events-none opacity-50' : ''}
           `}
         >
           <div className="flex justify-center w-full px-4">
