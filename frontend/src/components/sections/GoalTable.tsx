@@ -344,6 +344,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] })
+      queryClient.invalidateQueries({ queryKey: ['usage'] })
     }
   })
 
@@ -372,6 +373,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] })
+      queryClient.invalidateQueries({ queryKey: ['usage'] })
       setSelectedGoals([])
     }
   })

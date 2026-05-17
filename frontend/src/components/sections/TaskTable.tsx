@@ -207,6 +207,7 @@ export default function TaskTable({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['usage'] })
     }
   })
 
@@ -232,6 +233,7 @@ export default function TaskTable({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['usage'] })
       setSelectedTasks([])
     }
   })
@@ -518,7 +520,7 @@ export default function TaskTable({
                   className="bg-indigo-600 hover:bg-indigo-700 flex-1 lg:flex-none"
                 >
                   <Plus className="w-4 h-4 mr-1" />
-                  Add
+                  Add6
                 </Button>
               </UsageLimitGate>
               <TooltipProvider>
