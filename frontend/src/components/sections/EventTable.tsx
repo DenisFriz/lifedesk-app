@@ -45,6 +45,7 @@ import UsageLimitGate from '@/components/subscription/UsageLimitGate'
 import { TablePagination } from '../TablePagination'
 import { CategorySelectDialog } from '../CategorySelectDialog'
 import { useSound } from '@/contexts/SoundContext'
+import { useUserLimit } from '@/contexts/UserLimitContext'
 
 export default function EventTable({
   category,
@@ -79,6 +80,8 @@ export default function EventTable({
   const tableRef = React.useRef(null)
 
   const { playSound } = useSound()
+
+  const { canCreate } = useUserLimit()
 
   const { data: allEvents = [] } = useQuery<any[]>({
     queryKey: ['events', category, businessId],
@@ -430,11 +433,7 @@ export default function EventTable({
                   className="pl-8 h-9 w-48 text-sm"
                 />
               </div>
-              <UsageLimitGate
-                current={allEvents.length}
-                max={limit('home_events_limit')}
-                label="events"
-              >
+              <UsageLimitGate allowed={canCreate('events')} label="goals">
                 <Button
                   onClick={handleAddNew}
                   size="sm"
