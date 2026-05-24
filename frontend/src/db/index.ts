@@ -30,6 +30,8 @@ export interface GoalRecord {
 }
 
 export interface TaskRecord {
+  priority: any
+  problem_id: any
   id: string
   serverId?: string | null
   title: string

@@ -68,7 +68,7 @@ export default function GoalCreateForm({ date, time, open, onOpenChange, initial
 
   const { createMutation } = useGoalMutations()
 
-  const handleCreateGoal = async (data: Record<string, unknown>) => {
+  const handleCreateGoal = async (data: any) => {
     try {
       await createMutation.mutateAsync(data)
       onOpenChange(false)

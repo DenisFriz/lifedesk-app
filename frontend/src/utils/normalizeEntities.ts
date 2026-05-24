@@ -29,6 +29,7 @@ export function normalizeGoal(serverGoal: any): GoalRecord {
     target_time: serverGoal.target_time ?? null,
     business_id: serverGoal.business_id ?? null,
     is_deleted: serverGoal.is_deleted ?? false,
+    reminders: serverGoal.reminders ?? null,
     createdAt: serverGoal.createdAt,
     updatedAt: serverGoal.updatedAt
   }
@@ -62,6 +63,8 @@ export function normalizeTask(serverTask: any): TaskRecord {
     parent_recurring_task_id: serverTask.parent_recurring_task_id ?? null,
     deleted_at: serverTask.deleted_at ?? null,
     deleted_by_process: serverTask.deleted_by_process ?? null,
+    priority: null,
+    problem_id: null,
     createdAt: serverTask.createdAt,
     updatedAt: serverTask.updatedAt
   }
