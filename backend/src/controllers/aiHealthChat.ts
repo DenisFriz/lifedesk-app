@@ -120,7 +120,7 @@ export async function aiHealthChat(req: Request, res: Response) {
     // Body
     if (bodyMeasurements.length) {
       const latest = bodyMeasurements[0];
-      context += `⚖️ Body: Weight ${latest.weight}, Fat ${latest.body_fat_percentage}%\n\n`;
+      context += `⚖️ Body: Weight ${latest.weight}, Fat ${latest.body_fat}%\n\n`;
     }
 
     // Finance calc

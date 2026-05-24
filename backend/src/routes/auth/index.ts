@@ -505,16 +505,13 @@ router.get(
       tasks: userUsed.tasks,
       calendarEntries: userUsed.calendarEntries,
       events: userUsed.events,
-      assets: userUsed.assets,
-      bankAccounts: userUsed.bankAccounts,
       workouts: userUsed.workouts,
-      projects: userUsed.projects,
     };
 
     const remaining = Object.fromEntries(
-      (Object.keys(currentPlanLimits) as UsageKey[]).map((key) => {
+      (Object.keys(currentPlanLimits) as (keyof typeof usage)[]).map((key) => {
         const limit = currentPlanLimits[key];
-        const used = userUsed[key] ?? 0;
+        const used = usage[key] ?? 0;
 
         if (typeof limit !== 'number') {
           return [key, null];
