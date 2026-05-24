@@ -8,7 +8,7 @@ export { Project } from './Project.js';
 export { Contact } from './Contact.js';
 export { Client } from './Client.js';
 export { Hobby } from './Hobby.js';
-export { LearningItem } from './LearningItem.js';
+export { Learning } from './Learning.js';
 export { Note } from './Note.js';
 export { Income } from './Income.js';
 export { Expense } from './Expense.js';
@@ -29,6 +29,7 @@ export { CommunityComment } from './CommunityComment.js';
 export { BankBalanceSnapshot } from './BankBalanceSnapshot.js';
 export { TimeEntry } from './TimeEntry.js';
 export { Subscription } from './Subscription.js';
+export { RelationShip } from './RelationShip.js';
 
 import mongoose from 'mongoose';
 import { User } from './User.js';
@@ -41,7 +42,7 @@ import { Project } from './Project.js';
 import { Contact } from './Contact.js';
 
 import { Hobby } from './Hobby.js';
-import { LearningItem } from './LearningItem.js';
+import { Learning } from './Learning.js';
 import { Note } from './Note.js';
 import { Income } from './Income.js';
 import { Expense } from './Expense.js';
@@ -65,6 +66,10 @@ import { Subscription } from './Subscription.js';
 import { Client } from './Client.js';
 import { UserPlan } from './UserPlan.js';
 import { CommunityIdea } from './CommunityIdea.js';
+import { Vehicle } from './Vehicle.js';
+import { Estate } from './Estate.js';
+import { OtherAsset } from './OtherAsset.js';
+import { RelationShip } from './RelationShip.js';
 
 export const modelMap: Record<string, mongoose.Model<any>> = {
   user: User,
@@ -72,12 +77,16 @@ export const modelMap: Record<string, mongoose.Model<any>> = {
   goal: Goal,
   problem: Problem,
   event: Event,
+  vehicle: Vehicle,
+  estate: Estate,
+  otherasset: OtherAsset,
   business: Business,
   project: Project,
   contact: Contact,
   client: Client,
   hobby: Hobby,
-  learningitem: LearningItem,
+  learning: Learning,
+  relationships: RelationShip,
   note: Note,
   income: Income,
   expense: Expense,

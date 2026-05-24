@@ -7,7 +7,7 @@
  */
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { processSyncQueue, getPendingCount, clearSyncQueue } from '@/lib/syncQueue'
+import { processSyncQueue, getPendingCount, clearSyncQueue } from '@/db/syncQueue'
 import { WifiOff, RefreshCw } from 'lucide-react'
 
 export default function OfflineSyncManager() {
@@ -33,20 +33,24 @@ export default function OfflineSyncManager() {
       setPendingCount(count)
     }
 
+    const handleQueueUpdated = async () => {
+      if (!navigator.onLine) return
+      setSyncing(true)
+      await processSyncQueue(queryClient)
+      setPendingCount(await getPendingCount())
+      setSyncing(false)
+    }
+
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
+    window.addEventListener('syncqueue:updated', handleQueueUpdated)
 
-    // On mount: clear stale queue entries and sync if online
+    // On mount: sync any leftover pending items
     getPendingCount().then(async count => {
       if (count > 0 && navigator.onLine) {
         setSyncing(true)
         await processSyncQueue(queryClient)
-        const remaining = await getPendingCount()
-        // If items are still stuck after processing, clear them — they're stale/unresolvable
-        if (remaining > 0) {
-          await clearSyncQueue()
-        }
-        setPendingCount(0)
+        setPendingCount(await getPendingCount())
         setSyncing(false)
       } else {
         setPendingCount(count)
@@ -56,6 +60,7 @@ export default function OfflineSyncManager() {
     return () => {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
+      window.removeEventListener('syncqueue:updated', handleQueueUpdated)
     }
   }, [queryClient])
 

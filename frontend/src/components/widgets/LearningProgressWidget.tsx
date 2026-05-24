@@ -1,8 +1,6 @@
-import React from 'react'
 import { backend } from '@/api/backend'
 import { useQuery } from '@tanstack/react-query'
 import { Brain } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import type { LearningItem } from '@/types/entities'
 
 const TYPE_ICONS = {

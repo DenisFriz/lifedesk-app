@@ -1,40 +1,98 @@
-import mongoose, { Schema, Model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
-import { encryptNullable, decryptNullable } from '@utils/encryption.js';
-import { IProgressPhoto } from '@/types/index.js';
+import mongoose, { Schema, Model, Types } from 'mongoose';
 
-const ProgressPhotoSchema = new Schema<IProgressPhoto>(
+export interface IProgressPhoto {
+  _id: Types.ObjectId;
+  created_by: Types.ObjectId;
+  image_url: string;
+  date: Date;
+  description: string | null;
+  body_area:
+    | 'front'
+    | 'back'
+    | 'side'
+    | 'full_body'
+    | 'arms'
+    | 'chest'
+    | 'legs'
+    | 'core'
+    | 'other';
+  is_deleted: boolean;
+  is_archived: boolean;
+  deleted_at: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const progressPhotoSchema = new Schema<IProgressPhoto>(
   {
-    id: { type: String, default: () => uuidv4(), unique: true, index: true },
-    created_by: { type: String, required: true, index: true },
-    url: {
+    created_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+
+    image_url: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 2000,
+    },
+
+    date: {
+      type: Date,
+      required: true,
+    },
+
+    description: {
       type: String,
       default: null,
-      set: encryptNullable,
-      get: decryptNullable,
+      maxlength: 500,
+      trim: true,
     },
-    date: String,
-    notes: String,
-    is_deleted: { type: Boolean, default: false },
-    deleted_at: String,
-    deleted_by_process: String,
-    created_at: { type: String, default: () => new Date().toISOString() },
-    updated_at: { type: String, default: () => new Date().toISOString() },
+
+    body_area: {
+      type: String,
+      enum: [
+        'front',
+        'back',
+        'side',
+        'full_body',
+        'arms',
+        'chest',
+        'legs',
+        'core',
+        'other',
+      ],
+      default: 'full_body',
+      required: true,
+    },
+
+    is_deleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    is_archived: {
+      type: Boolean,
+      default: false,
+    },
+
+    deleted_at: {
+      type: Date,
+      default: null,
+    },
   },
   {
-    timestamps: false,
+    timestamps: true,
     versionKey: false,
-    toObject: { getters: true },
-    toJSON: { getters: true },
   },
 );
 
-ProgressPhotoSchema.pre<IProgressPhoto>(
-  'save',
-  function (this: IProgressPhoto) {
-    this.updated_at = new Date().toISOString();
-  },
-);
+progressPhotoSchema.index({
+  created_by: 1,
+  date: -1,
+});
 
 export const ProgressPhoto: Model<IProgressPhoto> =
-  mongoose.model<IProgressPhoto>('ProgressPhoto', ProgressPhotoSchema);
+  mongoose.model<IProgressPhoto>('ProgressPhoto', progressPhotoSchema);

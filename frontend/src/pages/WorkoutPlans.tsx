@@ -1,12 +1,9 @@
 import React, { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { backend } from '@/api/backend'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Plus, Trash2, Pencil, Play, Calendar as CalendarIcon, Lock } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Link } from 'react-router-dom'
-import { useSubscription } from '@/hooks/useSubscription'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -21,97 +18,69 @@ import { Badge } from '@/components/ui/badge'
 import { useNavigate } from 'react-router-dom'
 import { createPageUrl } from '@/utils'
 import { Helmet } from 'react-helmet-async'
-
-type WorkoutExercise = {
-  name: string
-  sets?: number | null
-  reps?: number | null
-  weight?: number | null
-  distance?: number | null
-  duration?: number | null
-  rest_seconds?: number | null
-  notes?: string | null
-}
-
-type WorkoutPlan = {
-  id: string
-  name: string
-  description?: string | null
-  type: 'strength' | 'cardio' | 'flexibility' | 'sports' | 'other'
-  exercises: WorkoutExercise[]
-  scheduled_days: number[]
-  active: boolean
-  is_deleted: boolean
-  created_date?: string
-}
-
-type WorkoutPlanCreateInput = {
-  name: string
-  description?: string | null
-  type: 'strength' | 'cardio' | 'flexibility' | 'sports' | 'other'
-  exercises: any[]
-  scheduled_days: number[]
-  active: boolean
-}
+import { useWorkoutPlansQuery } from '@/hooks/workoutplans/useWorkoutPlansQuery'
+import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useWorkoutPlanMutations } from '@/hooks/workoutplans/useWorkoutPlanMutations'
+import { CreateWorkoutPlanInput } from '@/repositories/workoutplan.repository'
+import { WorkoutPlanRecord } from '@/db'
 
 export default function WorkoutPlans() {
   const [showForm, setShowForm] = useState(false)
   const [editingPlan, setEditingPlan] = useState(null)
-  const queryClient = useQueryClient()
   const navigate = useNavigate()
 
-  const { limit } = useSubscription()
-  const planLimit = limit('fitness_workout_plans_limit')
+  const { canCreate, data } = useUserLimit()
 
-  const { data: plans = [] } = useQuery<WorkoutPlan[]>({
-    queryKey: ['workoutPlans'],
-    queryFn: async (): Promise<WorkoutPlan[]> => {
-      return backend.entities.WorkoutPlan.filter({ is_deleted: false }, '-created_date') as Promise<
-        WorkoutPlan[]
-      >
-    }
-  })
+  const { data: plans = [] } = useWorkoutPlansQuery()
 
-  const atLimit = planLimit !== Infinity && plans.length >= planLimit
+  const atLimit = canCreate('workoutPlans')
 
-  const createMutation = useMutation<WorkoutPlan, Error, WorkoutPlanCreateInput>({
-    mutationFn: async (data): Promise<WorkoutPlan> => {
-      return backend.entities.WorkoutPlan.create(data) as Promise<WorkoutPlan>
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workoutPlans'] })
+  const { createMutation, updateMutation, deleteMutation } = useWorkoutPlanMutations()
+
+  const handleCreateWorkoutPlan = async (data: CreateWorkoutPlanInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
       setEditingPlan(null)
     }
-  })
+  }
 
-  const updateMutation = useMutation<
-    WorkoutPlan,
-    Error,
-    { id: string; data: Partial<WorkoutPlan> }
-  >({
-    mutationFn: async ({ id, data }) => {
-      return backend.entities.WorkoutPlan.update(id, data) as Promise<WorkoutPlan>
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workoutPlans'] })
+  const handleUpdateWorkoutPlan = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<WorkoutPlanRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
       setEditingPlan(null)
     }
-  })
+  }
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.WorkoutPlan.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workoutPlans'] })
+  const handleDeleteWorkoutPlan = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setShowForm(false)
+      setEditingPlan(null)
     }
-  })
+  }
 
   const handleSubmit = data => {
     if (editingPlan) {
-      updateMutation.mutate({ id: editingPlan.id, data })
+      handleUpdateWorkoutPlan({ id: editingPlan.id, data })
     } else {
-      createMutation.mutate(data)
+      handleCreateWorkoutPlan(data)
     }
   }
 
@@ -167,7 +136,7 @@ export default function WorkoutPlans() {
               <Link to="/Upgrade" className="w-full lg:w-auto">
                 <Button className="w-full bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
-                  Limit reached ({plans.length}/{planLimit})
+                  Limit reached ({data?.usage?.workoutPlans}/{data?.limits?.workoutPlans})
                 </Button>
               </Link>
             ) : (
@@ -254,7 +223,7 @@ export default function WorkoutPlans() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => deleteMutation.mutate(plan.id)}
+                        onClick={() => handleDeleteWorkoutPlan(plan.id)}
                       >
                         <Trash2 className="h-4 w-4 text-rose-500" />
                       </Button>

@@ -1,18 +1,40 @@
 import { Toaster } from '@/components/ui/toaster'
-import { QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider, useQueryClient } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import VisualEditAgent from '@/lib/VisualEditAgent'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/lib/AuthContext'
 import UserNotRegisteredError from '@/components/UserNotRegisteredError'
 import OfflineSyncManager from '@/components/offline/OfflineSyncManager'
 import { HelmetProvider } from 'react-helmet-async'
+import { bootstrapSync } from '@/sync/bootstrapSync'
 
 import Layout from './Layout'
 import { appRoutes, authRoutes } from './routes'
 import Home from './pages/Home'
-import { ReactNode } from 'react'
+import { ReactNode, useEffect, useRef } from 'react'
 import { UserLimitProvider } from './contexts/UserLimitContext'
+
+function AuthSyncBridge() {
+  const { isAuthenticated, isLoadingAuth } = useAuth()
+  const queryClient = useQueryClient()
+  const hasBootstrapped = useRef(false)
+
+  useEffect(() => {
+    if (isLoadingAuth) return
+    if (!isAuthenticated) {
+      hasBootstrapped.current = false
+      return
+    }
+    if (hasBootstrapped.current) return
+    hasBootstrapped.current = true
+
+    bootstrapSync(queryClient).catch(err => {
+      console.error('[AuthSyncBridge] bootstrapSync failed:', err)
+    })
+  }, [isAuthenticated, isLoadingAuth, queryClient])
+
+  return null
+}
 
 const LoadingAuth = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -103,8 +125,8 @@ function App() {
           </BrowserRouter>
 
           <Toaster />
-          <VisualEditAgent />
           <OfflineSyncManager />
+          <AuthSyncBridge />
         </QueryClientProvider>
       </AuthProvider>
     </HelmetProvider>

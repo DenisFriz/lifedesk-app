@@ -191,8 +191,7 @@ export interface IProblem {
 
 export interface IEvent {
   _id?: Types.ObjectId;
-  id: string;
-  created_by: string;
+  created_by: Types.ObjectId;
   title: string;
   description: string | null;
   category: string | null;
@@ -213,22 +212,6 @@ export interface IEvent {
   recurrence_end_count: number | null;
   excluded_dates: string[];
   parent_recurring_event_id: string | null;
-  order: number | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  deleted_by_process: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface IBusiness {
-  _id?: Types.ObjectId;
-  id: string;
-  created_by: string;
-  name: string;
-  description: string | null;
-  categories: string[];
-  color: string;
   order: number | null;
   is_deleted: boolean;
   deleted_at: string | null;
@@ -297,10 +280,9 @@ export interface IHobby {
   updated_at: string;
 }
 
-export interface ILearningItem {
+export interface ILearning {
   _id?: Types.ObjectId;
-  id: string;
-  created_by: string;
+  created_by: Types.ObjectId;
   title: string;
   type: string | null;
   status: string;

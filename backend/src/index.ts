@@ -8,9 +8,7 @@ async function startServer() {
   try {
     await connectDB();
 
-    app.listen(PORT, () => {
-      console.log(`API Base URL: http://localhost:${PORT}`);
-    });
+    app.listen(PORT);
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);

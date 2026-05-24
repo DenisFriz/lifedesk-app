@@ -29,10 +29,25 @@ export type UsageKey =
   | 'tasks'
   | 'calendarEntries'
   | 'events'
-  | 'assets'
-  | 'bankAccounts'
+  | 'vehicle'
+  | 'estate'
+  | 'otherAsset'
+  | 'offlineBankAccount'
+  | 'healthTrackingEnties'
+  | 'medicalDocuments'
   | 'workouts'
-  | 'projects'
+  | 'workoutPlans'
+  | 'measurements'
+  | 'hobbies'
+  | 'learning'
+  | 'relationships'
+  | 'business'
+  | 'bodyMeasurements'
+  | 'progressPhotos'
+  | 'projectsAndClients'
+  | 'marketingStrategy'
+  | 'campaign'
+  | 'content'
 
 type UsageMap = Record<UsageKey, number>
 type LimitsMap = Record<UsageKey, number | null>
@@ -112,8 +127,5 @@ export const backend = {
       ExtractDataFromUploadedFile: (p: unknown) =>
         apiFetch('POST', '/functions/extractDataFromUploadedFile', p)
     }
-  },
-  appLogs: {
-    logUserInApp: (pageName: string) => apiFetch('POST', '/appLogs/userActivity', { pageName })
   }
 }

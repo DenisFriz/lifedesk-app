@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { backend } from '@/api/backend'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import {
@@ -15,7 +13,6 @@ import {
   Brain
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useSubscription } from '@/hooks/useSubscription'
 import OverLimitItem from '@/components/subscription/OverLimitItem'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -24,6 +21,11 @@ import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { Lock } from 'lucide-react'
 import { Helmet } from 'react-helmet-async'
+import { useBodyMeasurementsQuery } from '@/hooks/bodymeasurements/useBodyMeasurementsQuery'
+import { useBodyMeasurementMutations } from '@/hooks/bodymeasurements/useBodyMeasurementMutations'
+import { CreateBodyMeasurementInput } from '@/repositories/bodymeasurement.repository'
+import { BodyMeasurementRecord } from '@/db'
+import { useUserLimit } from '@/contexts/UserLimitContext'
 
 const METRIC_GROUPS = [
   {
@@ -100,52 +102,11 @@ function MetricBadge({ value, unit, label }) {
   )
 }
 
-type BodyMeasurement = {
-  id: string
-  date: string
-  notes?: string | null
-
-  heart_rate?: number | null
-  blood_pressure_systolic?: number | null
-  blood_pressure_diastolic?: number | null
-  spo2?: number | null
-  hrv?: number | null
-  respiratory_rate?: number | null
-  body_temperature?: number | null
-
-  weight?: number | null
-  bmi?: number | null
-  body_fat_percentage?: number | null
-  muscle_mass?: number | null
-  bone_mass?: number | null
-  water_percentage?: number | null
-  visceral_fat?: number | null
-
-  chest?: number | null
-  waist?: number | null
-  hips?: number | null
-  arms?: number | null
-  legs?: number | null
-
-  vo2_max?: number | null
-  steps?: number | null
-
-  sleep_hours?: number | null
-  sleep_score?: number | null
-  stress_level?: number | null
-}
-
-type UpdateBodyMeasurementInput = {
-  id: string
-  data: Partial<BodyMeasurement>
-}
-
 export default function BodyMeasurements() {
   const [showForm, setShowForm] = useState(false)
   const [editingMeasurement, setEditingMeasurement] = useState(null)
   const [isScrolled, setIsScrolled] = useState(false)
   const headerRef = useRef(null)
-  const queryClient = useQueryClient()
 
   useEffect(() => {
     if (!headerRef.current) return
@@ -159,50 +120,58 @@ export default function BodyMeasurements() {
     return () => observer.disconnect()
   }, [])
 
-  const { limit } = useSubscription()
-  const measurementLimit = limit('fitness_measurements_limit')
+  const { canCreate, data } = useUserLimit()
 
-  const { data: measurements = [] } = useQuery<BodyMeasurement[]>({
-    queryKey: ['measurements'],
-    queryFn: () => backend.entities.BodyMeasurement.list('-date') as Promise<BodyMeasurement[]>
-  })
+  const { data: measurements = [] } = useBodyMeasurementsQuery()
 
-  const atLimit = measurementLimit !== Infinity && measurements.length >= measurementLimit
-  const isOverLimit = idx => measurementLimit !== Infinity && idx >= measurementLimit
+  const atLimit = canCreate('bodyMeasurements')
 
-  const createMutation = useMutation({
-    mutationFn: (data: BodyMeasurement) => backend.entities.BodyMeasurement.create(data),
+  const { createMutation, updateMutation, deleteMutation } = useBodyMeasurementMutations()
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['measurements'] })
+  const handleCreateBodyMeasurement = async (data: CreateBodyMeasurementInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
       setEditingMeasurement(null)
     }
-  })
+  }
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: UpdateBodyMeasurementInput) =>
-      backend.entities.BodyMeasurement.update(id, data),
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['measurements'] })
+  const handleUpdateBodyMeasurement = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<BodyMeasurementRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
       setEditingMeasurement(null)
     }
-  })
+  }
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.BodyMeasurement.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['measurements'] })
+  const handleDeleteBodyMeasurement = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setShowForm(false)
+      setEditingMeasurement(null)
     }
-  })
+  }
 
   const handleSubmit = data => {
     if (editingMeasurement) {
-      updateMutation.mutate({ id: editingMeasurement.id, data })
+      handleUpdateBodyMeasurement({ id: editingMeasurement.id, data })
     } else {
-      createMutation.mutate(data)
+      handleCreateBodyMeasurement(data)
     }
   }
 
@@ -234,7 +203,8 @@ export default function BodyMeasurements() {
               <Link to="/Upgrade" className="w-full lg:w-auto">
                 <Button className="w-full bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
-                  Limit reached ({measurements.length}/{measurementLimit})
+                  Limit reached ({data?.usage?.bodyMeasurements || 0}/
+                  {data?.limits?.bodyMeasurements})
                 </Button>
               </Link>
             ) : (
@@ -263,8 +233,8 @@ export default function BodyMeasurements() {
                 </CardContent>
               </Card>
             ) : (
-              measurements.map((m, idx) => {
-                const overLimit = isOverLimit(idx)
+              measurements.map(m => {
+                const overLimit = canCreate('bodyMeasurements')
                 const card = (
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -287,7 +257,7 @@ export default function BodyMeasurements() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => deleteMutation.mutate(m.id)}
+                            onClick={() => handleDeleteBodyMeasurement(m.id)}
                           >
                             <Trash2 className="h-4 w-4 text-rose-500" />
                           </Button>

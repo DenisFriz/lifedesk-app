@@ -1,11 +1,14 @@
 import mongoose, { Schema, Model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
 import { IEvent } from '@/types/index.js';
 
 const eventSchema = new Schema<IEvent>(
   {
-    id: { type: String, default: () => uuidv4(), unique: true, index: true },
-    created_by: { type: String, index: true, required: true },
+    created_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
     title: { type: String, required: true },
     description: { type: String, default: null },
     category: { type: String, default: null },
@@ -30,15 +33,9 @@ const eventSchema = new Schema<IEvent>(
     is_deleted: { type: Boolean, default: false },
     deleted_at: { type: String, default: null },
     deleted_by_process: { type: String, default: null },
-    created_at: { type: String, default: () => new Date().toISOString() },
-    updated_at: { type: String, default: () => new Date().toISOString() },
   },
-  { timestamps: false, versionKey: false },
+  { timestamps: true, versionKey: false },
 );
-
-eventSchema.pre<IEvent>('save', function (this: IEvent) {
-  this.updated_at = new Date().toISOString();
-});
 
 export const Event: Model<IEvent> = mongoose.model<IEvent>(
   'Event',

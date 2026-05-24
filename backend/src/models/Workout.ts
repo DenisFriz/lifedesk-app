@@ -1,28 +1,115 @@
-import mongoose, { Schema, Model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
-import { IWorkout } from '@/types/index.js';
+import mongoose, { Schema, Model, Types } from 'mongoose';
+
+export interface IWorkout {
+  _id: Types.ObjectId;
+  created_by: Types.ObjectId;
+  type: string;
+  title: string;
+  duration_minutes: number | null;
+  calories_burned: number | null;
+  date: string;
+  notes: string | null;
+  exercises: {
+    name: string;
+    sets: number | null;
+    reps: number | null;
+    weight: number | null;
+    distance: number | null;
+    duration: number | null;
+    notes: string | null;
+  }[];
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const workoutSchema = new Schema<IWorkout>(
   {
-    id: { type: String, default: () => uuidv4(), unique: true, index: true },
-    created_by: { type: String, index: true, required: true },
-    type: String,
-    title: String,
-    duration_minutes: Number,
-    notes: String,
-    date: String,
-    is_deleted: { type: Boolean, default: false },
-    deleted_at: String,
-    deleted_by_process: String,
-    created_at: { type: String, default: () => new Date().toISOString() },
-    updated_at: { type: String, default: () => new Date().toISOString() },
-  },
-  { timestamps: false, versionKey: false },
-);
+    created_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
 
-workoutSchema.pre<IWorkout>('save', function (this: IWorkout) {
-  this.updated_at = new Date().toISOString();
-});
+    type: {
+      type: String,
+      required: true,
+      index: true,
+    },
+
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200,
+    },
+
+    duration_minutes: {
+      type: Number,
+      default: null,
+    },
+
+    calories_burned: {
+      type: Number,
+      default: null,
+    },
+
+    date: {
+      type: String,
+      required: true,
+      index: true,
+    },
+
+    notes: {
+      type: String,
+      default: null,
+      maxlength: 5000,
+    },
+
+    exercises: [
+      {
+        name: {
+          type: String,
+          required: true,
+        },
+
+        sets: {
+          type: Number,
+          default: null,
+        },
+
+        reps: {
+          type: Number,
+          default: null,
+        },
+
+        weight: {
+          type: Number,
+          default: null,
+        },
+
+        distance: {
+          type: Number,
+          default: null,
+        },
+
+        duration: {
+          type: Number,
+          default: null,
+        },
+
+        notes: {
+          type: String,
+          default: null,
+        },
+      },
+    ],
+  },
+  {
+    timestamps: true,
+    versionKey: false,
+  },
+);
 
 export const Workout: Model<IWorkout> = mongoose.model<IWorkout>(
   'Workout',

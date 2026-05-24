@@ -1,7 +1,6 @@
-import React from 'react'
 import { backend } from '@/api/backend'
 import { useQuery } from '@tanstack/react-query'
-import { Clock, TrendingUp, DollarSign } from 'lucide-react'
+import { Clock, DollarSign } from 'lucide-react'
 import { startOfWeek, endOfWeek, format, isWithinInterval, parseISO } from 'date-fns'
 import type { TimeEntry } from '@/types/entities'
 

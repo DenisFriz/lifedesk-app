@@ -2,6 +2,10 @@ const getUserLocale = (): string => {
   return navigator.languages?.[0] || navigator.language || 'en-US'
 }
 
+function parseDateString(date: string): Date {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(date + 'T00:00:00') : new Date(date)
+}
+
 export const formatCurrency = (amount: number | null | undefined, currency = 'EUR'): string => {
   if (amount == null || isNaN(amount)) return '-'
 
@@ -39,7 +43,7 @@ export const formatPercent = (value: number | null | undefined, decimals = 0): s
 export const formatDate = (date: string | Date | null | undefined): string => {
   if (!date) return '-'
 
-  const dateObj = typeof date === 'string' ? new Date(date) : date
+  const dateObj = typeof date === 'string' ? parseDateString(date) : date
   if (isNaN(dateObj.getTime())) return '-'
 
   return new Intl.DateTimeFormat(getUserLocale(), {
@@ -52,7 +56,7 @@ export const formatDate = (date: string | Date | null | undefined): string => {
 export const formatDateLong = (date: string | Date | null | undefined): string => {
   if (!date) return '-'
 
-  const dateObj = typeof date === 'string' ? new Date(date) : date
+  const dateObj = typeof date === 'string' ? parseDateString(date) : date
   if (isNaN(dateObj.getTime())) return '-'
 
   return new Intl.DateTimeFormat(getUserLocale(), {
@@ -65,7 +69,7 @@ export const formatDateLong = (date: string | Date | null | undefined): string =
 export const formatDateMedium = (date: string | Date | null | undefined): string => {
   if (!date) return '-'
 
-  const dateObj = typeof date === 'string' ? new Date(date) : date
+  const dateObj = typeof date === 'string' ? parseDateString(date) : date
   if (isNaN(dateObj.getTime())) return '-'
 
   return new Intl.DateTimeFormat(getUserLocale(), {
@@ -78,7 +82,7 @@ export const formatDateMedium = (date: string | Date | null | undefined): string
 export const formatDateTime = (date: string | Date | null | undefined): string => {
   if (!date) return '-'
 
-  const dateObj = typeof date === 'string' ? new Date(date) : date
+  const dateObj = typeof date === 'string' ? parseDateString(date) : date
   if (isNaN(dateObj.getTime())) return '-'
 
   return new Intl.DateTimeFormat(getUserLocale(), {
@@ -93,7 +97,7 @@ export const formatDateTime = (date: string | Date | null | undefined): string =
 export const formatMonthYear = (date: string | Date | null | undefined): string => {
   if (!date) return '-'
 
-  const dateObj = typeof date === 'string' ? new Date(date) : date
+  const dateObj = typeof date === 'string' ? parseDateString(date) : date
   if (isNaN(dateObj.getTime())) return '-'
 
   return new Intl.DateTimeFormat(getUserLocale(), {

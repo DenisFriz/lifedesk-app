@@ -1,4 +1,3 @@
-import React from 'react'
 import { backend } from '@/api/backend'
 import { useQuery } from '@tanstack/react-query'
 import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react'

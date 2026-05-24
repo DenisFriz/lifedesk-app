@@ -1,67 +1,68 @@
 import { useState } from 'react'
-import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Plus, Car, Lock } from 'lucide-react'
 import CarAssetCard from '@/components/assets/CarAssetCard'
 import CarAssetForm from '@/components/assets/CarAssetForm'
 import { formatCurrency } from '@/components/utils/formatters'
-import { useSubscription } from '@/hooks/useSubscription'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-
-type TangibleAsset = {
-  id: string
-  category: 'vehicle' | 'real_estate' | 'other' | string
-  name?: string
-  current_value?: number
-  purchase_price?: number
-  mortgage_amount?: number
-  created_date?: string
-}
+import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useVehicleMutations } from '@/hooks/vehicles/useVehicleMutations'
+import { CreateVehicleInput } from '@/repositories/vehicle.repository'
+import { useVehiclesQuery } from '@/hooks/vehicles/useVehiclesQuery'
+import { VehicleRecord } from '@/db'
 
 export default function AssetsCars() {
   const [form, setForm] = useState({ open: false, asset: null })
-  const queryClient = useQueryClient()
 
-  const { data: assets = [], isLoading } = useQuery<TangibleAsset[]>({
-    queryKey: ['tangible-assets'],
-    queryFn: async (): Promise<TangibleAsset[]> => {
-      const res = await backend.entities.TangibleAsset.list('-created_date')
-      return res as TangibleAsset[]
-    }
-  })
+  const { data: vehicles, isLoading } = useVehiclesQuery()
 
-  const { limit: getLimit } = useSubscription()
-  const vehicleLimit = getLimit('assets_vehicles_limit')
+  const { canCreate, data } = useUserLimit()
 
-  const cars = assets.filter(a => a.category === 'vehicle')
-  const totalValue = cars.reduce((s, a) => s + (a.current_value || a.purchase_price || 0), 0)
-  const atLimit = cars.length >= vehicleLimit
+  const totalValue = vehicles?.reduce((s, a) => s + (a.current_value || a.purchase_price || 0), 0)
+  const atLimit = canCreate('vehicle')
 
-  const createMutation = useMutation({
-    mutationFn: (data: TangibleAsset) => backend.entities.TangibleAsset.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tangible-assets'] })
+  const { updateMutation, createMutation, deleteMutation } = useVehicleMutations()
+
+  const handleUpdateVehicle = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<VehicleRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setForm({ open: false, asset: null })
     }
-  })
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<TangibleAsset> }) =>
-      backend.entities.TangibleAsset.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tangible-assets'] })
+  }
+
+  const handleCreateVehicle = async (data: CreateVehicleInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setForm({ open: false, asset: null })
     }
-  })
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.TangibleAsset.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tangible-assets'] })
-  })
+  }
 
-  const handleSubmit = (data: TangibleAsset) => {
-    if (form.asset) updateMutation.mutate({ id: form.asset.id, data })
-    else createMutation.mutate(data)
+  const handleDeleteVehicle = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setForm({ open: false, asset: null })
+    }
+  }
+
+  const handleSubmit = (data: CreateVehicleInput) => {
+    if (form.asset) handleUpdateVehicle({ id: form.asset.id, data })
+    else handleCreateVehicle(data)
   }
 
   return (
@@ -101,12 +102,10 @@ export default function AssetsCars() {
             <p className="text-sm text-slate-500">Total Fleet Value</p>
             <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalValue)}</p>
             <p className="text-xs text-slate-400 mt-1">
-              {cars.length} vehicle{cars.length !== 1 ? 's' : ''}
-              {vehicleLimit !== Infinity && (
-                <span className="ml-1">
-                  · {cars.length}/{vehicleLimit} used
-                </span>
-              )}
+              {vehicles?.length} vehicle{vehicles?.length !== 1 ? 's' : ''}
+              <span className="ml-1">
+                · {data?.usage?.vehicle || 0}/{data?.limits?.vehicle} used
+              </span>
             </p>
           </div>
 
@@ -114,7 +113,7 @@ export default function AssetsCars() {
             <div className="text-center py-12">
               <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
             </div>
-          ) : cars.length === 0 ? (
+          ) : vehicles?.length === 0 ? (
             <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
               <Car className="w-16 h-16 text-slate-300 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-slate-900 mb-2">No vehicles added yet</h3>
@@ -139,12 +138,12 @@ export default function AssetsCars() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {cars.map(asset => (
+              {vehicles?.map(asset => (
                 <CarAssetCard
                   key={asset.id}
                   asset={asset}
                   onEdit={a => setForm({ open: true, asset: a })}
-                  onDelete={id => deleteMutation.mutate(id)}
+                  onDelete={id => handleDeleteVehicle(id)}
                 />
               ))}
             </div>

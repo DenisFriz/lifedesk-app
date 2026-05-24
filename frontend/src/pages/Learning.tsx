@@ -1,6 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { backend } from '@/api/backend'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -15,9 +13,13 @@ import { Link } from 'react-router-dom'
 import LearningStats from '@/components/learning/LearningStats'
 import LearningItemCard from '@/components/learning/LearningItemCard'
 import LearningItemForm from '@/components/learning/LearningItemForm'
-import { useSubscription } from '@/hooks/useSubscription'
 import OverLimitItem from '@/components/subscription/OverLimitItem'
 import { Helmet } from 'react-helmet-async'
+import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useLearningMutations } from '@/hooks/learning/useLearningMutations'
+import { LearningRecord } from '@/db'
+import { CreateLearningInput } from '@/repositories/learning.repository'
+import { useLearningQuery } from '@/hooks/learning/useLearningQuery'
 
 const STATUS_TABS = [
   { value: 'all', label: 'All' },
@@ -25,18 +27,7 @@ const STATUS_TABS = [
   { value: 'want_to_learn', label: 'Want to Learn' },
   { value: 'completed', label: 'Completed' },
   { value: 'on_hold', label: 'On Hold' }
-]
-
-type LearningItem = {
-  id: string
-  title: string
-  status: 'in_progress' | 'want_to_learn' | 'completed' | 'on_hold'
-  type: string
-  priority?: 'low' | 'medium' | 'high'
-  author?: string
-  is_deleted?: boolean
-  created_date: string
-}
+] as const
 
 export default function Learning() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -46,7 +37,6 @@ export default function Learning() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
   const [search, setSearch] = useState('')
-  const queryClient = useQueryClient()
 
   useEffect(() => {
     if (!headerRef.current) return
@@ -60,60 +50,68 @@ export default function Learning() {
     return () => observer.disconnect()
   }, [])
 
-  const { limit } = useSubscription()
-  const learningLimit = limit('learning_limit')
+  const { canCreate, data } = useUserLimit()
 
-  const { data: items = [] } = useQuery<LearningItem[]>({
-    queryKey: ['learningItems'],
-    queryFn: async (): Promise<LearningItem[]> => {
-      return backend.entities.LearningItem.filter(
-        { is_deleted: false },
-        '-created_date'
-      ) as unknown as LearningItem[]
-    }
-  })
+  const learningLimit = canCreate('learning')
 
-  const atLimit = learningLimit !== Infinity && items.length >= learningLimit
-  const isOverLimit = (idx: number) => learningLimit !== Infinity && idx >= learningLimit
+  const { data: learningItems = [] } = useLearningQuery()
 
-  const createMutation = useMutation({
-    mutationFn: (data: Omit<LearningItem, 'id' | 'created_date'>) =>
-      backend.entities.LearningItem.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['learningItems'] })
+  const atLimit = canCreate('learning')
+
+  const { createMutation, updateMutation, deleteMutation } = useLearningMutations()
+
+  const handleCreateLearning = async (data: CreateLearningInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
-    }
-  })
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<LearningItem> }) =>
-      backend.entities.LearningItem.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['learningItems'] })
-      setShowForm(false)
-      setEditingItem(null)
-    }
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.LearningItem.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['learningItems'] })
-  })
-
-  const handleSubmit = (data: Omit<LearningItem, 'id' | 'created_date'>) => {
-    if (editingItem) {
-      updateMutation.mutate({ id: editingItem.id, data })
-    } else {
-      createMutation.mutate(data)
     }
   }
 
-  const handleEdit = (item: LearningItem) => {
+  const handleUpdateLearning = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<LearningRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setShowForm(false)
+      setEditingItem(null)
+    }
+  }
+
+  const handleDeleteLearning = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setShowForm(false)
+      setEditingItem(null)
+    }
+  }
+
+  const handleSubmit = (data: CreateLearningInput) => {
+    if (editingItem) {
+      handleUpdateLearning({ id: editingItem.id, data })
+    } else {
+      handleCreateLearning(data)
+    }
+  }
+
+  const handleEdit = (item: LearningRecord) => {
     setEditingItem(item)
     setShowForm(true)
   }
 
-  const filtered = items.filter(item => {
+  const filtered = learningItems?.filter(item => {
     const matchStatus = statusFilter === 'all' || item.status === statusFilter
     const matchType = typeFilter === 'all' || item.type === typeFilter
     const matchSearch =
@@ -167,7 +165,7 @@ export default function Learning() {
               <Link to="/Upgrade" className="w-full lg:w-auto">
                 <Button className="w-full bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
-                  Limit reached ({items.length}/{learningLimit})
+                  Limit reached ({learningItems?.length}/{learningLimit})
                 </Button>
               </Link>
             ) : (
@@ -184,7 +182,7 @@ export default function Learning() {
             )}
           </div>
 
-          <LearningStats items={items} />
+          <LearningStats items={learningItems} />
 
           {/* Filters */}
           <div className="bg-white rounded-xl border border-slate-200 p-3 mb-4 flex flex-wrap gap-3 items-center">
@@ -220,8 +218,8 @@ export default function Learning() {
             {STATUS_TABS.map(tab => {
               const count =
                 tab.value === 'all'
-                  ? items.length
-                  : items.filter(i => i.status === tab.value).length
+                  ? learningItems?.length
+                  : learningItems?.filter(i => i.status === tab.value).length
               return (
                 <button
                   key={tab.value}
@@ -242,11 +240,11 @@ export default function Learning() {
             <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
               <Brain className="w-16 h-16 text-slate-300 mx-auto mb-4" />
               <p className="text-slate-500 mb-4">
-                {items.length === 0
+                {learningItems?.length === 0
                   ? 'Start tracking your learning journey'
                   : 'No items match your filters'}
               </p>
-              {items.length === 0 && !atLimit && (
+              {learningItems?.length === 0 && !atLimit && (
                 <Button
                   onClick={() => setShowForm(true)}
                   className="bg-indigo-600 hover:bg-indigo-700"
@@ -259,8 +257,7 @@ export default function Learning() {
           ) : (
             <div className="space-y-3 pb-8">
               {sorted.map(item => {
-                const itemIdx = items.indexOf(item)
-                const overLimit = isOverLimit(itemIdx)
+                const overLimit = canCreate('learning')
                 return overLimit ? (
                   <OverLimitItem key={item.id}>
                     <LearningItemCard item={item} onEdit={() => {}} onDelete={() => {}} />
@@ -270,7 +267,7 @@ export default function Learning() {
                     key={item.id}
                     item={item}
                     onEdit={handleEdit}
-                    onDelete={deleteMutation.mutate}
+                    onDelete={id => handleDeleteLearning(id)}
                   />
                 )
               })}

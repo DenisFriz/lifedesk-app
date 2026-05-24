@@ -1,53 +1,87 @@
-import mongoose, { Schema, Model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
-import { encryptNullable, decryptNullable } from '@utils/encryption.js';
-import { IMedicalDocument } from '@/types/index.js';
+import mongoose, { Schema, Model, Types } from 'mongoose';
 
-const MedicalDocumentSchema = new Schema<IMedicalDocument>(
+export interface IMedicalDocument {
+  _id: Types.ObjectId;
+  created_by: Types.ObjectId;
+  title: string;
+  description: string | null;
+  date: string;
+  type:
+    | 'prescription'
+    | 'lab_result'
+    | 'doctor_note'
+    | 'insurance'
+    | 'vaccination'
+    | 'medical_history'
+    | 'health_image'
+    | 'other';
+  file_url: string;
+  is_archived: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const medicalDocumentSchema = new Schema<IMedicalDocument>(
   {
-    id: { type: String, default: () => uuidv4(), unique: true, index: true },
-    created_by: { type: String, required: true, index: true },
-    title: String,
-    type: String,
+    created_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200,
+    },
+
     description: {
       type: String,
       default: null,
-      set: encryptNullable,
-      get: decryptNullable,
+      maxlength: 5000,
     },
-    summary: {
+
+    date: {
       type: String,
-      default: null,
-      set: encryptNullable,
-      get: decryptNullable,
+      required: true,
+      index: true,
     },
-    date: String,
-    url: {
+
+    type: {
       type: String,
-      default: null,
-      set: encryptNullable,
-      get: decryptNullable,
+      required: true,
+      enum: [
+        'prescription',
+        'lab_result',
+        'doctor_note',
+        'insurance',
+        'vaccination',
+        'medical_history',
+        'health_image',
+        'other',
+      ],
+      default: 'other',
+      index: true,
     },
-    is_deleted: { type: Boolean, default: false },
-    deleted_at: String,
-    deleted_by_process: String,
-    created_at: { type: String, default: () => new Date().toISOString() },
-    updated_at: { type: String, default: () => new Date().toISOString() },
+
+    file_url: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    is_archived: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
-    timestamps: false,
+    timestamps: true,
     versionKey: false,
-    toObject: { getters: true },
-    toJSON: { getters: true },
-  },
-);
-
-MedicalDocumentSchema.pre<IMedicalDocument>(
-  'save',
-  function (this: IMedicalDocument) {
-    this.updated_at = new Date().toISOString();
   },
 );
 
 export const MedicalDocument: Model<IMedicalDocument> =
-  mongoose.model<IMedicalDocument>('MedicalDocument', MedicalDocumentSchema);
+  mongoose.model<IMedicalDocument>('MedicalDocument', medicalDocumentSchema);

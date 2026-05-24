@@ -1,18 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { backend } from '@/api/backend'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 import { Users, Plus, Search, Gift, Lock } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useSubscription } from '@/hooks/useSubscription'
 import { differenceInDays, parseISO, addYears, isAfter, format } from 'date-fns'
 import RelationshipStats from '@/components/relationships/RelationshipStats'
 import ContactCard from '@/components/relationships/ContactCard'
 import ContactForm from '@/components/relationships/ContactForm'
 import OverLimitItem from '@/components/subscription/OverLimitItem'
 import { Helmet } from 'react-helmet-async'
+import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useRelationShipMutations } from '@/hooks/relationships/useRelationShipMutations'
+import { CreateRelationShipInput } from '@/repositories/relationships.repository'
+import { RelationShipRecord } from '@/db'
+import { useRelationShipsQuery } from '@/hooks/relationships/useRelationShipsQuery'
 
 const FREQUENCY_DAYS = {
   weekly: 7,
@@ -21,7 +23,7 @@ const FREQUENCY_DAYS = {
   quarterly: 90,
   twice_a_year: 180,
   yearly: 365
-}
+} as const
 
 const REL_TABS = [
   { value: 'all', label: 'All' },
@@ -30,7 +32,7 @@ const REL_TABS = [
   { value: 'close_friend', label: 'Close Friends' },
   { value: 'friend', label: 'Friends' },
   { value: 'colleague', label: 'Colleagues' }
-]
+] as const
 
 type Contact = {
   id: string
@@ -57,7 +59,6 @@ export default function Relationships() {
   const [editingContact, setEditingContact] = useState(null)
   const [relFilter, setRelFilter] = useState('all')
   const [search, setSearch] = useState('')
-  const queryClient = useQueryClient()
 
   useEffect(() => {
     if (!headerRef.current) return
@@ -71,48 +72,57 @@ export default function Relationships() {
     return () => observer.disconnect()
   }, [])
 
-  const { limit } = useSubscription()
-  const relationshipsLimit = limit('relationships_limit')
+  const { canCreate, data } = useUserLimit()
 
-  const { data: contacts = [] } = useQuery<Contact[]>({
-    queryKey: ['contacts'],
-    queryFn: () =>
-      backend.entities.Contact.filter({ status: 'active', is_deleted: false }, 'name') as Promise<
-        Contact[]
-      >
-  })
+  const { data: relationships } = useRelationShipsQuery()
 
-  const atLimit = relationshipsLimit !== Infinity && contacts.length >= relationshipsLimit
-  const isOverLimit = idx => relationshipsLimit !== Infinity && idx >= relationshipsLimit
+  const atLimit = canCreate('relationships')
 
-  const createMutation = useMutation({
-    mutationFn: (data: Partial<Contact>) => backend.entities.Contact.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contacts'] })
+  const { createMutation, updateMutation, deleteMutation } = useRelationShipMutations()
+
+  const handleCreateRelationship = async (data: CreateRelationShipInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
     }
-  })
+  }
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Contact> }) =>
-      backend.entities.Contact.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contacts'] })
+  const handleUpdateRelationship = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<RelationShipRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
       setEditingContact(null)
     }
-  })
+  }
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.Contact.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contacts'] })
-  })
+  const handleDeleteRelationship = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setShowForm(false)
+      setEditingContact(null)
+    }
+  }
 
-  const handleSubmit = (data: Partial<Contact>) => {
+  const handleSubmit = (data: CreateRelationShipInput) => {
     if (editingContact) {
-      updateMutation.mutate({ id: editingContact.id, data })
+      handleUpdateRelationship({ id: editingContact.id, data })
     } else {
-      createMutation.mutate(data)
+      handleCreateRelationship(data)
     }
   }
 
@@ -121,8 +131,8 @@ export default function Relationships() {
     setShowForm(true)
   }
 
-  const handleCheckedIn = (contact: Contact) => {
-    updateMutation.mutate({
+  const handleCheckedIn = (contact: any) => {
+    handleUpdateRelationship({
       id: contact.id,
       data: { ...contact, last_contact_date: format(new Date(), 'yyyy-MM-dd') }
     })
@@ -136,13 +146,16 @@ export default function Relationships() {
     )
   }
 
-  const filtered = contacts.filter(c => {
-    if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false
-    if (relFilter === 'overdue') return isOverdue(c)
-    if (relFilter !== 'all') return c.relationship === relFilter
-    return true
-  })
+  const filtered =
+    relationships?.filter(c => {
+      if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false
+      if (relFilter === 'overdue') return isOverdue(c)
+      if (relFilter !== 'all') return c.relationship === relFilter
+      return true
+    }) || []
 
+  console.log('filtered')
+  console.log(filtered)
   // Sort: overdue first, then by name
   const sorted = [...filtered].sort((a, b) => {
     const aOver = isOverdue(a) ? 0 : 1
@@ -152,8 +165,8 @@ export default function Relationships() {
   })
 
   // Upcoming birthdays in next 30 days
-  const upcomingBirthdays = contacts
-    .filter(c => {
+  const upcomingBirthdays = relationships
+    ?.filter(c => {
       if (!c.birthday) return false
       const bday = parseISO(c.birthday)
       const today = new Date()
@@ -180,7 +193,7 @@ export default function Relationships() {
       return getNext(a).getTime() - getNext(b).getTime()
     })
 
-  const overdueCount = contacts.filter(isOverdue).length
+  const overdueCount = relationships?.filter(isOverdue).length
 
   return (
     <>
@@ -216,7 +229,8 @@ export default function Relationships() {
               <Link to="/Upgrade" className="w-full lg:w-auto">
                 <Button className="w-full bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
-                  Limit reached ({contacts.length}/{relationshipsLimit})
+                  Limit reached ({data?.usage?.relationships}/{data?.limits?.relationships}),
+                  Upgrade to Add More
                 </Button>
               </Link>
             ) : (
@@ -233,16 +247,16 @@ export default function Relationships() {
             )}
           </div>
 
-          <RelationshipStats contacts={contacts} />
+          <RelationshipStats contacts={relationships} />
 
           {/* Upcoming Birthdays Banner */}
-          {upcomingBirthdays.length > 0 && (
+          {upcomingBirthdays?.length > 0 && (
             <div className="bg-pink-50 border border-pink-200 rounded-xl p-4 mb-4 flex items-start gap-3">
               <Gift className="w-5 h-5 text-pink-500 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-pink-800 mb-1">Upcoming Birthdays 🎂</p>
                 <div className="flex flex-wrap gap-2">
-                  {upcomingBirthdays.map(c => {
+                  {upcomingBirthdays?.map(c => {
                     const today = new Date()
                     const bday = parseISO(c.birthday)
                     let next = new Date(today.getFullYear(), bday.getMonth(), bday.getDate())
@@ -281,10 +295,10 @@ export default function Relationships() {
             {REL_TABS.map(tab => {
               const count =
                 tab.value === 'all'
-                  ? contacts.length
+                  ? relationships?.length
                   : tab.value === 'overdue'
                     ? overdueCount
-                    : contacts.filter(c => c.relationship === tab.value).length
+                    : relationships?.filter(c => c.relationship === tab.value).length
               return (
                 <button
                   key={tab.value}
@@ -306,11 +320,11 @@ export default function Relationships() {
             <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
               <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
               <p className="text-slate-500 mb-4">
-                {contacts.length === 0
+                {relationships?.length === 0
                   ? 'Add your first contact to get started'
                   : 'No contacts match your filters'}
               </p>
-              {contacts.length === 0 && !atLimit && (
+              {relationships?.length === 0 && !atLimit && (
                 <Button
                   onClick={() => setShowForm(true)}
                   className="bg-indigo-600 hover:bg-indigo-700"
@@ -323,8 +337,7 @@ export default function Relationships() {
           ) : (
             <div className="space-y-3 pb-8">
               {sorted.map(contact => {
-                const contactIdx = contacts.indexOf(contact)
-                const overLimit = isOverLimit(contactIdx)
+                const overLimit = canCreate('relationships')
                 return overLimit ? (
                   <OverLimitItem key={contact.id}>
                     <ContactCard
@@ -339,7 +352,7 @@ export default function Relationships() {
                     key={contact.id}
                     contact={contact}
                     onEdit={handleEdit}
-                    onDelete={deleteMutation.mutate}
+                    onDelete={id => handleDeleteRelationship(id)}
                     onCheckedIn={handleCheckedIn}
                   />
                 )

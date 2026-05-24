@@ -1,6 +1,4 @@
-import React, { useState } from 'react'
-import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Target, MoreHorizontal, Pencil, Trash2, CheckCircle, Star } from 'lucide-react'
@@ -13,6 +11,9 @@ import {
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import GoalForm from './GoalForm'
+import { useGoalsQuery } from '@/hooks/goals/useGoalsQuery'
+import { useGoalMutations } from '@/hooks/goals/useGoalMutations'
+import { GoalCreateInput } from '@/repositories/goal.repository'
 
 interface GoalSectionProps {
   category: string
@@ -22,42 +23,48 @@ interface GoalSectionProps {
 export default function GoalSection({ category, onCreateTask }: GoalSectionProps) {
   const [showForm, setShowForm] = useState<boolean>(false)
   const [editingGoal, setEditingGoal] = useState<any | null>(null)
-  const queryClient = useQueryClient()
 
-  const { data: goals = [] } = useQuery<any[]>({
-    queryKey: ['goals', category],
-    queryFn: () => backend.entities.Goal.filter({ category })
-  })
+  const { data: goals = [] } = useGoalsQuery({ category })
 
-  const createMutation = useMutation<any, any, any>({
-    mutationFn: data => backend.entities.Goal.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals', category] })
+  const { updateMutation, createMutation, deleteMutation } = useGoalMutations()
+
+  const handleCreateGoal = async (data: GoalCreateInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
     }
-  })
+  }
 
-  const updateMutation = useMutation<any, any, { id: string; data: any }>({
-    mutationFn: ({ id, data }) => backend.entities.Goal.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals', category] })
+  const handleUpdateGoal = async ({ id, data }: { id: string; data: any }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
       setEditingGoal(null)
     }
-  })
+  }
 
-  const deleteMutation = useMutation<void, any, string>({
-    mutationFn: id => backend.entities.Goal.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals', category] })
+  const handleDeleteGoal = async (goalId: string) => {
+    try {
+      await deleteMutation.mutateAsync(goalId)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setShowForm(false)
+      setEditingGoal(null)
     }
-  })
+  }
 
   const handleSubmit = (data: any): void => {
     if (editingGoal) {
-      updateMutation.mutate({ id: editingGoal.id, data: { ...data, category } })
+      handleUpdateGoal({ id: editingGoal.id, data: { ...data, category } })
     } else {
-      createMutation.mutate({ ...data, category })
+      handleCreateGoal({ ...data, category })
     }
   }
 
@@ -67,7 +74,7 @@ export default function GoalSection({ category, onCreateTask }: GoalSectionProps
   }
 
   const handleAchieve = (goal: any): void => {
-    updateMutation.mutate({
+    handleUpdateGoal({
       id: goal.id,
       data: { status: goal.status === 'achieved' ? 'active' : 'achieved' }
     })
@@ -165,7 +172,7 @@ export default function GoalSection({ category, onCreateTask }: GoalSectionProps
                       Mark achieved
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => deleteMutation.mutate(goal.id)}
+                      onClick={() => handleDeleteGoal(goal.id)}
                       className="text-rose-600"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />

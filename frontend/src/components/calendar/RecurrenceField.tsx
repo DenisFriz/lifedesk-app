@@ -18,18 +18,18 @@ import {
 } from '@/components/ui/dialog'
 import { Settings2 } from 'lucide-react'
 
+const daysOfWeek = [
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+  { value: 0, label: 'Sun' }
+]
+
 export default function RecurrenceField({ formData, setFormData }) {
   const [customOpen, setCustomOpen] = useState(false)
-
-  const daysOfWeek = [
-    { value: 1, label: 'Mon' },
-    { value: 2, label: 'Tue' },
-    { value: 3, label: 'Wed' },
-    { value: 4, label: 'Thu' },
-    { value: 5, label: 'Fri' },
-    { value: 6, label: 'Sat' },
-    { value: 0, label: 'Sun' }
-  ]
 
   const toggleRecurring = () => {
     if (formData.is_recurring) {

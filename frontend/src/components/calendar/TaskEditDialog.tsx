@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { backend } from '@/api/backend'
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,28 +15,12 @@ import {
 import { Trash2, Star } from 'lucide-react'
 import RecurrenceField from './RecurrenceField'
 import DeleteRecurringDialog from './DeleteRecurringDialog'
+import { useTaskMutations } from '@/hooks/tasks/useTaskMutations'
+import { useGoalsQuery } from '@/hooks/goals/useGoalsQuery'
 
 type Business = {
   id: string
   name: string
-}
-
-type Goal = {
-  id: string
-  title: string
-  description?: string
-  status: 'active' | 'completed' | 'archived'
-  category: string
-  business_id?: string | null
-  target_date?: string
-  target_time?: string
-  reminders?: number[]
-  important?: boolean
-}
-
-type TaskUpdateInput = {
-  id: string
-  data: Record<string, unknown>
 }
 
 export default function TaskEditDialog({ task, open, onOpenChange }) {
@@ -58,32 +42,30 @@ export default function TaskEditDialog({ task, open, onOpenChange }) {
     }
   })
 
-  const { data: goals = [] } = useQuery<Goal[]>({
-    queryKey: ['goals'],
-    queryFn: async () => {
-      const data = await backend.entities.Goal.list('-created_date')
-      return data as Goal[]
-    }
-  })
+  const { data: goals = [] } = useGoalsQuery()
 
-  const updateMutation = useMutation<unknown, Error, TaskUpdateInput>({
-    mutationFn: ({ id, data }) => backend.entities.Task.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
-      onOpenChange(false)
-    }
-  })
+  const { updateMutation, deleteMutation } = useTaskMutations()
 
-  const deleteMutation = useMutation<unknown, Error, string>({
-    mutationFn: id => backend.entities.Task.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+  const handleUpdateTask = async ({ id, data }: { id: string; data: any }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
       onOpenChange(false)
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
+
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+      onOpenChange(false)
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   const handleSave = () => {
-    updateMutation.mutate({ id: task.id, data: formData })
+    handleUpdateTask({ id: task.id, data: formData })
   }
 
   const handleDelete = () => {
@@ -91,7 +73,7 @@ export default function TaskEditDialog({ task, open, onOpenChange }) {
       setShowDeleteDialog(true)
     } else {
       if (confirm('Are you sure you want to delete this task?')) {
-        deleteMutation.mutate(task.id)
+        handleDeleteTask(task.id)
       }
     }
   }
@@ -115,7 +97,7 @@ export default function TaskEditDialog({ task, open, onOpenChange }) {
       }
     } else {
       // Delete all recurring entries
-      deleteMutation.mutate(task.id)
+      handleDeleteTask(task.id)
     }
   }
 

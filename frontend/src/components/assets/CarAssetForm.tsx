@@ -18,7 +18,6 @@ import VehicleCalendarDialog from './VehicleCalendarDialog'
 import { useSubscription } from '@/hooks/useSubscription'
 import { Link } from 'react-router-dom'
 
-const MAX_VEHICLE_IMAGES = 20
 const MAX_REPAIR_IMAGES = 5
 const MAX_IMAGE_SIZE_MB = 5
 
@@ -71,8 +70,8 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
         color: asset.color || '',
         license_plate: asset.license_plate || '',
         vin: asset.vin || '',
-        fuel_type: asset.fuel_type || '',
-        transmission: asset.transmission || '',
+        fuel_type: asset.fuel_type || null,
+        transmission: asset.transmission || null,
         mileage: asset.mileage || '',
         purchase_price: asset.purchase_price || '',
         current_value: asset.current_value || '',
@@ -98,6 +97,8 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
       mileage: f.mileage ? parseFloat(f.mileage) : undefined,
       purchase_price: f.purchase_price ? parseFloat(f.purchase_price) : undefined,
       current_value: f.current_value ? parseFloat(f.current_value) : undefined,
+      fuel_type: f.fuel_type || null,
+      transmission: f.transmission || null,
       repairs: f.repairs.map(r => ({
         ...r,
         cost: r.cost ? parseFloat(r.cost) : undefined

@@ -1,4 +1,4 @@
-import React from 'react'
+import { useState } from 'react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/alert-dialog'
 
 export default function DeleteRecurringDialog({ open, onOpenChange, onConfirm }) {
-  const [deleteType, setDeleteType] = React.useState(null)
+  const [deleteType, setDeleteType] = useState(null)
 
   const handleChoice = type => {
     setDeleteType(type)

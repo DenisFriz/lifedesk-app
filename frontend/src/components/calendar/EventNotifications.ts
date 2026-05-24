@@ -1,51 +1,16 @@
 import { useEffect, useRef } from 'react'
-import { backend } from '@/api/backend'
-import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useSound } from '@/contexts/SoundContext'
-
-type EventItem = {
-  id: string
-  title: string
-  start_date: string
-  start_time: string
-  status?: string
-  reminders?: number[]
-}
-
-type TaskItem = {
-  id: string
-  title: string
-  due_date: string
-  due_time: string
-  status?: string
-  reminders?: number[]
-}
-
-type GoalItem = {
-  id: string
-  title: string
-  target_date: string
-  target_time: string
-  status?: string
-  reminders?: number[]
-}
+import { useEventsQuery } from '@/hooks/events/useEventsQuery'
+import { useTasksQuery } from '@/hooks/tasks/useTasksQuery'
+import { useGoalsQuery } from '@/hooks/goals/useGoalsQuery'
 
 export default function EventNotifications() {
-  const { data: events = [] } = useQuery<EventItem[]>({
-    queryKey: ['events'],
-    queryFn: async () => (await backend.entities.Event.list()) as EventItem[]
-  })
+  const { data: events = [] } = useEventsQuery()
 
-  const { data: tasks = [] } = useQuery<TaskItem[]>({
-    queryKey: ['tasks'],
-    queryFn: async () => (await backend.entities.Task.list()) as TaskItem[]
-  })
+  const { data: tasks = [] } = useTasksQuery()
 
-  const { data: goals = [] } = useQuery<GoalItem[]>({
-    queryKey: ['goals'],
-    queryFn: async () => (await backend.entities.Goal.list()) as GoalItem[]
-  })
+  const { data: goals = [] } = useGoalsQuery()
 
   const { playSound } = useSound()
 

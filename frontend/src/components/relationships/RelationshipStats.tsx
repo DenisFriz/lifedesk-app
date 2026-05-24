@@ -15,18 +15,18 @@ interface Props {
 }
 
 export default function RelationshipStats({ contacts }: Props) {
-  const total = contacts.length
-  const close = contacts.filter(c =>
+  const total = contacts?.length
+  const close = contacts?.filter(c =>
     ['family', 'close_friend', 'partner'].includes(c.relationship)
   ).length
 
-  const overdue = contacts.filter(c => {
+  const overdue = contacts?.filter(c => {
     if (!c.check_in_frequency || !c.last_contact_date) return false
     const days = FREQUENCY_DAYS[c.check_in_frequency]
     return differenceInDays(new Date(), parseISO(c.last_contact_date)) >= days
   }).length
 
-  const upcomingBirthdays = contacts.filter(c => {
+  const upcomingBirthdays = contacts?.filter(c => {
     if (!c.birthday) return false
     const bday = parseISO(c.birthday)
     const today = new Date()

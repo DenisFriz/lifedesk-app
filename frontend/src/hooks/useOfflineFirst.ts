@@ -1,5 +1,5 @@
-import { db } from '@/lib/localDb'
-import { enqueueMutation, generateOptimisticId, isOptimisticId } from '@/lib/syncQueue'
+import { db } from '@/db'
+import { enqueueMutation, generateOptimisticId, isOptimisticId } from '@/db/syncQueue'
 
 export async function offlineFirst<T>(
   storeName: string,
@@ -56,8 +56,8 @@ export async function offlineCreate<T extends Record<string, unknown>>(
 
   await (db as any)[storeName].put(optimisticRecord)
   await enqueueMutation(storeName, 'create', {
-    optimisticId,
-    data: optimisticRecord
+    ...data,
+    optimisticId
   })
 
   return optimisticRecord

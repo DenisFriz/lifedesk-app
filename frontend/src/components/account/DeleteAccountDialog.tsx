@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { backend } from '@/api/backend'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, Loader2, X } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
+import { db } from '@/db'
+import { useQueryClient } from '@tanstack/react-query'
 
 type DeleteAccountResponse = {
   data: any
@@ -30,6 +32,8 @@ export default function DeleteAccountDialog({
   const [password, setPassword] = useState<string>('')
   const [error, setError] = useState<string>('')
   const [isDeleting, setIsDeleting] = useState<boolean>(false)
+
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     if (!isOpen) return
@@ -95,9 +99,7 @@ export default function DeleteAccountDialog({
 
       if (res.success) {
         setStep('loading')
-        setTimeout(() => {
-          backend.auth.logout()
-        }, 1500)
+        setTimeout(handleFinalStep, 1500)
       } else {
         setError(res.data?.error || 'Failed to delete account. Please try again.')
         setIsDeleting(false)
@@ -142,9 +144,7 @@ export default function DeleteAccountDialog({
 
         if (res.success) {
           setStep('loading')
-          setTimeout(() => {
-            backend.auth.logout()
-          }, 1500)
+          setTimeout(handleFinalStep, 1500)
         } else {
           setError(res.data?.error || 'Failed to delete account. Please try again.')
           setIsDeleting(false)
@@ -162,6 +162,22 @@ export default function DeleteAccountDialog({
       )
     }
   })
+
+  const cleanupClientData = useCallback(async () => {
+    queryClient.clear()
+    await db.delete()
+    localStorage.clear()
+    sessionStorage.clear()
+  }, [queryClient])
+
+  const handleFinalStep = useCallback(async () => {
+    try {
+      await cleanupClientData()
+      await backend.auth.logout()
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [cleanupClientData])
 
   if (!isOpen) return null
 

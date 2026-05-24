@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { backend } from '@/api/backend'
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select'
 import { Trash2 } from 'lucide-react'
 import RecurrenceField from './RecurrenceField'
+import { useGoalMutations } from '@/hooks/goals/useGoalMutations'
 
 type Business = {
   id: string
@@ -47,7 +48,7 @@ export default function GoalCreateForm({ date, time, open, onOpenChange, initial
         }
   )
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialData) {
       setFormData({
         ...initialData,
@@ -56,7 +57,6 @@ export default function GoalCreateForm({ date, time, open, onOpenChange, initial
       })
     }
   }, [initialData, date, time])
-  const queryClient = useQueryClient()
 
   const { data: businesses = [] } = useQuery<Business[]>({
     queryKey: ['businesses'],
@@ -66,17 +66,20 @@ export default function GoalCreateForm({ date, time, open, onOpenChange, initial
     }
   })
 
-  const createMutation = useMutation<unknown, Error, Record<string, unknown>>({
-    mutationFn: data => backend.entities.Goal.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] })
+  const { createMutation } = useGoalMutations()
+
+  const handleCreateGoal = async (data: Record<string, unknown>) => {
+    try {
+      await createMutation.mutateAsync(data)
       onOpenChange(false)
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
 
   const handleSave = () => {
     if (!formData.title.trim()) return
-    createMutation.mutate(formData)
+    handleCreateGoal(formData)
   }
 
   return (

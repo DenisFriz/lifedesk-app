@@ -661,7 +661,11 @@ const LayoutContent = memo(
             )}
           >
             <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200">
-              {!collapsed && <img src="logo.webp" alt="lifedesk" className="h-8" />}
+              {!collapsed && (
+                <Link to="/">
+                  <img src="logo.webp" alt="lifedesk" className="h-8" />
+                </Link>
+              )}
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
@@ -717,7 +721,6 @@ const LayoutContent = memo(
                 >
                   {tools.map(tool => {
                     const Icon = tool.icon
-                    console.log(tool.id)
                     const toolHidden = hiddenTools.includes(tool.id)
                     if (toolHidden && !editMode) return null
                     return (
@@ -735,7 +738,6 @@ const LayoutContent = memo(
                             className="h-7 w-7 hover:bg-slate-200 flex-shrink-0"
                             onClick={() => toggleToolVisibility(tool.id)}
                           >
-                            alextest
                             {toolHidden ? (
                               <EyeOff className="w-3 h-3" />
                             ) : (
@@ -973,7 +975,9 @@ const LayoutContent = memo(
             >
               <div className="lg:hidden sticky top-0 z-30 bg-white px-4 py-3 flex items-center justify-between ">
                 <div className="w-12" />
-                <img src="logo.webp" alt="lifedesk" className="h-8" />
+                <Link to="/">
+                  <img src="logo.webp" alt="lifedesk" className="h-8" />
+                </Link>
                 <Button
                   variant="ghost"
                   size="icon"

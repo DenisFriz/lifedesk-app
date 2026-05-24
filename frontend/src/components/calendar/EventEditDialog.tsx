@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { backend } from '@/api/backend'
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,11 +15,7 @@ import {
 import { Trash2, Star } from 'lucide-react'
 import RecurrenceField from './RecurrenceField'
 import DeleteRecurringDialog from './DeleteRecurringDialog'
-
-type UpdateEventInput = {
-  id: string
-  data: Record<string, unknown>
-}
+import { useEventMutations } from '@/hooks/events/useEventMutations'
 
 type Business = {
   id: string
@@ -31,7 +27,7 @@ export default function EventEditDialog({ event, open, onOpenChange }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const queryClient = useQueryClient()
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (event) {
       setFormData(event)
     }
@@ -42,24 +38,28 @@ export default function EventEditDialog({ event, open, onOpenChange }) {
     queryFn: () => backend.entities.Business.list('order') as Promise<Business[]>
   })
 
-  const updateMutation = useMutation<unknown, Error, UpdateEventInput>({
-    mutationFn: ({ id, data }) => backend.entities.Event.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['events'] })
-      onOpenChange(false)
-    }
-  })
+  const { updateMutation, deleteMutation } = useEventMutations()
 
-  const deleteMutation = useMutation<void, Error, string>({
-    mutationFn: id => backend.entities.Event.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['events'] })
+  const handleUpdateEvent = async ({ id, data }: { id: string; data: any }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
       onOpenChange(false)
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
+
+  const handleDeleteEvent = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+      onOpenChange(false)
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   const handleSave = () => {
-    updateMutation.mutate({ id: event.id, data: formData })
+    handleUpdateEvent({ id: event.id, data: formData })
   }
 
   const handleDelete = () => {
@@ -67,7 +67,7 @@ export default function EventEditDialog({ event, open, onOpenChange }) {
       setShowDeleteDialog(true)
     } else {
       if (confirm('Are you sure you want to delete this event?')) {
-        deleteMutation.mutate(event.id)
+        handleDeleteEvent(event.id)
       }
     }
   }
@@ -91,7 +91,7 @@ export default function EventEditDialog({ event, open, onOpenChange }) {
       }
     } else {
       // Delete all recurring entries
-      deleteMutation.mutate(event.id)
+      handleDeleteEvent(event.id)
     }
   }
 

@@ -1,7 +1,6 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { offlineFirst } from '@/hooks/useOfflineFirst'
 import { useLayout } from '@/Layout'
 import { Button } from '@/components/ui/button'
 import { useSubscription } from '@/hooks/useSubscription'
@@ -61,14 +60,18 @@ import EventEditDialog from '../components/calendar/EventEditDialog'
 import CreateEntryDialog from '../components/calendar/CreateEntryDialog'
 import { toast } from 'sonner'
 import { Helmet } from 'react-helmet-async'
+import { useTasksQuery } from '@/hooks/tasks/useTasksQuery'
+import { useGoalsQuery } from '@/hooks/goals/useGoalsQuery'
+import { useEventsQuery } from '@/hooks/events/useEventsQuery'
+import { useTaskMutations } from '@/hooks/tasks/useTaskMutations'
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [isScrolled, setIsScrolled] = React.useState(false)
-  const headerRef = React.useRef(null)
+  const [isScrolled, setIsScrolled] = useState(false)
+  const headerRef = useRef(null)
   const { isHidden } = useLayout()
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!headerRef.current) return
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -145,28 +148,24 @@ export default function Calendar() {
 
     return isGranted && storedValue !== 'false'
   })
-  const weekViewRef = React.useRef(null)
+  const weekViewRef = useRef(null)
 
-  /*   const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => backend.auth.me()
-  }) */
   const { can } = useSubscription()
 
-  const { data: tasks = [] } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: () => offlineFirst('tasks', () => backend.entities.Task.list('-due_date'))
-  })
+  const { data: tasks = [] } = useTasksQuery()
 
-  const { data: goals = [] } = useQuery({
-    queryKey: ['goals'],
-    queryFn: () => offlineFirst('goals', () => backend.entities.Goal.list('-target_date'))
-  })
+  const { data: goals = [] } = useGoalsQuery()
 
-  const { data: events = [] } = useQuery({
-    queryKey: ['events'],
-    queryFn: () => offlineFirst('events', () => backend.entities.Event.list('-start_date'))
-  })
+  const { data: events = [] } = useEventsQuery()
+
+  const {
+    updateMutation: updateTaskMutation,
+    createMutation,
+    deleteMutation,
+    duplicateMutation,
+    bulkDeleteMutation,
+    bulkUpdateMutation
+  } = useTaskMutations()
 
   const { data: workoutPlans = [] } = useQuery({
     queryKey: ['workoutPlans'],
@@ -175,13 +174,21 @@ export default function Calendar() {
 
   const queryClient = useQueryClient()
 
-  const updateTaskMutation = useMutation({
+  const handleUpdateTask = async ({ id, data }: { id: string; data: Record<string, any> }) => {
+    try {
+      await updateTaskMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  /*   const updateTaskMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
       backend.entities.Task.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
     }
-  })
+  }) */
 
   const updateGoalMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
@@ -316,7 +323,7 @@ export default function Calendar() {
     }
 
     if (type === 'task') {
-      updateTaskMutation.mutate({
+      handleUpdateTask({
         id: item.id,
         data: {
           ...item,

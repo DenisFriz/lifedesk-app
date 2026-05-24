@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef, Fragment } from 'react'
 import { Link } from 'react-router-dom'
 import { createPageUrl } from '@/utils'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { backend } from '@/api/backend'
 import { Dumbbell, Lock } from 'lucide-react'
-import { useSubscription } from '@/hooks/useSubscription'
 import OverLimitItem from '@/components/subscription/OverLimitItem'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,19 +18,11 @@ import {
 } from '@/components/ui/select'
 import { format } from 'date-fns'
 import { Helmet } from 'react-helmet-async'
-
-type Workout = {
-  id: string
-  title: string
-  date: string
-  type: 'strength' | 'cardio' | 'flexibility' | 'sports' | 'other'
-  duration_minutes?: number | null
-  calories_burned?: number | null
-  exercises: WorkoutExercise[]
-  notes?: string | null
-}
-
-type WorkoutCreateInput = Omit<Workout, 'id'>
+import { useWorkoutsQuery } from '@/hooks/workouts/useWorkoutsQuery'
+import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useWorkoutMutations } from '@/hooks/workouts/useWorkoutMutations'
+import { CreateWorkoutInput } from '@/repositories/workout.repository'
+import { WorkoutRecord } from '@/db'
 
 export default function Workouts() {
   const [showForm, setShowForm] = useState(false)
@@ -41,7 +30,6 @@ export default function Workouts() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [filterType, setFilterType] = useState('all')
   const headerRef = useRef(null)
-  const queryClient = useQueryClient()
 
   useEffect(() => {
     const planData = localStorage.getItem('startWorkoutFromPlan')
@@ -67,57 +55,60 @@ export default function Workouts() {
     return () => observer.disconnect()
   }, [])
 
-  const { limit } = useSubscription()
-  const workoutLimit = limit('fitness_workouts_limit')
+  const { canCreate, data } = useUserLimit()
 
-  const { data: workouts = [] } = useQuery<Workout[]>({
-    queryKey: ['workouts'],
-    queryFn: async (): Promise<Workout[]> => {
-      return (await backend.entities.Workout.list('-date')) as Workout[]
-    }
-  })
+  const { data: workouts = [] } = useWorkoutsQuery()
 
-  const atLimit = workoutLimit !== Infinity && workouts.length >= workoutLimit
-  const isOverLimit = idx => workoutLimit !== Infinity && idx >= workoutLimit
+  const atLimit = canCreate('workouts')
 
-  const createMutation = useMutation<Workout, Error, WorkoutCreateInput>({
-    mutationFn: async (data: WorkoutCreateInput): Promise<Workout> => {
-      return (await backend.entities.Workout.create(data)) as Workout
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workouts'] })
+  const { createMutation, updateMutation, deleteMutation } = useWorkoutMutations()
+
+  const handleCreateWorkout = async (data: CreateWorkoutInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
       setEditingWorkout(null)
     }
-  })
+  }
 
-  const updateMutation = useMutation<Workout, Error, { id: string; data: Partial<Workout> }>({
-    mutationFn: async ({ id, data }) => {
-      return (await backend.entities.Workout.update(id, data)) as Workout
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workouts'] })
+  const handleUpdateWorkout = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<WorkoutRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
       setEditingWorkout(null)
     }
-  })
+  }
 
-  const deleteMutation = useMutation<void, Error, string>({
-    mutationFn: async (id: string) => {
-      return await backend.entities.Workout.delete(id)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workouts'] })
+  const handleDeleteWorkout = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setShowForm(false)
+      setEditingWorkout(null)
     }
-  })
+  }
 
   const handleSubmit = data => {
     // Check if this is an actual DB record (has an id from the DB) vs. a plan-loaded workout
     if (editingWorkout && editingWorkout.id && !editingWorkout.planId) {
-      updateMutation.mutate({ id: editingWorkout.id, data })
+      handleUpdateWorkout({ id: editingWorkout.id, data })
     } else {
       // Always create new if: no editingWorkout, no id, or it came from a plan
-      createMutation.mutate(data)
+      handleCreateWorkout(data)
     }
   }
 
@@ -180,7 +171,7 @@ export default function Workouts() {
                 <Link to="/Upgrade" className="flex-1 lg:flex-initial">
                   <Button className="w-full bg-amber-500 hover:bg-amber-600">
                     <Lock className="w-4 h-4 mr-2" />
-                    Limit reached ({workouts.length}/{workoutLimit})
+                    Limit reached ({data?.usage?.workouts || 0}/{data?.remaining?.workouts})
                   </Button>
                 </Link>
               ) : (
@@ -240,8 +231,7 @@ export default function Workouts() {
               </Card>
             ) : (
               filteredWorkouts.map(workout => {
-                const workoutIdx = workouts.indexOf(workout)
-                const overLimit = isOverLimit(workoutIdx)
+                const overLimit = canCreate('workouts')
                 const card = (
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
@@ -288,7 +278,7 @@ export default function Workouts() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => deleteMutation.mutate(workout.id)}
+                            onClick={() => handleDeleteWorkout(workout.id)}
                           >
                             <Trash2 className="h-4 w-4 text-rose-500" />
                           </Button>

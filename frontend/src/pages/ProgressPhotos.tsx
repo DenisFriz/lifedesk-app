@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { backend } from '@/api/backend'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,7 +14,6 @@ import {
   Lock
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useSubscription } from '@/hooks/useSubscription'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -28,27 +27,9 @@ import {
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { Helmet } from 'react-helmet-async'
-
-const placeholderPhotos = [
-  {
-    id: 'placeholder-1',
-    image_url: '/progress-photo-1.jpg',
-    date: '2026-01-15',
-    body_area: 'full_body',
-    description: 'Week 1 - Starting point',
-    is_archived: false,
-    created_by: 'system'
-  },
-  {
-    id: 'placeholder-2',
-    image_url: '/progress-photo-2.jpg',
-    date: '2026-02-25',
-    body_area: 'full_body',
-    description: 'Month 2 - Visible transformation',
-    is_archived: false,
-    created_by: 'system'
-  }
-] as const
+import { useProgressPhotosQuery } from '@/hooks/progressphotos/useProgressPhotosQuery'
+import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useProgressPhotoMutations } from '@/hooks/progressphotos/useProgressPhotoMutations'
 
 const bodyAreaLabels = {
   front: 'Front',
@@ -71,49 +52,46 @@ export default function ProgressPhotos() {
   const [selectedPhotos, setSelectedPhotos] = useState(new Set())
   const [longPressTimers, setLongPressTimers] = useState({})
   const [showArchived, setShowArchived] = useState(false)
-  const queryClient = useQueryClient()
 
-  const { limit } = useSubscription()
-  const photoLimit = limit('fitness_progress_photos_limit')
+  const { canCreate, data } = useUserLimit()
 
-  const { data: photos = [], isLoading } = useQuery({
-    queryKey: ['progressPhotos'],
-    queryFn: async () => {
-      const existing = await backend.entities.ProgressPhoto.list('-date')
+  const { data: photos = [], isLoading } = useProgressPhotosQuery()
 
-      return existing.length ? existing : placeholderPhotos
-    }
-  })
+  const { deleteMutation, bulkDeleteMutation, bulkUpdateMutation } = useProgressPhotoMutations()
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.ProgressPhoto.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['progressPhotos'] })
+  const handleDeleteProgressPhoto = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
       toast.success('Photo deleted')
     }
-  })
+  }
 
-  const archiveMutation = useMutation({
-    mutationFn: (ids: string[]) =>
-      Promise.all(ids.map(id => backend.entities.ProgressPhoto.update(id, { is_archived: true }))),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['progressPhotos'] })
+  const handleArchiveProgressPhotos = async (ids: string[]) => {
+    try {
+      await bulkUpdateMutation.mutateAsync({ ids, data: { is_archived: true } })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setSelectedPhotos(new Set())
       setSelectionMode(false)
       toast.success('Photos archived')
     }
-  })
+  }
 
-  const bulkDeleteMutation = useMutation({
-    mutationFn: (ids: string[]) =>
-      Promise.all(ids.map(id => backend.entities.ProgressPhoto.delete(id))),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['progressPhotos'] })
+  const handleDeleteProgressPhotos = async (ids: string[]) => {
+    try {
+      await bulkDeleteMutation.mutateAsync(ids)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setSelectedPhotos(new Set())
       setSelectionMode(false)
       toast.success('Photos deleted')
     }
-  })
+  }
 
   const handleLongPress = (photoId: string) => {
     if (!selectionMode) {
@@ -152,16 +130,18 @@ export default function ProgressPhotos() {
     }
   }
 
-  const restoreMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.ProgressPhoto.update(id, { is_archived: false }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['progressPhotos'] })
+  const handleRestoreProgressPhoto = async (id: string) => {
+    try {
+      await bulkUpdateMutation.mutateAsync({ ids: [id], data: { is_archived: false } })
+    } catch (e) {
+      console.error(e)
+    } finally {
       toast.success('Photo restored')
     }
-  })
+  }
 
   const filteredPhotos = photos.filter(p => p.is_archived === showArchived)
-  const atLimit = photoLimit !== Infinity && photos.length >= photoLimit
+  const atLimit = canCreate('progressPhotos')
 
   const handlePrevPhoto = () => {
     setSelectedPhotoIndex(Math.max(0, selectedPhotoIndex - 1))
@@ -198,7 +178,7 @@ export default function ProgressPhotos() {
               <Link to="/Upgrade">
                 <Button className="bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
-                  Limit reached ({photos.length}/{photoLimit})
+                  Limit reached ({data?.usage?.progressPhotos || 0}/{data?.limits?.progressPhotos})
                 </Button>
               </Link>
             ) : (
@@ -319,7 +299,7 @@ export default function ProgressPhotos() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => restoreMutation.mutate(currentPhoto.id)}
+                              onClick={() => handleRestoreProgressPhoto(currentPhoto.id)}
                               className="text-blue-600 hover:bg-blue-50"
                               title="Restore photo"
                             >
@@ -329,7 +309,7 @@ export default function ProgressPhotos() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => archiveMutation.mutate([currentPhoto.id])}
+                              onClick={() => handleArchiveProgressPhotos([currentPhoto.id])}
                               className="text-amber-600 hover:bg-amber-50"
                               title="Archive photo"
                             >
@@ -339,7 +319,7 @@ export default function ProgressPhotos() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => deleteMutation.mutate(currentPhoto.id)}
+                            onClick={() => handleDeleteProgressPhoto(currentPhoto.id)}
                             className="text-red-600 hover:bg-red-50"
                             title="Delete photo permanently"
                           >
@@ -433,7 +413,7 @@ export default function ProgressPhotos() {
                           variant="outline"
                           size="sm"
                           onClick={() =>
-                            archiveMutation.mutate(Array.from(selectedPhotos) as string[])
+                            handleArchiveProgressPhotos(Array.from(selectedPhotos) as string[])
                           }
                           className="flex-1"
                         >
@@ -443,7 +423,7 @@ export default function ProgressPhotos() {
                           variant="destructive"
                           size="sm"
                           onClick={() =>
-                            bulkDeleteMutation.mutate(Array.from(selectedPhotos) as string[])
+                            handleDeleteProgressPhotos(Array.from(selectedPhotos) as string[])
                           }
                           className="flex-1"
                         >

@@ -59,7 +59,7 @@ import Marketing from './pages/Marketing'
 
 import Overview from './pages/Overview'
 
-import PageNotFound from './lib/PageNotFound'
+import PageNotFound from './pages/PageNotFound'
 
 import Profile from './pages/Profile'
 import ProgressPhotos from './pages/ProgressPhotos'
@@ -85,7 +85,7 @@ import Workouts from './pages/Workouts'
 import ResetPassword from './pages/ResetPassword'
 import ForgotPassword from './pages/ForgotPassword'
 
-export interface AppRoute {
+interface AppRoute {
   path: string
   name: string
   element: ComponentType

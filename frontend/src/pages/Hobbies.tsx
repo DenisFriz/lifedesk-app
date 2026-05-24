@@ -1,6 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { backend } from '@/api/backend'
 import { Palette as PaletteIcon, Plus, Search, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,9 +12,13 @@ import {
 import { Link } from 'react-router-dom'
 import HobbyCard from '@/components/hobbies/HobbyCard'
 import HobbyForm from '@/components/hobbies/HobbyForm'
-import { useSubscription } from '@/hooks/useSubscription'
 import OverLimitItem from '@/components/subscription/OverLimitItem'
 import { Helmet } from 'react-helmet-async'
+import { useHobbiesQuery } from '@/hooks/hobbies/useHobbieQuery'
+import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useHobbyMutations } from '@/hooks/hobbies/useHobbyMutations'
+import { CreateHobbyInput } from '@/repositories/hobby.repository'
+import { HobbyRecord } from '@/db'
 
 const CATEGORIES = [
   { value: 'all', label: 'All' },
@@ -30,7 +32,7 @@ const CATEGORIES = [
   { value: 'collecting', label: '🪙 Collecting' },
   { value: 'travel', label: '✈️ Travel' },
   { value: 'other', label: '⭐ Other' }
-]
+] as const
 
 type Hobby = {
   id: string
@@ -42,13 +44,6 @@ type Hobby = {
   created_date: string
 }
 
-type HobbyCreateInput = {
-  name: string
-  description?: string
-  category?: string
-  status?: string
-}
-
 export default function Hobbies() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [showForm, setShowForm] = useState(false)
@@ -57,7 +52,6 @@ export default function Hobbies() {
   const [filterCategory, setFilterCategory] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
   const headerRef = useRef(null)
-  const queryClient = useQueryClient()
 
   useEffect(() => {
     if (!headerRef.current) return
@@ -71,51 +65,52 @@ export default function Hobbies() {
     return () => observer.disconnect()
   }, [])
 
-  const { limit } = useSubscription()
-  const hobbyLimit = limit('hobbies_limit')
+  const { canCreate, data } = useUserLimit()
 
-  const { data: hobbies = [] } = useQuery<Hobby[]>({
-    queryKey: ['hobbies'],
-    queryFn: async (): Promise<Hobby[]> => {
-      return backend.entities.Hobby.filter({ is_deleted: false }, '-created_date') as Promise<
-        Hobby[]
-      >
-    }
-  })
+  const { data: hobbies = [] } = useHobbiesQuery()
 
-  const atLimit = hobbyLimit !== Infinity && hobbies.length >= hobbyLimit
-  const isOverLimit = (idx: number) => hobbyLimit !== Infinity && idx >= hobbyLimit
+  const atLimit = canCreate('hobbies')
+  const isOverLimit = (idx: number) => canCreate('hobbies')
 
-  const createMutation = useMutation<Hobby, Error, HobbyCreateInput>({
-    mutationFn: (data: HobbyCreateInput) => backend.entities.Hobby.create(data) as Promise<Hobby>,
+  const { createMutation, updateMutation, deleteMutation } = useHobbyMutations()
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hobbies'] })
+  const handleCreateHobby = async (data: CreateHobbyInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
     }
-  })
+  }
 
-  const updateMutation = useMutation<Hobby, Error, { id: string; data: Partial<Hobby> }>({
-    mutationFn: ({ id, data }) => backend.entities.Hobby.update(id, data) as Promise<Hobby>,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hobbies'] })
+  const handleUpdateHobby = async ({ id, data }: { id: string; data: Partial<HobbyRecord> }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
       setEditingHobby(null)
     }
-  })
+  }
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.Hobby.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hobbies'] })
+  const handleDeleteHobby = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setShowForm(false)
+      setEditingHobby(null)
     }
-  })
+  }
 
-  const handleSubmit = (data: HobbyCreateInput) => {
+  const handleSubmit = (data: CreateHobbyInput) => {
     if (editingHobby) {
-      updateMutation.mutate({ id: editingHobby.id, data })
+      handleUpdateHobby({ id: editingHobby.id, data })
     } else {
-      createMutation.mutate(data)
+      handleCreateHobby(data)
     }
   }
 
@@ -172,7 +167,7 @@ export default function Hobbies() {
               <Link to="/Upgrade" className="w-full lg:w-auto">
                 <Button className="w-full bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
-                  Limit reached ({hobbies.length}/{hobbyLimit})
+                  Limit reached ({data?.usage?.hobbies || 0}/{data?.limits?.hobbies})
                 </Button>
               </Link>
             ) : (
@@ -259,7 +254,7 @@ export default function Hobbies() {
                     key={hobby.id}
                     hobby={hobby}
                     onEdit={handleEdit}
-                    onDelete={deleteMutation.mutate}
+                    onDelete={id => handleDeleteHobby(id)}
                   />
                 )
               })}

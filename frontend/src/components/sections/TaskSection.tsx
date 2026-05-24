@@ -14,6 +14,7 @@ import {
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import TaskFormSimple from './TaskFormSimple'
+import { useTasksQuery } from '@/hooks/tasks/useTasksQuery'
 
 const priorityColors = {
   high: 'bg-rose-50 text-rose-700 border-rose-200',
@@ -27,14 +28,11 @@ interface TaskSectionProps {
 }
 
 export default function TaskSection({ category, initialTaskData }: TaskSectionProps) {
-  const [showForm, setShowForm] = useState<boolean>(false)
+  const [showForm, setShowForm] = useState(false)
   const [editingTask, setEditingTask] = useState<any | null>(null)
   const queryClient = useQueryClient()
 
-  const { data: tasks = [] } = useQuery<any[]>({
-    queryKey: ['tasks', category],
-    queryFn: () => backend.entities.Task.filter({ category })
-  })
+  const { data: tasks = [] } = useTasksQuery({ category })
 
   const { data: problems = [] } = useQuery<any[]>({
     queryKey: ['problems', category],

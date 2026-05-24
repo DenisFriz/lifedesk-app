@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { backend } from '@/api/backend'
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,21 +14,12 @@ import {
 } from '@/components/ui/select'
 import { Trash2 } from 'lucide-react'
 import RecurrenceField from './RecurrenceField'
+import { useTaskMutations } from '@/hooks/tasks/useTaskMutations'
+import { useGoalsQuery } from '@/hooks/goals/useGoalsQuery'
 
 type Business = {
   id: string
   name: string
-}
-
-type Goal = {
-  id: string
-  title: string
-  status: string
-  category: string
-  business_id?: string | null
-  target_date?: string
-  target_time?: string
-  reminders?: number[]
 }
 
 type TaskInput = {
@@ -80,7 +71,6 @@ export default function TaskCreateForm({ date, time, open, onOpenChange, initial
       })
     }
   }, [initialData, date, time])
-  const queryClient = useQueryClient()
 
   const { data: businesses = [] } = useQuery<Business[]>({
     queryKey: ['businesses'],
@@ -90,25 +80,22 @@ export default function TaskCreateForm({ date, time, open, onOpenChange, initial
     }
   })
 
-  const { data: goals = [] } = useQuery<Goal[]>({
-    queryKey: ['goals'],
-    queryFn: async () => {
-      const data = await backend.entities.Goal.list('-created_date')
-      return data as Goal[]
-    }
-  })
+  const { data: goals = [] } = useGoalsQuery()
 
-  const createMutation = useMutation<unknown, Error, TaskInput>({
-    mutationFn: data => backend.entities.Task.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+  const { createMutation } = useTaskMutations()
+
+  const handleCreateTask = async (data: TaskInput) => {
+    try {
+      await createMutation.mutateAsync(data)
       onOpenChange(false)
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
 
   const handleSave = () => {
     if (!formData.title.trim()) return
-    createMutation.mutate(formData)
+    handleCreateTask(formData)
   }
 
   const relevantGoals = goals.filter(
@@ -120,7 +107,7 @@ export default function TaskCreateForm({ date, time, open, onOpenChange, initial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Create Task</DialogTitle>
         </DialogHeader>

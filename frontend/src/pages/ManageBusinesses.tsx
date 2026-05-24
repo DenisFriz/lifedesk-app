@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -9,74 +9,67 @@ import { Plus, Briefcase, Pencil, Trash2, GripVertical, Lock } from 'lucide-reac
 import { Link } from 'react-router-dom'
 import { BUSINESS_CATEGORIES } from '@/components/finances/categories'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
-import { useSubscription } from '@/hooks/useSubscription'
 import { Helmet } from 'react-helmet-async'
-
-type Business = {
-  id: string
-  name: string
-  description?: string
-  order: number
-  color?: string
-  is_deleted?: boolean
-}
-
-type CreateBusinessInput = Omit<Business, 'id'>
-
-type BusinessInput = {
-  name: string
-  description: string
-  categories: string[]
-  color: string
-  order: number
-}
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
+import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useBusinessMutations } from '@/hooks/businesses/useBusinessMutations'
+import { CreateBusinessInput } from '@/repositories/business.repository'
+import { BusinessRecord } from '@/db'
+import { useAuth } from '@/lib/AuthContext'
 
 export default function ManageBusinesses() {
   const [showForm, setShowForm] = useState(false)
   const [editingBusiness, setEditingBusiness] = useState(null)
   const queryClient = useQueryClient()
 
-  const { limit } = useSubscription()
-  const businessLimit = limit('business_manage_businesses_limit')
+  const { canCreate, data } = useUserLimit()
 
-  const { data: businesses = [] } = useQuery<Business[]>({
-    queryKey: ['businesses'],
-    queryFn: async (): Promise<Business[]> => {
-      const data = (await backend.entities.Business.list('order')) as Business[]
-      return data.filter(r => !r.is_deleted)
-    }
-  })
+  const { user } = useAuth()
 
-  const atLimit = businessLimit !== Infinity && businesses.length >= businessLimit
+  const { data: businesses = [] } = useBusinessesQuery()
 
-  const createMutation = useMutation<Business, Error, CreateBusinessInput>({
-    mutationFn: async (data: CreateBusinessInput): Promise<Business> => {
-      return backend.entities.Business.create(data) as unknown as Business
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['businesses'] })
+  const atLimit = canCreate('business')
+
+  const { createMutation, updateMutation, deleteMutation } = useBusinessMutations()
+
+  const handleCreateBusiness = async (data: CreateBusinessInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
       setEditingBusiness(null)
     }
-  })
+  }
 
-  const updateMutation = useMutation<Business, Error, { id: string; data: Partial<Business> }>({
-    mutationFn: async ({ id, data }) => {
-      return backend.entities.Business.update(id, data) as unknown as Business
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['businesses'] })
+  const handleUpdateBusiness = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<BusinessRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
       setEditingBusiness(null)
     }
-  })
+  }
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.Business.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['businesses'] })
+  const handleDeleteBusiness = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setShowForm(false)
+      setEditingBusiness(null)
     }
-  })
+  }
 
   const handleDragEnd = result => {
     if (!result.destination) return
@@ -95,7 +88,8 @@ export default function ManageBusinesses() {
 
     const formData = new FormData(e.currentTarget)
 
-    const data: BusinessInput = {
+    const data = {
+      created_by: user.id,
       name: String(formData.get('name') || ''),
       description: String(formData.get('description') || ''),
       categories: BUSINESS_CATEGORIES,
@@ -104,9 +98,9 @@ export default function ManageBusinesses() {
     }
 
     if (editingBusiness) {
-      updateMutation.mutate({ id: editingBusiness.id, data })
+      handleUpdateBusiness({ id: editingBusiness.id, data })
     } else {
-      createMutation.mutate(data)
+      handleCreateBusiness(data)
     }
   }
 
@@ -133,7 +127,7 @@ export default function ManageBusinesses() {
               <Link to="/Upgrade">
                 <Button className="bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
-                  Limit reached ({businesses.length}/{businessLimit})
+                  Limit reached ({data?.usage?.business}/{data?.limits?.business})
                 </Button>
               </Link>
             ) : (
@@ -189,7 +183,7 @@ export default function ManageBusinesses() {
                                 size="icon"
                                 onClick={() => {
                                   if (confirm(`Delete "${business.name}"?`)) {
-                                    deleteMutation.mutate(business.id)
+                                    handleDeleteBusiness(business.id)
                                   }
                                 }}
                                 className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"

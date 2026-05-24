@@ -1,4 +1,7 @@
-import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits.js';
+import {
+  SUBSCRIPTION_LIMITS,
+  SubscriptionLimits,
+} from '@/config/subscriptionLimits.js';
 import { modelMap } from '@/models/index.js';
 import { UsageKey, UserUsage } from '@/models/UserUsage.js';
 import { Router, type Request, type Response } from 'express';
@@ -167,15 +170,28 @@ router.post('/:entity', async (req: Request, res: Response) => {
       return res.status(201).json(record);
     }
 
-    const entityToLimitKey: Record<string, keyof typeof limits> = {
+    const entityToLimitKey: Record<string, keyof SubscriptionLimits> = {
       task: 'tasks',
       goal: 'goals',
-      event: 'events',
-      project: 'projects',
-      asset: 'assets',
-      bankaccount: 'bankAccounts',
-      workout: 'workouts',
       calendarentry: 'calendarEntries',
+      event: 'events',
+      vehicle: 'vehicle',
+      estate: 'estate',
+      otherasset: 'otherAsset',
+      offlineaccount: 'offlineBankAccount',
+      healthtrackingentry: 'healthTrackingEnties',
+      medicaldocument: 'medicalDocuments',
+      workout: 'workouts',
+      workoutplan: 'workoutPlans',
+      measurement: 'measurements',
+      hobby: 'hobbies',
+      learning: 'learning',
+      relationship: 'relationships',
+      business: 'business',
+      projectsandclients: 'projectsAndClients',
+      marketingstrategy: 'marketingStrategy',
+      campaign: 'campaign',
+      content: 'content',
     };
 
     const limitKey = entityToLimitKey[modelKey] as UsageKey;
@@ -234,29 +250,39 @@ router.put('/:entity/:id', async (req: Request, res: Response) => {
     const idParam = req.params.id;
     const id = Array.isArray(idParam) ? idParam[0] : idParam;
 
-    if (!Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        error: 'Invalid ObjectId',
-      });
-    }
-
     const entity = Array.isArray(entityParam) ? entityParam[0] : entityParam;
-
     const modelKey = entity.toLowerCase();
 
     const Model = modelMap[modelKey];
 
     if (!Model) {
-      return res.status(400).json({
-        error: `Unknown entity: ${modelKey}`,
-      });
+      return res.status(400).json({ error: `Unknown entity: ${modelKey}` });
+    }
+
+    const body = sanitizeInput(req.body);
+
+    if (!Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid ObjectId' });
     }
 
     const record = await Model.findOne({ _id: id });
 
     if (!record) {
-      return res.status(404).json({
-        error: 'Not found or forbidden',
+      return res.status(404).json({ error: 'Not found or forbidden' });
+    }
+
+    const clientUpdatedAt = body.updatedAt
+      ? new Date(body.updatedAt).getTime()
+      : null;
+
+    const serverUpdatedAt = record.updatedAt
+      ? new Date(record.updatedAt).getTime()
+      : 0;
+
+    if (clientUpdatedAt && clientUpdatedAt < serverUpdatedAt) {
+      return res.status(409).json({
+        error: 'Conflict: stale update',
+        server: record,
       });
     }
 
@@ -264,10 +290,11 @@ router.put('/:entity/:id', async (req: Request, res: Response) => {
       { _id: id },
       {
         $set: {
-          ...sanitizeInput(req.body),
+          ...body,
+          updatedAt: new Date(),
         },
       },
-      { new: true },
+      { returnDocument: 'after' },
     );
 
     res.json(updated);

@@ -9,11 +9,10 @@ import {
   MouseEvent
 } from 'react'
 import { useLocation } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { backend } from '@/api/backend'
 import { Button } from '@/components/ui/button'
 import { DropResult } from '@hello-pangea/dnd'
 import { Maximize, Minimize } from 'lucide-react'
+import { createPageUrl } from '@/utils'
 
 import NotesPanel from '@/components/notes/NotesPanel'
 import QuickCalculatorPanel from '@/components/calculator/QuickCalculatorPanel'
@@ -23,6 +22,8 @@ import EventNotifications from '@/components/calendar/EventNotifications'
 import { TimeTrackerProvider } from '@/components/time/TimeTrackerContext'
 import type { LayoutContextValue, NavItem as NavItemType, User } from '@/types'
 import LayoutContent from './layouts/default-layout'
+import { useAuth } from './lib/AuthContext'
+import { useBusinessesQuery } from './hooks/businesses/useBusinessesQuery'
 
 export const LayoutContext = createContext<LayoutContextValue | null>(null)
 
@@ -32,6 +33,29 @@ export const useLayout = (): LayoutContextValue => {
     throw new Error('useLayout must be used within a LayoutProvider')
   }
   return context
+}
+
+function findSectionsToExpand(
+  items: NavItemType[],
+  pathname: string,
+  businessId: string | null
+): string[] | null {
+  for (const item of items) {
+    if (item.page) {
+      const pathMatches = pathname === createPageUrl(item.page)
+      const businessMatches = !item.businessId || String(item.businessId) === String(businessId)
+      if (pathMatches && businessMatches) {
+        return []
+      }
+    }
+    if (item.children) {
+      const result = findSectionsToExpand(item.children, pathname, businessId)
+      if (result !== null) {
+        return item.expandable && item.section ? [item.section, ...result] : result
+      }
+    }
+  }
+  return null
 }
 
 interface LayoutProps {
@@ -163,8 +187,6 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
 
   const [hiddenSections, setHiddenSections] = useState<string[]>(() => {
     const saved = localStorage.getItem('hiddenSections')
-    console.log('hidden sections')
-    console.log(saved)
     return saved ? JSON.parse(saved) : []
   })
   const [sectionOrder, setSectionOrder] = useState<string[]>(() => {
@@ -180,16 +202,9 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
     return saved ? JSON.parse(saved) : {}
   })
 
-  const { data: businesses = [] } = useQuery({
-    queryKey: ['businesses'],
-    queryFn: () =>
-      backend.entities.Business.filter({ is_deleted: false }, 'order') as Promise<any[]>
-  })
+  const { data: businesses = [] } = useBusinessesQuery()
 
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => backend.auth.me() as Promise<User | undefined>
-  })
+  const { user } = useAuth()
 
   const getDefaultNavigation = useCallback(
     (): NavItemType[] => [
@@ -600,6 +615,32 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
   }, [currentPageName, location.search])
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(location.search)
+    const currentBusinessId = urlParams.get('businessId')
+    const navigation = getDefaultNavigation()
+    const sectionsToExpand = findSectionsToExpand(navigation, location.pathname, currentBusinessId)
+
+    if (!sectionsToExpand) return
+
+    setExpandedSections(prev => {
+      const newExpanded: Record<string, boolean> = {}
+      sectionsToExpand.forEach(section => {
+        newExpanded[section] = true
+      })
+
+      const prevActive = Object.entries(prev)
+        .filter(([, v]) => v)
+        .map(([k]) => k)
+        .sort()
+      const nextActive = [...sectionsToExpand].sort()
+      if (JSON.stringify(prevActive) === JSON.stringify(nextActive)) return prev
+
+      localStorage.setItem('expandedSections', JSON.stringify(newExpanded))
+      return newExpanded
+    })
+  }, [location.pathname, location.search, getDefaultNavigation])
+
+  useEffect(() => {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(collapsed))
   }, [collapsed])
 
@@ -648,8 +689,6 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
       return newHidden
     })
   }, [])
-
-  console.log(hiddenTools)
 
   const getOrderedSubsections = useCallback(
     (parentItem: NavItemType): NavItemType[] => {

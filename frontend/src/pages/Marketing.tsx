@@ -18,7 +18,7 @@ const TABS = [
     icon: FileText,
     desc: 'Content planning and execution'
   }
-]
+] as const
 
 type Business = {
   id: string

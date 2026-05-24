@@ -1,9 +1,8 @@
 import { useState, useRef } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { backend } from '@/api/backend'
 import { Button } from '@/components/ui/button'
 import { Plus, Trash2, FileText, Archive, Download, Lock } from 'lucide-react'
-import { useSubscription } from '@/hooks/useSubscription'
 import { Link } from 'react-router-dom'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -18,6 +17,9 @@ import {
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { Helmet } from 'react-helmet-async'
+import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useMedicalDocumentsQuery } from '@/hooks/medicaldocuments/useMedicalDocumentsQuery'
+import { useMedicalDocumentMutations } from '@/hooks/medicaldocuments/useMedicalDocumentMutations'
 
 type MedicalDocument = {
   id: string
@@ -34,41 +36,44 @@ export default function HealthDocuments() {
   const [showUploadDialog, setShowUploadDialog] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
   const [previewDocument, setPreviewDocument] = useState(null)
-  const queryClient = useQueryClient()
-  const { limit } = useSubscription()
 
-  const { data: documents = [], isLoading } = useQuery<MedicalDocument[]>({
-    queryKey: ['medicalDocuments'],
-    queryFn: () => backend.entities.MedicalDocument.list('-date') as Promise<MedicalDocument[]>
-  })
+  const { data: documents = [], isLoading } = useMedicalDocumentsQuery()
 
-  const docLimit = limit('health_medical_documents_limit')
-  const activeDocuments = documents.filter(d => !d.is_archived)
-  const atLimit = docLimit !== Infinity && documents.length >= docLimit
+  const { canCreate, data } = useUserLimit()
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.MedicalDocument.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['medicalDocuments'] })
+  const atLimit = canCreate('medicalDocuments')
+
+  const { updateMutation, deleteMutation } = useMedicalDocumentMutations()
+
+  const handleDeleteMedicalDocument = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
       toast.success('Document deleted')
     }
-  })
+  }
 
-  const archiveMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.MedicalDocument.update(id, { is_archived: true }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['medicalDocuments'] })
+  const handleArchiveMedicalDocument = async (id: string) => {
+    try {
+      await updateMutation.mutateAsync({ id, data: { is_archived: true } })
+    } catch (e) {
+      console.error(e)
+    } finally {
       toast.success('Document archived')
     }
-  })
+  }
 
-  const restoreMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.MedicalDocument.update(id, { is_archived: false }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['medicalDocuments'] })
+  const handleRecstoreMedicalDocument = async (id: string) => {
+    try {
+      await updateMutation.mutateAsync({ id, data: { is_archived: false } })
+    } catch (e) {
+      console.error(e)
+    } finally {
       toast.success('Document restored')
     }
-  })
+  }
 
   const filteredDocuments = documents.filter(d => d.is_archived === showArchived)
 
@@ -108,7 +113,8 @@ export default function HealthDocuments() {
               <Link to="/Upgrade">
                 <Button className="bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
-                  Limit reached ({activeDocuments.length}/{docLimit})
+                  Limit reached ({data?.usage?.medicalDocuments}/{data?.remaining?.medicalDocuments}
+                  )
                 </Button>
               </Link>
             ) : (
@@ -214,7 +220,7 @@ export default function HealthDocuments() {
                         </p>
                       )}
                       <p className="text-xs text-slate-500">
-                        {format(new Date(doc.date || doc.created_date), 'MMM d, yyyy')}
+                        {format(new Date(doc.date || doc.createdAt), 'MMM d, yyyy')}
                       </p>
                     </div>
 
@@ -233,7 +239,7 @@ export default function HealthDocuments() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => restoreMutation.mutate(doc.id)}
+                          onClick={() => handleRecstoreMedicalDocument(doc.id)}
                           className="text-blue-600 hover:bg-blue-50"
                           title="Restore document"
                         >
@@ -243,7 +249,7 @@ export default function HealthDocuments() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => archiveMutation.mutate(doc.id)}
+                          onClick={() => handleArchiveMedicalDocument(doc.id)}
                           className="text-amber-600 hover:bg-amber-50"
                           title="Archive document"
                         >
@@ -253,7 +259,7 @@ export default function HealthDocuments() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => deleteMutation.mutate(doc.id)}
+                        onClick={() => handleDeleteMedicalDocument(doc.id)}
                         className="text-red-600 hover:bg-red-50"
                         title="Delete permanently"
                       >

@@ -32,6 +32,7 @@ import OfflineAccountMonthlyTable from '@/components/finances/OfflineAccountMont
 import OnlineAccountMonthlyTable from '@/components/finances/OnlineAccountMonthlyTable'
 import { formatCurrency } from '@/components/utils/formatters'
 import { Helmet } from 'react-helmet-async'
+import { useUserLimit } from '@/contexts/UserLimitContext'
 
 const CHANGE_PERIOD_OPTIONS = [
   { value: 'this_month', label: 'This Month' },
@@ -316,6 +317,8 @@ export default function Accounts() {
   const [changePeriod, setChangePeriod] = useState('this_month')
   const { limit, can } = useSubscription()
 
+  const { canCreate, data: UserLimitData } = useUserLimit()
+
   const { data: offlineAccounts = [] } = useQuery<OfflineAccount[]>({
     queryKey: ['offlineAccounts'],
     queryFn: () =>
@@ -458,8 +461,8 @@ export default function Accounts() {
                 Connect Bank
               </Button>
               {(() => {
-                const offlineLimit = limit('finance_offline_accounts_limit')
-                const atLimit = offlineAccounts.length >= offlineLimit
+                const offlineLimit = UserLimitData?.limits?.offlineBankAccount || 0
+                const atLimit = canCreate('offlineBankAccount')
                 return (
                   <TooltipProvider>
                     <Tooltip>

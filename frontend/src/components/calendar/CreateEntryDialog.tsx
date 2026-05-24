@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -6,9 +6,7 @@ import { ListTodo, Target, Clock, Zap } from 'lucide-react'
 import TaskCreateForm from './TaskCreateForm'
 import GoalCreateForm from './GoalCreateForm'
 import EventCreateForm from './EventCreateForm'
-import { useSubscription } from '@/hooks/useSubscription'
-import { useQuery } from '@tanstack/react-query'
-import { backend } from '@/api/backend'
+import { useUserLimit } from '@/contexts/UserLimitContext'
 
 export default function CreateEntryDialog({
   date,
@@ -23,9 +21,10 @@ export default function CreateEntryDialog({
   onEventCreated
 }) {
   const [selectedType, setSelectedType] = useState(null)
-  const { limit } = useSubscription()
 
-  const { data: tasks = [] } = useQuery({
+  const { canCreate, data: userLimit } = useUserLimit()
+
+  /*  const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
     queryFn: () => backend.entities.Task.list()
   })
@@ -36,13 +35,11 @@ export default function CreateEntryDialog({
   const { data: events = [] } = useQuery({
     queryKey: ['events'],
     queryFn: () => backend.entities.Event.list()
-  })
+  }) */
 
-  const totalCalendarEntries = tasks.length + goals.length + events.length
-  const calendarLimit = limit('home_calendar_entries_limit')
-  const isAtCalendarLimit = calendarLimit !== Infinity && totalCalendarEntries >= calendarLimit
+  const isCalendarLimitReached = !canCreate('calendarEntries')
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialTaskData) {
       setSelectedType('task')
     } else if (initialGoalData) {
@@ -110,11 +107,11 @@ export default function CreateEntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>What would you like to create?</DialogTitle>
         </DialogHeader>
-        {isAtCalendarLimit ? (
+        {isCalendarLimitReached ? (
           <div className="py-6 flex flex-col items-center text-center gap-4">
             <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center">
               <Zap className="w-6 h-6 text-amber-500" />
@@ -122,7 +119,8 @@ export default function CreateEntryDialog({
             <div>
               <p className="font-semibold text-slate-900 mb-1">Calendar entry limit reached</p>
               <p className="text-sm text-slate-500">
-                You've reached the limit of {calendarLimit} calendar entries on the free plan.
+                You've reached the limit of {userLimit?.limits?.calendarEntries || 0} calendar
+                entries on the free plan.
               </p>
             </div>
             <Link

@@ -1,7 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
 import { Tabs } from '@/components/ui/tabs'
 import GoalTable from '@/components/sections/GoalTable'
-import { useLayout } from '@/Layout'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ChevronDown, Target } from 'lucide-react'
 import { Helmet } from 'react-helmet-async'
+import { useEntityTabs } from '@/hooks/useEntityTabs'
 
 type FilterType = 'all' | 'important' | 'category' | 'business'
 
@@ -86,71 +85,11 @@ const tabs: TabConfig[] = [
 ]
 
 export default function MainGoals() {
-  const [activeTab, setActiveTab] = useState(() => {
-    const saved = localStorage.getItem('mainGoalsActiveTab')
-    return saved || 'all'
-  })
-  const [visibleTabs, setVisibleTabs] = useState<TabConfig[]>([])
-  const [overflowTabs, setOverflowTabs] = useState<TabConfig[]>([])
-  const [isScrolled, setIsScrolled] = useState(false)
-  const headerRef = useRef(null)
-
-  const { isHidden } = useLayout()
-
-  const getOrderedTabs = useCallback(() => {
-    const saved = localStorage.getItem('subsectionOrder')
-    const subsectionOrder = saved ? JSON.parse(saved) : {}
-
-    const privateOrder = subsectionOrder['Private'] || []
-
-    return [...tabs]
-      .sort((a, b) => {
-        if (!a.section || !b.section) return 0
-
-        const nameA = a.section.replace('Private > ', '')
-        const nameB = b.section.replace('Private > ', '')
-
-        const indexA = privateOrder.indexOf(nameA)
-        const indexB = privateOrder.indexOf(nameB)
-
-        if (indexA === -1 && indexB === -1) return 0
-        if (indexA === -1) return 1
-        if (indexB === -1) return -1
-
-        return indexA - indexB
-      })
-      .filter(tab => !tab.section || !isHidden(tab.section))
-  }, [isHidden])
-
-  useEffect(() => {
-    const calculateVisibleTabs = () => {
-      // On mobile/tablet, show first 12 tabs (roughly 3 rows), rest in dropdown
-      const maxVisible = window.innerWidth < 640 ? 6 : window.innerWidth < 1024 ? 9 : 12
-
-      const orderedTabs = getOrderedTabs()
-
-      setVisibleTabs(orderedTabs.slice(0, maxVisible))
-      setOverflowTabs(orderedTabs.slice(maxVisible))
-    }
-
-    calculateVisibleTabs()
-    window.addEventListener('resize', calculateVisibleTabs)
-    return () => window.removeEventListener('resize', calculateVisibleTabs)
-  }, [getOrderedTabs])
-
-  useEffect(() => {
-    if (!headerRef.current) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsScrolled(!entry.isIntersecting)
-      },
-      { threshold: 0, rootMargin: '-60px 0px 0px 0px' }
-    )
-
-    observer.observe(headerRef.current)
-    return () => observer.disconnect()
-  }, [])
+  const { activeTab, setActiveTab, visibleTabs, overflowTabs, isScrolled, headerRef } =
+    useEntityTabs({
+      tabs,
+      storageKey: 'mainGoalsActiveTab'
+    })
 
   return (
     <>

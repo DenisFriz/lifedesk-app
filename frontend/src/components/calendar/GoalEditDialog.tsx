@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { backend } from '@/api/backend'
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,11 +15,7 @@ import {
 import { Trash2, Star } from 'lucide-react'
 import RecurrenceField from './RecurrenceField'
 import DeleteRecurringDialog from './DeleteRecurringDialog'
-
-type UpdateGoalInput = {
-  id: string
-  data: Record<string, unknown>
-}
+import { useGoalMutations } from '@/hooks/goals/useGoalMutations'
 
 type Business = {
   id: string
@@ -31,7 +27,7 @@ export default function GoalEditDialog({ goal, open, onOpenChange }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const queryClient = useQueryClient()
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (goal) {
       setFormData(goal)
     }
@@ -42,23 +38,28 @@ export default function GoalEditDialog({ goal, open, onOpenChange }) {
     queryFn: () => backend.entities.Business.list('order') as Promise<Business[]>
   })
 
-  const updateMutation = useMutation<unknown, Error, UpdateGoalInput>({
-    mutationFn: ({ id, data }) => backend.entities.Goal.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] })
-      onOpenChange(false)
-    }
-  })
+  const { updateMutation, deleteMutation } = useGoalMutations()
 
-  const deleteMutation = useMutation<void, Error, string>({
-    mutationFn: id => backend.entities.Goal.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] })
+  const handleUpdateGoal = async ({ id, data }: { id: string; data: any }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
       onOpenChange(false)
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
+
+  const handleDeleteGoal = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+      onOpenChange(false)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   const handleSave = () => {
-    updateMutation.mutate({ id: goal.id, data: formData })
+    handleUpdateGoal({ id: goal.id, data: formData })
   }
 
   const handleDelete = () => {
@@ -66,7 +67,7 @@ export default function GoalEditDialog({ goal, open, onOpenChange }) {
       setShowDeleteDialog(true)
     } else {
       if (confirm('Are you sure you want to delete this goal?')) {
-        deleteMutation.mutate(goal.id)
+        handleDeleteGoal(goal.id)
       }
     }
   }
@@ -90,7 +91,7 @@ export default function GoalEditDialog({ goal, open, onOpenChange }) {
       }
     } else {
       // Delete all recurring entries
-      deleteMutation.mutate(goal.id)
+      handleDeleteGoal(goal.id)
     }
   }
 

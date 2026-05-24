@@ -1,69 +1,64 @@
 import { useState } from 'react'
-import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Plus, Home, Lock } from 'lucide-react'
 import EstateAssetCard from '@/components/assets/EstateAssetCard'
 import EstateAssetForm from '@/components/assets/EstateAssetForm'
 import { formatCurrency } from '@/components/utils/formatters'
-import { useSubscription } from '@/hooks/useSubscription'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-
-type TangibleAsset = {
-  id: string
-  category: string
-
-  purchase_price?: number
-  current_value?: number
-  mortgage_amount?: number
-
-  created_date?: string
-  is_deleted?: boolean
-}
+import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useEstateMutations } from '@/hooks/estates/useEstateMutations'
+import { EstateRecord } from '@/db'
+import { CreateEstateInput } from '@/repositories/estate.repository'
+import { useEstatesQuery } from '@/hooks/estates/useEstatesQuery'
 
 export default function AssetsEstates() {
   const [form, setForm] = useState({ open: false, asset: null })
-  const queryClient = useQueryClient()
-  const { limit: getLimit } = useSubscription()
 
-  const { data: assets = [], isLoading } = useQuery<TangibleAsset[]>({
-    queryKey: ['tangible-assets'],
-    queryFn: async (): Promise<TangibleAsset[]> => {
-      return backend.entities.TangibleAsset.list('-created_date') as Promise<TangibleAsset[]>
-    }
-  })
+  const { data: estates, isLoading } = useEstatesQuery()
 
-  const estateLimit = getLimit('assets_estates_limit')
-  const estates = assets.filter(a => a.category === 'real_estate')
-  const atLimit = estates.length >= estateLimit
-  const totalValue = estates.reduce((s, a) => s + (a.current_value || a.purchase_price || 0), 0)
-  const totalMortgage = estates.reduce((s, a) => s + (a.mortgage_amount || 0), 0)
+  const { canCreate, data } = useUserLimit()
+
+  const atLimit = canCreate('estate')
+  const totalValue = estates?.reduce((s, a) => s + (a.current_value || a.purchase_price || 0), 0)
+  const totalMortgage = estates?.reduce((s, a) => s + (a.mortgage_amount || 0), 0)
   const totalEquity = totalValue - totalMortgage
 
-  const createMutation = useMutation({
-    mutationFn: (data: TangibleAsset) => backend.entities.TangibleAsset.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tangible-assets'] })
-      setForm({ open: false, asset: null })
-    }
-  })
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<TangibleAsset> }) =>
-      backend.entities.TangibleAsset.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tangible-assets'] })
-      setForm({ open: false, asset: null })
-    }
-  })
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.TangibleAsset.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tangible-assets'] })
-  })
+  const { updateMutation, createMutation, deleteMutation } = useEstateMutations()
 
-  const handleSubmit = (data: TangibleAsset) => {
-    if (form.asset) updateMutation.mutate({ id: form.asset.id, data })
-    else createMutation.mutate(data)
+  const handleUpdateEstate = async ({ id, data }: { id: string; data: Partial<EstateRecord> }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setForm({ open: false, asset: null })
+    }
+  }
+
+  const handleCreateEstate = async (data: CreateEstateInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setForm({ open: false, asset: null })
+    }
+  }
+
+  const handleDeleteEstate = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setForm({ open: false, asset: null })
+    }
+  }
+
+  const handleSubmit = (data: CreateEstateInput) => {
+    if (form.asset) handleUpdateEstate({ id: form.asset.id, data })
+    else handleCreateEstate(data)
   }
 
   return (
@@ -103,11 +98,9 @@ export default function AssetsEstates() {
             <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
               <p className="text-sm text-slate-500">Total Value</p>
               <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalValue)}</p>
-              {estateLimit !== Infinity && (
-                <p className="text-xs text-slate-400 mt-1">
-                  {estates.length}/{estateLimit} used
-                </p>
-              )}
+              <p className="text-xs text-slate-400 mt-1">
+                {data?.usage?.estate || 0}/{data?.limits?.estate} used
+              </p>
             </div>
             <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
               <p className="text-sm text-slate-500">Outstanding Mortgage</p>
@@ -148,12 +141,12 @@ export default function AssetsEstates() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {estates.map(asset => (
+              {estates?.map(asset => (
                 <EstateAssetCard
                   key={asset.id}
                   asset={asset}
                   onEdit={a => setForm({ open: true, asset: a })}
-                  onDelete={id => deleteMutation.mutate(id)}
+                  onDelete={id => handleDeleteEstate(id)}
                 />
               ))}
             </div>

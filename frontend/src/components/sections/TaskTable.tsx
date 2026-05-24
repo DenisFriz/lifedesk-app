@@ -1,8 +1,6 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { offlineFirst, offlineUpdate } from '@/hooks/useOfflineFirst'
-import { useSubscription } from '@/hooks/useSubscription'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import UsageLimitGate from '@/components/subscription/UsageLimitGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -49,6 +47,11 @@ import { TablePagination } from '../TablePagination'
 import { CategorySelectDialog } from '../CategorySelectDialog'
 import { useSound } from '@/contexts/SoundContext'
 import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useTaskMutations } from '@/hooks/tasks/useTaskMutations'
+import { useGoalsQuery } from '@/hooks/goals/useGoalsQuery'
+import { useTasksQuery } from '@/hooks/tasks/useTasksQuery'
+import { useTableState } from '@/hooks/useTableState'
+import { TaskRecord } from '@/db'
 
 interface TaskTableProps {
   filterType?: 'all' | 'important' | 'category' | 'business'
@@ -71,45 +74,35 @@ export default function TaskTable({
   businessId,
   isActive = true
 }: TaskTableProps) {
+  const { table } = useTableState('taskTableCompactView')
+
   const [taskValues, setTaskValues] = useState<TaskValues>({})
-  const [sortBy, setSortBy] = useState<string | null>(null)
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [statusFilter, setStatusFilter] = useState<'active' | 'done' | 'archived'>('active')
   const [animatingTask, setAnimatingTask] = useState<string | null>(null)
   const [showCategoryDialog, setShowCategoryDialog] = useState<boolean>(false)
-  const [page, setPage] = useState<number>(1)
-  const [perPage, setPerPage] = useState<number>(20)
   const [showReminders, setShowReminders] = useState<Record<string, boolean>>({})
   const [reminderValues, setReminderValues] = useState<ReminderValues>({})
   const [selectOpen, setSelectOpen] = useState<boolean>(false)
   const [selectedTasks, setSelectedTasks] = useState<string[]>([])
-  const [bulkMode, setBulkMode] = useState<boolean>(false)
   const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({})
-  const [compactView, setCompactView] = useState<boolean>(() => {
-    const saved = localStorage.getItem('taskTableCompactView')
-    return saved ? JSON.parse(saved) : false
-  })
+
   const [hoveredDueDate, setHoveredDueDate] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState<string>('')
   const queryClient = useQueryClient()
-  const tableRef = React.useRef(null)
 
   const { playSound } = useSound()
 
-  const { limit } = useSubscription()
-
   const { canCreate } = useUserLimit()
 
-  const tasksLimit = limit('home_tasks_limit')
+  const {
+    updateMutation,
+    createMutation,
+    deleteMutation,
+    duplicateMutation,
+    bulkDeleteMutation,
+    bulkUpdateMutation
+  } = useTaskMutations()
 
-  const { data: allTasks = [] } = useQuery<any[]>({
-    queryKey: ['tasks'],
-    queryFn: async () => {
-      const data = await backend.entities.Task.list('-created_date')
-      return (data as any[]).filter(r => !r.is_deleted)
-    },
-    enabled: isActive
-  })
+  const { data: allTasks = [] } = useTasksQuery()
 
   const { data: businesses = [] } = useQuery<any[]>({
     queryKey: ['businesses'],
@@ -120,14 +113,7 @@ export default function TaskTable({
     enabled: isActive
   })
 
-  const { data: allGoals = [] } = useQuery<any[]>({
-    queryKey: ['goals'],
-    queryFn: async () => {
-      const data = await offlineFirst('goals', () => backend.entities.Goal.list('-created_date'))
-      return (data as any[]).filter(r => !r.is_deleted)
-    },
-    enabled: isActive
-  })
+  const { data: allGoals = [] } = useGoalsQuery({ enabled: isActive })
 
   // Filter tasks based on filterType
   let tasks = allTasks
@@ -139,171 +125,103 @@ export default function TaskTable({
     tasks = allTasks.filter(t => t.category === 'business' && t.business_id === businessId)
   }
 
-  const updateMutation = useMutation<any, any, { id: string; data: any }>({
-    mutationFn: ({ id, data }) => offlineUpdate('tasks', backend.entities.Task, id, data),
-    onMutate: async ({ id, data }) => {
-      await queryClient.cancelQueries({ queryKey: ['tasks'] })
-      const previousTasks = queryClient.getQueryData(['tasks'])
-      queryClient.setQueryData(['tasks'], (oldTasks: any) => {
-        if (!oldTasks) return oldTasks
-        return oldTasks.map((task: any) => (task._id === id ? { ...task, ...data } : task))
-      })
-      return { previousTasks }
-    },
-    onError: (err, variables, context: any) => {
-      if (context?.previousTasks) {
-        queryClient.setQueryData(['tasks'], context.previousTasks)
-      }
-    },
-    onSuccess: (updatedTask, variables) => {
-      queryClient.setQueryData(['tasks'], (oldTasks: any) =>
-        oldTasks
-          ? oldTasks.map((task: any) => (task._id === updatedTask.id ? updatedTask : task))
-          : oldTasks
-      )
-      setTaskValues(prev => {
-        const newValues = { ...prev }
-        for (const field in variables.data) {
-          delete newValues[`${updatedTask.id}-${field}`]
-        }
-        return newValues
-      })
-      if (variables.data.status === 'completed') {
-        setAnimatingTask(null)
-      }
+  const handleCreateTask = async (data: Record<string, any>) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
 
-  const createMutation = useMutation<any, any, any>({
-    mutationFn: async data => {
-      return backend.entities.Task.create(data)
-    },
-    onMutate: async data => {
-      await queryClient.cancelQueries({ queryKey: ['tasks'] })
-      return { previousTasks: queryClient.getQueryData(['tasks']) }
-    },
-    onSuccess: (newTask: any) => {
-      queryClient.setQueryData(['tasks'], (oldTasks: any) => {
-        if (!oldTasks) return [newTask]
-        const exists = oldTasks.find((t: any) => t._id === newTask._id)
-        return exists
-          ? oldTasks.map((t: any) => (t._id === newTask._id ? newTask : t))
-          : [newTask, ...oldTasks]
-      })
-
-      queryClient.invalidateQueries({ queryKey: ['usage'] })
-    },
-    onError: (err, variables, context: any) => {
-      if (context?.previousTasks) {
-        queryClient.setQueryData(['tasks'], context.previousTasks)
-      }
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await deleteMutation.mutateAsync(taskId)
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
 
-  const deleteMutation = useMutation<void, any, string>({
-    mutationFn: id => {
-      playSound('delete')
-      return backend.entities.Task.delete(id)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
-      queryClient.invalidateQueries({ queryKey: ['usage'] })
+  const handleDuplicateTask = async (data: Record<string, any>) => {
+    try {
+      await duplicateMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
 
-  const duplicateMutation = useMutation<any, any, any>({
-    mutationFn: task => {
-      const { id, created_date, updated_date, created_by, ...rest } = task
-      return backend.entities.Task.create({
-        ...rest,
-        title: `${rest.title} (copy)`,
-        status: 'pending',
-        order: (task.order ?? 0) + 0.5
-      })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
-    }
-  })
-
-  const bulkDeleteMutation = useMutation<void, any, string[]>({
-    mutationFn: async ids => {
-      playSound('delete')
-      await Promise.all(ids.map(id => backend.entities.Task.delete(id)))
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
-      queryClient.invalidateQueries({ queryKey: ['usage'] })
+  const handleBulkDeleteTasks = async (taskIds: string[]) => {
+    try {
+      await bulkDeleteMutation.mutateAsync(taskIds)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setSelectedTasks([])
     }
-  })
+  }
 
-  const bulkUpdateMutation = useMutation<void, any, { ids: string[]; data: any }>({
-    mutationFn: async ({ ids, data }) => {
-      if (data.status === 'archived') {
-        playSound('archived')
-      }
-      await Promise.all(ids.map(id => backend.entities.Task.update(id, data)))
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+  const handleBulkUpdateTasks = async ({
+    ids,
+    data
+  }: {
+    ids: string[]
+    data: Record<string, any>
+  }) => {
+    try {
+      await bulkUpdateMutation.mutateAsync({ ids, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setSelectedTasks([])
     }
-  })
+  }
 
   const filteredTasksByStatus = tasks
     .filter(t => {
       if (statusFilter === 'active' && animatingTask === t.id) return true
-
       if (statusFilter === 'active') return t.status === 'pending'
       if (statusFilter === 'done') return t.status === 'completed'
       if (statusFilter === 'archived') return t.status === 'archived'
       return true
     })
     .filter(t => {
-      if (!searchQuery) return true
-      const q = searchQuery.toLowerCase()
+      if (!table.searchQuery) return true
+      const q = table.searchQuery.toLowerCase()
       return (
         (t.title || '').toLowerCase().includes(q) || (t.description || '').toLowerCase().includes(q)
       )
     })
 
-  const getBusinessName = businessId => {
-    const business = businesses.find(b => b.id === businessId)
-    return business ? business.name : 'Business'
-  }
-
   const handleSort = (field: string): void => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    if (table.sortBy === field) {
+      table.setSortOrder(table.sortOrder === 'asc' ? 'desc' : 'asc')
     } else {
-      setSortBy(field)
-      setSortOrder('asc')
+      table.setSortBy(field)
+      table.setSortOrder('asc')
     }
-    setPage(1)
+    table.setPage(1)
   }
 
   const sortedTasks = [...filteredTasksByStatus].sort((a: any, b: any) => {
-    if (!sortBy) {
+    if (!table.sortBy) {
       const orderA = a.order ?? 999999
       const orderB = b.order ?? 999999
       return orderA - orderB
     }
 
-    let aVal = a[sortBy]
-    let bVal = b[sortBy]
+    let aVal = a[table.sortBy]
+    let bVal = b[table.sortBy]
 
-    if (sortBy === 'important') {
+    if (table.sortBy === 'important') {
       aVal = a.important ? 1 : 0
       bVal = b.important ? 1 : 0
     }
 
     if (aVal === bVal) return 0
     const comparison = aVal > bVal ? 1 : -1
-    return sortOrder === 'asc' ? comparison : -comparison
+    return table.sortOrder === 'asc' ? comparison : -comparison
   })
 
-  const handleDragEnd = (result: any): void => {
+  const handleDragEnd = (result: any) => {
     if (!result.destination || result.source.index === result.destination.index) return
 
     const items = Array.from(sortedTasks)
@@ -313,7 +231,7 @@ export default function TaskTable({
     queryClient.setQueryData(['tasks'], (oldTasks: any) => {
       if (!oldTasks) return oldTasks
       return oldTasks.map((task: any) => {
-        const itemIndex = items.findIndex(item => item.id === task._id)
+        const itemIndex = items.findIndex(item => item.id === getTaskId(task))
         if (itemIndex !== -1) {
           return { ...task, order: itemIndex }
         }
@@ -322,43 +240,58 @@ export default function TaskTable({
     })
 
     items.forEach((task: any, index: number) => {
-      updateMutation.mutate({ id: task._id, data: { order: index } })
+      updateMutation.mutate({ id: getTaskId(task), data: { order: index } })
     })
   }
 
   const paginatedTasks = useMemo(() => {
-    const startIndex = (page - 1) * perPage
-    return sortedTasks.slice(startIndex, startIndex + perPage)
-  }, [sortedTasks, page, perPage])
+    const startIndex = (table.page - 1) * table.perPage
+    return sortedTasks.slice(startIndex, startIndex + table.perPage)
+  }, [sortedTasks, table.page, table.perPage])
 
-  const totalPages = Math.ceil(sortedTasks.length / perPage)
+  const totalPages = Math.ceil(sortedTasks.length / table.perPage)
 
-  const toggleImportant = (task: any): void => {
-    updateMutation.mutate({ id: task._id, data: { important: !task.important } })
+  const toggleImportant = (task: TaskRecord) => {
+    updateMutation.mutate({ id: getTaskId(task), data: { important: !task.important } })
   }
 
-  const getTaskValue = (taskId: string, field: string, defaultValue?: any): any => {
+  const getTaskValue = (taskId: string, field: string, defaultValue?: any) => {
     if (taskValues[`${taskId}-${field}`] !== undefined) {
       return taskValues[`${taskId}-${field}`]
     }
     return defaultValue || ''
   }
 
-  const handleTaskChange = (taskId: string, field: string, value: any): void => {
+  const handleTaskChange = (taskId: string, field: string, value: any) => {
     setTaskValues(prev => ({ ...prev, [`${taskId}-${field}`]: value }))
   }
 
-  const handleTaskBlur = (task: any, field: string): void => {
-    const value = taskValues[`${task._id}-${field}`]
+  const handleTaskBlur = (task: TaskRecord, field: string) => {
+    const taskId = getTaskId(task)
+    const value = taskValues[`${taskId}-${field}`]
+
     if (value !== undefined && value !== task[field]) {
-      updateMutation.mutate({ id: task._id, data: { [field]: value } })
+      updateMutation.mutate(
+        { id: taskId, data: { [field]: value } },
+        {
+          onSuccess: () => {
+            setTaskValues(prev => {
+              const next = { ...prev }
+              delete next[`${taskId}-${field}`]
+              return next
+            })
+          }
+        }
+      )
     }
   }
 
-  const toggleComplete = (task: any): void => {
+  const toggleComplete = (task: TaskRecord) => {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed'
+    const taskId = getTaskId(task)
+
     if (newStatus === 'completed') {
-      setAnimatingTask(task._id)
+      setAnimatingTask(taskId)
       playSound('task-done')
 
       const updateData: any = { status: newStatus }
@@ -366,27 +299,32 @@ export default function TaskTable({
         updateData.category = 'assets'
       }
       setTimeout(() => {
-        updateMutation.mutate({ id: task._id, data: updateData })
+        updateMutation.mutate(
+          { id: taskId, data: updateData },
+          {
+            onSuccess: () => setAnimatingTask(null)
+          }
+        )
       }, 800)
     } else {
       const updateData: any = { status: newStatus }
       if (!task.category) {
         updateData.category = 'assets'
       }
-      updateMutation.mutate({ id: task._id, data: updateData })
+      updateMutation.mutate({ id: taskId, data: updateData })
     }
   }
 
-  const archiveTask = (task: any): void => {
+  const archiveTask = (task: TaskRecord) => {
     playSound('archived')
-    updateMutation.mutate({ id: task._id, data: { status: 'archived' } })
+    updateMutation.mutate({ id: getTaskId(task), data: { status: 'archived' } })
   }
 
-  const unarchiveTask = (task: any): void => {
-    updateMutation.mutate({ id: task._id, data: { status: 'pending' } })
+  const unarchiveTask = (task: TaskRecord) => {
+    updateMutation.mutate({ id: getTaskId(task), data: { status: 'pending' } })
   }
 
-  const handleAddNew = (): void => {
+  const handleAddNew = () => {
     if (filterType === 'all') {
       setShowCategoryDialog(true)
     } else {
@@ -409,7 +347,7 @@ export default function TaskTable({
         data.category = 'assets'
       }
 
-      createMutation.mutate(data)
+      handleCreateTask(data)
     }
   }
 
@@ -430,7 +368,7 @@ export default function TaskTable({
       data.business_id = selectedBusinessId
     }
 
-    createMutation.mutate(data)
+    handleCreateTask(data)
     setShowCategoryDialog(false)
   }
 
@@ -449,8 +387,8 @@ export default function TaskTable({
   }
 
   const toggleBulkMode = (): void => {
-    setBulkMode(!bulkMode)
-    if (bulkMode) {
+    table.setBulkMode(!table.bulkMode)
+    if (table.bulkMode) {
       setSelectedTasks([])
     }
   }
@@ -461,6 +399,8 @@ export default function TaskTable({
       [taskId]: !prev[taskId]
     }))
   }
+
+  const getTaskId = (task: TaskRecord): string => String(task.serverId || task.id || '')
 
   return (
     <>
@@ -505,10 +445,10 @@ export default function TaskTable({
                 <Input
                   id="tasks-search"
                   placeholder="Search tasks..."
-                  value={searchQuery}
+                  value={table.searchQuery}
                   onChange={e => {
-                    setSearchQuery(e.target.value)
-                    setPage(1)
+                    table.setSearchQuery(e.target.value)
+                    table.setPage(1)
                   }}
                   className="pl-8 h-9 w-48 text-sm"
                 />
@@ -520,7 +460,7 @@ export default function TaskTable({
                   className="bg-indigo-600 hover:bg-indigo-700 flex-1 lg:flex-none"
                 >
                   <Plus className="w-4 h-4 mr-1" />
-                  Add6
+                  Add
                 </Button>
               </UsageLimitGate>
               <TooltipProvider>
@@ -530,7 +470,7 @@ export default function TaskTable({
                       variant="ghost"
                       size="icon"
                       onClick={toggleBulkMode}
-                      className={cn('h-9 w-9 flex-shrink-0', bulkMode && 'bg-slate-200')}
+                      className={cn('h-9 w-9 flex-shrink-0', table.bulkMode && 'bg-slate-200')}
                     >
                       <ListChecks className="w-5 h-5" />
                     </Button>
@@ -547,11 +487,11 @@ export default function TaskTable({
                       variant="ghost"
                       size="icon"
                       onClick={() => {
-                        const newValue = !compactView
-                        setCompactView(newValue)
+                        const newValue = !table.compactView
+                        table.setCompactView(newValue)
                         localStorage.setItem('taskTableCompactView', JSON.stringify(newValue))
                       }}
-                      className={cn('h-9 w-9 flex-shrink-0', compactView && 'bg-slate-200')}
+                      className={cn('h-9 w-9 flex-shrink-0', table.compactView && 'bg-slate-200')}
                     >
                       <Rows3 className="w-5 h-5" />
                     </Button>
@@ -564,7 +504,7 @@ export default function TaskTable({
             </div>
           </div>
 
-          <TabsContent value={statusFilter} className="m-0" ref={tableRef}>
+          <TabsContent value={statusFilter} className="m-0" ref={table.tableRef}>
             {filteredTasksByStatus.length === 0 ? (
               <div className="p-12 text-center">
                 <p className="text-slate-500 mb-4">No {statusFilter} tasks</p>
@@ -582,7 +522,7 @@ export default function TaskTable({
                     <table className="task-table w-full min-w-[1000px]">
                       <thead className="task-table-thead bg-slate-50 border-b border-slate-200">
                         <tr className="task-table-header-row">
-                          {!sortBy && (
+                          {!table.sortBy && (
                             <th className="task-table-th-drag pl-3 pr-2 py-3 text-left w-10">
                               <GripVertical className="w-4 h-4 text-slate-400 mx-auto" />
                             </th>
@@ -599,7 +539,7 @@ export default function TaskTable({
                           <th className="task-table-th-checkbox py-3 text-center w-8">
                             <Check className="w-4 h-4 text-slate-700 mx-auto" />
                           </th>
-                          {bulkMode && (
+                          {table.bulkMode && (
                             <th className="task-table-th-bulk px-2 py-3 text-center w-12">
                               <Checkbox
                                 checked={
@@ -645,7 +585,7 @@ export default function TaskTable({
                           </th>
                         </tr>
                       </thead>
-                      <Droppable droppableId="tasks">
+                      <Droppable droppableId="tasks" type="task">
                         {provided => (
                           <tbody
                             {...provided.droppableProps}
@@ -653,14 +593,13 @@ export default function TaskTable({
                             className="task-table-tbody"
                           >
                             {paginatedTasks.map((task, index) => {
-                              const taskOverLimit =
-                                tasksLimit !== Infinity && allTasks.indexOf(task) >= tasksLimit
+                              const taskId = getTaskId(task)
                               return (
                                 <Draggable
-                                  key={task._id}
-                                  draggableId={`task-${task._id}`}
+                                  key={taskId}
+                                  draggableId={`task-${taskId}`}
                                   index={index}
-                                  isDragDisabled={!!sortBy || taskOverLimit}
+                                  isDragDisabled={!!table.sortBy || !canCreate('tasks')}
                                 >
                                   {(provided, snapshot) => (
                                     <tr
@@ -668,17 +607,17 @@ export default function TaskTable({
                                       {...provided.draggableProps}
                                       className={cn(
                                         'task-table-row border-b border-slate-100 hover:bg-slate-50',
-                                        animatingTask === task._id &&
+                                        animatingTask === taskId &&
                                           'animate-[wiggle_0.3s_ease-in-out]',
-                                        compactView && 'h-12',
+                                        table.compactView && 'h-12',
                                         snapshot.isDragging && 'opacity-50'
                                       )}
                                     >
-                                      {!sortBy && (
+                                      {!table.sortBy && (
                                         <td
                                           className={cn(
                                             'task-table-td-drag pl-3 pr-2 w-10 align-middle cursor-grab active:cursor-grabbing',
-                                            compactView ? 'py-1' : 'py-3'
+                                            table.compactView ? 'py-1' : 'py-3'
                                           )}
                                           {...provided.dragHandleProps}
                                         >
@@ -688,7 +627,7 @@ export default function TaskTable({
                                       <td
                                         className={cn(
                                           'task-table-td-star pl-3 pr-2 w-8 align-middle',
-                                          compactView ? 'py-1' : 'py-3'
+                                          table.compactView ? 'py-1' : 'py-3'
                                         )}
                                       >
                                         <button onClick={() => toggleImportant(task)}>
@@ -705,82 +644,77 @@ export default function TaskTable({
                                       <td
                                         className={cn(
                                           'task-table-td-checkbox text-center w-8 align-middle',
-                                          compactView ? 'py-1' : 'py-3'
+                                          table.compactView ? 'py-1' : 'py-3'
                                         )}
                                       >
                                         <Checkbox
                                           checked={
-                                            task.status === 'completed' ||
-                                            animatingTask === task._id
+                                            task.status === 'completed' || animatingTask === taskId
                                           }
                                           onCheckedChange={() => toggleComplete(task)}
                                           className={cn(
                                             'mx-auto',
                                             (task.status === 'completed' ||
-                                              animatingTask === task._id) &&
+                                              animatingTask === taskId) &&
                                               'border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500'
                                           )}
                                         />
                                       </td>
-                                      {bulkMode && (
+                                      {table.bulkMode && (
                                         <td
                                           className={cn(
                                             'task-table-td-bulk px-2 text-center w-12 align-middle',
-                                            compactView ? 'py-1' : 'py-3'
+                                            table.compactView ? 'py-1' : 'py-3'
                                           )}
                                         >
                                           <Checkbox
-                                            checked={selectedTasks.includes(task._id)}
-                                            onCheckedChange={() => toggleSelectTask(task._id)}
+                                            checked={selectedTasks.includes(taskId)}
+                                            onCheckedChange={() => toggleSelectTask(taskId)}
                                           />
                                         </td>
                                       )}
                                       <td
                                         className={cn(
                                           'task-table-td-title align-middle w-64 max-w-64',
-                                          compactView ? 'py-1' : 'py-3'
+                                          table.compactView ? 'py-1' : 'py-3'
                                         )}
                                       >
                                         <Input
-                                          id={`task-title-${task._id}`}
-                                          value={getTaskValue(task._id, 'title', task.title)}
+                                          id={`task-title-${taskId}`}
+                                          value={getTaskValue(taskId, 'title', task.title)}
                                           onChange={e =>
-                                            handleTaskChange(task._id, 'title', e.target.value)
+                                            handleTaskChange(taskId, 'title', e.target.value)
                                           }
                                           onBlur={() => handleTaskBlur(task, 'title')}
                                           maxLength={200}
                                           className={cn(
                                             'border-0 shadow-none px-2 py-1 h-auto font-medium text-slate-900 focus-visible:ring-1 focus-visible:ring-indigo-500 bg-transparent hover:bg-slate-100 focus:bg-white',
-                                            compactView ? 'line-clamp-1' : 'truncate'
+                                            table.compactView ? 'line-clamp-1' : 'truncate'
                                           )}
                                         />
                                       </td>
                                       <td
                                         className={cn(
                                           'task-table-td-description align-middle',
-                                          compactView ? 'py-1' : 'py-3'
+                                          table.compactView ? 'py-1' : 'py-3'
                                         )}
                                       >
                                         <Textarea
-                                          id={`task-description-${task._id}`}
+                                          id={`task-description-${taskId}`}
                                           value={getTaskValue(
-                                            task._id,
+                                            taskId,
                                             'description',
                                             task.description
                                           )}
                                           onChange={e =>
-                                            handleTaskChange(
-                                              task._id,
-                                              'description',
-                                              e.target.value
-                                            )
+                                            handleTaskChange(taskId, 'description', e.target.value)
                                           }
                                           onBlur={() => handleTaskBlur(task, 'description')}
                                           placeholder="Add description..."
                                           maxLength={5000}
                                           className={cn(
                                             'border-0 shadow-none px-2 py-1 resize-none text-sm text-slate-600 focus-visible:ring-1 focus-visible:ring-indigo-500 bg-transparent hover:bg-slate-100 focus:bg-white',
-                                            compactView
+                                            table.compactView
                                               ? 'h-8 min-h-0 line-clamp-1 overflow-hidden'
                                               : 'min-h-[60px]'
                                           )}
@@ -790,7 +724,7 @@ export default function TaskTable({
                                         <td
                                           className={cn(
                                             'task-table-td-category w-40 max-w-40 align-middle',
-                                            compactView ? 'py-1' : 'py-3'
+                                            table.compactView ? 'py-1' : 'py-3'
                                           )}
                                         >
                                           <Select
@@ -812,7 +746,7 @@ export default function TaskTable({
                                                 updateData.business_id = null
                                               }
                                               updateMutation.mutate({
-                                                id: task._id,
+                                                id: taskId,
                                                 data: updateData
                                               })
                                             }}
@@ -861,17 +795,17 @@ export default function TaskTable({
                                       <td
                                         className={cn(
                                           'task-table-td-goal w-40 max-w-40 align-middle',
-                                          compactView ? 'py-1' : 'py-3'
+                                          table.compactView ? 'py-1' : 'py-3'
                                         )}
                                       >
                                         <Select
-                                          value={task.goal_id || 'none'}
+                                          value={taskId || 'none'}
                                           onValueChange={value => {
                                             const updateData = {
                                               goal_id: value === 'none' ? null : value
                                             }
                                             updateMutation.mutate({
-                                              id: task._id,
+                                              id: taskId,
                                               data: updateData
                                             })
                                           }}
@@ -905,19 +839,19 @@ export default function TaskTable({
                                       <td
                                         className={cn(
                                           'task-table-td-duedate w-36 align-middle',
-                                          compactView ? 'py-1' : 'py-3'
+                                          table.compactView ? 'py-1' : 'py-3'
                                         )}
                                       >
-                                        {taskValues[`${task._id}-due_date-editing`] ? (
+                                        {taskValues[`${taskId}-due_date-editing`] ? (
                                           <div
                                             className="task-duedate-wrapper space-y-1"
                                             onBlur={e => {
                                               if (selectOpen) return
                                               if (!e.currentTarget.contains(e.relatedTarget)) {
                                                 const timeInput = document.querySelector(
-                                                  `input[data-time-for="${task._id}"]`
+                                                  `input[data-time-for="${taskId}"]`
                                                 ) as HTMLInputElement | null
-                                                const reminders = reminderValues[task._id] || []
+                                                const reminders = reminderValues[taskId] || []
                                                 handleTaskBlur(task, 'due_date')
                                                 if (
                                                   timeInput?.value !== task.due_time ||
@@ -925,7 +859,7 @@ export default function TaskTable({
                                                     JSON.stringify(task.reminders || [])
                                                 ) {
                                                   updateMutation.mutate({
-                                                    id: task._id,
+                                                    id: taskId,
                                                     data: {
                                                       due_time: timeInput?.value || null,
                                                       reminders
@@ -936,7 +870,7 @@ export default function TaskTable({
                                                 setReminderValues({})
                                                 setTaskValues(prev => ({
                                                   ...prev,
-                                                  [`${task._id}-due_date-editing`]: false
+                                                  [`${taskId}-due_date-editing`]: false
                                                 }))
                                               }
                                             }}
@@ -944,16 +878,12 @@ export default function TaskTable({
                                             <Input
                                               type="date"
                                               value={getTaskValue(
-                                                task._id,
+                                                taskId,
                                                 'due_date',
                                                 task.due_date
                                               )}
                                               onChange={e =>
-                                                handleTaskChange(
-                                                  task._id,
-                                                  'due_date',
-                                                  e.target.value
-                                                )
+                                                handleTaskChange(taskId, 'due_date', e.target.value)
                                               }
                                               autoFocus
                                               className="border-0 shadow-none px-2 py-1 h-8 text-sm text-slate-600 focus-visible:ring-1 focus-visible:ring-indigo-500 bg-transparent hover:bg-slate-100 focus:bg-white"
@@ -962,7 +892,7 @@ export default function TaskTable({
                                               <Input
                                                 type="time"
                                                 defaultValue={task.due_time || ''}
-                                                data-time-for={task._id}
+                                                data-time-for={taskId}
                                                 className="h-8 text-xs flex-1 border-0 shadow-none px-2 py-1 focus-visible:ring-1 focus-visible:ring-indigo-500 bg-transparent hover:bg-slate-100 focus:bg-white"
                                                 placeholder="Time"
                                               />
@@ -974,12 +904,12 @@ export default function TaskTable({
                                                 onClick={() => {
                                                   setShowReminders(prev => ({
                                                     ...prev,
-                                                    [task._id]: !prev[task._id]
+                                                    [taskId]: !prev[taskId]
                                                   }))
-                                                  if (!reminderValues[task._id]) {
+                                                  if (!reminderValues[taskId]) {
                                                     setReminderValues(prev => ({
                                                       ...prev,
-                                                      [task._id]: task.reminders || []
+                                                      [taskId]: task.reminders || []
                                                     }))
                                                   }
                                                 }}
@@ -987,12 +917,12 @@ export default function TaskTable({
                                                 <Bell className="w-4 h-4" />
                                               </Button>
                                             </div>
-                                            {showReminders[task._id] && (
+                                            {showReminders[taskId] && (
                                               <div className="space-y-1 mt-2">
                                                 <div className="text-xs text-slate-600 font-medium">
                                                   Reminders:
                                                 </div>
-                                                {(reminderValues[task._id] || []).map(
+                                                {(reminderValues[taskId] || []).map(
                                                   (totalMinutes, idx) => {
                                                     let value = totalMinutes
                                                     let unit = 'minutes'
@@ -1039,12 +969,12 @@ export default function TaskTable({
                                                             const newMinutes = newValue * multiplier
 
                                                             const newReminders = [
-                                                              ...(reminderValues[task._id] || [])
+                                                              ...(reminderValues[taskId] || [])
                                                             ]
                                                             newReminders[idx] = newMinutes
                                                             setReminderValues(prev => ({
                                                               ...prev,
-                                                              [task._id]: newReminders
+                                                              [taskId]: newReminders
                                                             }))
                                                           }}
                                                           className="h-8 text-xs w-20 flex-1"
@@ -1067,12 +997,12 @@ export default function TaskTable({
                                                             const newMinutes = value * multiplier
 
                                                             const newReminders = [
-                                                              ...(reminderValues[task._id] || [])
+                                                              ...(reminderValues[taskId] || [])
                                                             ]
                                                             newReminders[idx] = newMinutes
                                                             setReminderValues(prev => ({
                                                               ...prev,
-                                                              [task._id]: newReminders
+                                                              [taskId]: newReminders
                                                             }))
                                                           }}
                                                         >
@@ -1105,19 +1035,19 @@ export default function TaskTable({
                                                     size="sm"
                                                     onClick={() => {
                                                       const newReminders = [
-                                                        ...(reminderValues[task._id] || []),
+                                                        ...(reminderValues[taskId] || []),
                                                         30
                                                       ]
                                                       setReminderValues(prev => ({
                                                         ...prev,
-                                                        [task._id]: newReminders
+                                                        [taskId]: newReminders
                                                       }))
                                                     }}
                                                     className="flex-1 text-xs"
                                                   >
                                                     Add reminder
                                                   </Button>
-                                                  {(reminderValues[task._id] || []).length > 0 && (
+                                                  {(reminderValues[taskId] || []).length > 0 && (
                                                     <Button
                                                       type="button"
                                                       variant="ghost"
@@ -1126,11 +1056,11 @@ export default function TaskTable({
                                                       onClick={e => {
                                                         e.stopPropagation()
                                                         const newReminders = reminderValues[
-                                                          task._id
+                                                          taskId
                                                         ].slice(0, -1)
                                                         setReminderValues(prev => ({
                                                           ...prev,
-                                                          [task._id]: newReminders
+                                                          [taskId]: newReminders
                                                         }))
                                                       }}
                                                     >
@@ -1146,41 +1076,41 @@ export default function TaskTable({
                                             onClick={() => {
                                               setTaskValues(prev => ({
                                                 ...prev,
-                                                [`${task._id}-due_date-editing`]: true
+                                                [`${taskId}-due_date-editing`]: true
                                               }))
                                               setReminderValues(prev => ({
                                                 ...prev,
-                                                [task._id]: task.reminders || []
+                                                [taskId]: task.reminders || []
                                               }))
                                             }}
-                                            onMouseEnter={() => setHoveredDueDate(task._id)}
+                                            onMouseEnter={() => setHoveredDueDate(taskId)}
                                             onMouseLeave={() => setHoveredDueDate(null)}
                                             className="cursor-text text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded"
                                           >
                                             {task.due_date ? (
                                               <>
                                                 <div>{formatDateMedium(task.due_date)}</div>
-                                                {!compactView && task.due_time && (
+                                                {!table.compactView && task.due_time && (
                                                   <div className="text-xs text-slate-500 mt-0.5">
                                                     {task.due_time}
                                                   </div>
                                                 )}
-                                                {!compactView &&
+                                                {!table.compactView &&
                                                   task.reminders &&
                                                   task.reminders.length > 0 && (
                                                     <div className="text-xs text-slate-500 mt-0.5">
                                                       🔔 {task.reminders.length}
                                                     </div>
                                                   )}
-                                                {compactView &&
-                                                  hoveredDueDate === task._id &&
+                                                {table.compactView &&
+                                                  hoveredDueDate === taskId &&
                                                   task.due_time && (
                                                     <div className="text-xs text-slate-500 mt-0.5">
                                                       {task.due_time}
                                                     </div>
                                                   )}
-                                                {compactView &&
-                                                  hoveredDueDate === task._id &&
+                                                {table.compactView &&
+                                                  hoveredDueDate === taskId &&
                                                   task.reminders &&
                                                   task.reminders.length > 0 && (
                                                     <div className="text-xs text-slate-500 mt-0.5">
@@ -1197,7 +1127,7 @@ export default function TaskTable({
                                       <td
                                         className={cn(
                                           'task-table-td-actions px-2 text-center w-20 align-middle',
-                                          compactView ? 'py-1' : 'py-3'
+                                          table.compactView ? 'py-1' : 'py-3'
                                         )}
                                       >
                                         <div className="flex items-center justify-center gap-1">
@@ -1208,7 +1138,7 @@ export default function TaskTable({
                                                   variant="ghost"
                                                   size="icon"
                                                   className="h-8 w-8"
-                                                  onClick={() => duplicateMutation.mutate(task)}
+                                                  onClick={() => handleDuplicateTask(task)}
                                                 >
                                                   <Copy className="h-4 w-4 text-slate-600" />
                                                 </Button>
@@ -1257,7 +1187,7 @@ export default function TaskTable({
                                                   variant="ghost"
                                                   size="icon"
                                                   className="h-8 w-8"
-                                                  onClick={() => deleteMutation.mutate(task._id)}
+                                                  onClick={() => handleDeleteTask(taskId)}
                                                 >
                                                   <Trash2 className="h-4 w-4 text-rose-600" />
                                                 </Button>
@@ -1285,149 +1215,193 @@ export default function TaskTable({
                     <Droppable droppableId="tasks-mobile">
                       {provided => (
                         <div {...provided.droppableProps} ref={provided.innerRef}>
-                          {paginatedTasks.map((task, index) => (
-                            <Draggable
-                              key={task._id}
-                              draggableId={task._id}
-                              index={index}
-                              isDragDisabled={!!sortBy}
-                            >
-                              {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  className={cn(
-                                    'task-card p-4 space-y-3 border-b-[10px]',
-                                    index === 0 && 'border-t-[10px]',
-                                    animatingTask === task._id &&
-                                      'animate-[wiggle_0.3s_ease-in-out]',
-                                    snapshot.isDragging && 'opacity-50',
-                                    tasksLimit !== Infinity &&
-                                      allTasks.indexOf(task) >= tasksLimit &&
-                                      'opacity-50 pointer-events-none select-none'
-                                  )}
-                                  style={{
-                                    borderBottomColor: '#f5f7fb',
-                                    borderTopColor: '#f5f7fb',
-                                    ...provided.draggableProps.style
-                                  }}
-                                >
-                                  <div className="task-card-header flex items-start gap-3">
-                                    {!sortBy && (
-                                      <div
-                                        {...provided.dragHandleProps}
-                                        className="flex-shrink-0 mt-1 cursor-grab active:cursor-grabbing"
-                                      >
-                                        <GripVertical className="w-5 h-5 text-slate-400" />
-                                      </div>
+                          {paginatedTasks.map((task, index) => {
+                            const taskId = getTaskId(task)
+                            return (
+                              <Draggable
+                                key={taskId}
+                                draggableId={taskId}
+                                index={index}
+                                isDragDisabled={!!table.sortBy}
+                              >
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    className={cn(
+                                      'task-card p-4 space-y-3 border-b-[10px]',
+                                      index === 0 && 'border-t-[10px]',
+                                      animatingTask === taskId &&
+                                        'animate-[wiggle_0.3s_ease-in-out]',
+                                      snapshot.isDragging && 'opacity-50',
+                                      !canCreate('tasks') &&
+                                        'opacity-50 pointer-events-none select-none'
                                     )}
-                                    {bulkMode && (
-                                      <Checkbox
-                                        checked={selectedTasks.includes(task._id)}
-                                        onCheckedChange={() => toggleSelectTask(task._id)}
+                                    style={{
+                                      borderBottomColor: '#f5f7fb',
+                                      borderTopColor: '#f5f7fb',
+                                      ...provided.draggableProps.style
+                                    }}
+                                  >
+                                    <div className="task-card-header flex items-start gap-3">
+                                      {!table.sortBy && (
+                                        <div
+                                          {...provided.dragHandleProps}
+                                          className="flex-shrink-0 mt-1 cursor-grab active:cursor-grabbing"
+                                        >
+                                          <GripVertical className="w-5 h-5 text-slate-400" />
+                                        </div>
+                                      )}
+                                      {table.bulkMode && (
+                                        <Checkbox
+                                          checked={selectedTasks.includes(taskId)}
+                                          onCheckedChange={() => toggleSelectTask(taskId)}
+                                          className="flex-shrink-0 mt-1"
+                                        />
+                                      )}
+                                      <button
+                                        onClick={() => toggleImportant(task)}
                                         className="flex-shrink-0 mt-1"
-                                      />
-                                    )}
-                                    <button
-                                      onClick={() => toggleImportant(task)}
-                                      className="flex-shrink-0 mt-1"
-                                    >
-                                      <Star
-                                        className={cn(
-                                          'w-5 h-5',
-                                          task.important
-                                            ? 'fill-amber-400 text-amber-400'
-                                            : 'text-slate-300'
-                                        )}
-                                      />
-                                    </button>
-                                    <div className="flex-1 min-w-0">
-                                      <Input
-                                        value={getTaskValue(task._id, 'title', task.title)}
-                                        onChange={e =>
-                                          handleTaskChange(task._id, 'title', e.target.value)
+                                      >
+                                        <Star
+                                          className={cn(
+                                            'w-5 h-5',
+                                            task.important
+                                              ? 'fill-amber-400 text-amber-400'
+                                              : 'text-slate-300'
+                                          )}
+                                        />
+                                      </button>
+                                      <div className="flex-1 min-w-0">
+                                        <Input
+                                          value={getTaskValue(taskId, 'title', task.title)}
+                                          onChange={e =>
+                                            handleTaskChange(taskId, 'title', e.target.value)
+                                          }
+                                          onBlur={() => handleTaskBlur(task, 'title')}
+                                          maxLength={200}
+                                          className="w-full border-0 shadow-none px-0 py-0 h-auto font-medium text-slate-900 focus-visible:ring-0 bg-transparent"
+                                        />
+                                      </div>
+                                      <Checkbox
+                                        checked={
+                                          task.status === 'completed' || animatingTask === taskId
                                         }
-                                        onBlur={() => handleTaskBlur(task, 'title')}
-                                        maxLength={200}
-                                        className="w-full border-0 shadow-none px-0 py-0 h-auto font-medium text-slate-900 focus-visible:ring-0 bg-transparent"
+                                        onCheckedChange={() => toggleComplete(task)}
+                                        className={cn(
+                                          'flex-shrink-0 mt-1',
+                                          (task.status === 'completed' ||
+                                            animatingTask === taskId) &&
+                                            'border-emerald-500 data-[state=checked]:bg-emerald-500'
+                                        )}
                                       />
                                     </div>
-                                    <Checkbox
-                                      checked={
-                                        task.status === 'completed' || animatingTask === task._id
-                                      }
-                                      onCheckedChange={() => toggleComplete(task)}
-                                      className={cn(
-                                        'flex-shrink-0 mt-1',
-                                        (task.status === 'completed' ||
-                                          animatingTask === task._id) &&
-                                          'border-emerald-500 data-[state=checked]:bg-emerald-500'
+
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleExpandTask(taskId)}
+                                      className="w-full justify-start gap-2 text-slate-600"
+                                    >
+                                      {expandedTasks[taskId] ? (
+                                        <>
+                                          <ChevronUp className="w-4 h-4" />
+                                          <span className="text-xs">Hide details</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ChevronDown className="w-4 h-4" />
+                                          <span className="text-xs">Show details</span>
+                                        </>
                                       )}
-                                    />
-                                  </div>
+                                    </Button>
 
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => toggleExpandTask(task._id)}
-                                    className="w-full justify-start gap-2 text-slate-600"
-                                  >
-                                    {expandedTasks[task._id] ? (
+                                    {expandedTasks[taskId] && (
                                       <>
-                                        <ChevronUp className="w-4 h-4" />
-                                        <span className="text-xs">Hide details</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <ChevronDown className="w-4 h-4" />
-                                        <span className="text-xs">Show details</span>
-                                      </>
-                                    )}
-                                  </Button>
+                                        <Textarea
+                                          value={getTaskValue(
+                                            taskId,
+                                            'description',
+                                            task.description
+                                          )}
+                                          onChange={e =>
+                                            handleTaskChange(taskId, 'description', e.target.value)
+                                          }
+                                          onBlur={() => handleTaskBlur(task, 'description')}
+                                          placeholder="Add description..."
+                                          maxLength={5000}
+                                          className="task-card-description border-0 shadow-none px-0 py-0 min-h-[60px] resize-none text-sm text-slate-600 focus-visible:ring-0 bg-transparent"
+                                        />
 
-                                  {expandedTasks[task._id] && (
-                                    <>
-                                      <Textarea
-                                        value={getTaskValue(
-                                          task._id,
-                                          'description',
-                                          task.description
-                                        )}
-                                        onChange={e =>
-                                          handleTaskChange(task._id, 'description', e.target.value)
-                                        }
-                                        onBlur={() => handleTaskBlur(task, 'description')}
-                                        placeholder="Add description..."
-                                        maxLength={5000}
-                                        className="task-card-description border-0 shadow-none px-0 py-0 min-h-[60px] resize-none text-sm text-slate-600 focus-visible:ring-0 bg-transparent"
-                                      />
-
-                                      <div className="task-card-meta grid grid-cols-2 gap-2 text-sm">
-                                        {(filterType === 'all' || filterType === 'important') && (
+                                        <div className="task-card-meta grid grid-cols-2 gap-2 text-sm">
+                                          {(filterType === 'all' || filterType === 'important') && (
+                                            <div>
+                                              <label className="text-xs text-slate-500 block mb-1">
+                                                Category
+                                              </label>
+                                              <Select
+                                                value={
+                                                  task.category === 'business' && task.business_id
+                                                    ? `business-${task.business_id}`
+                                                    : task.category
+                                                }
+                                                onValueChange={value => {
+                                                  const updateData: Record<string, any> = {}
+                                                  if (value.startsWith('business-')) {
+                                                    updateData.category = 'business'
+                                                    updateData.business_id = value.replace(
+                                                      'business-',
+                                                      ''
+                                                    )
+                                                  } else {
+                                                    updateData.category = value
+                                                    updateData.business_id = null
+                                                  }
+                                                  updateMutation.mutate({
+                                                    id: taskId,
+                                                    data: updateData
+                                                  })
+                                                }}
+                                              >
+                                                <SelectTrigger className="h-9 text-sm">
+                                                  <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent className="max-w-[calc(100vw-2rem)]">
+                                                  <SelectItem value="finances">Finance</SelectItem>
+                                                  <SelectItem value="assets">Assets</SelectItem>
+                                                  <SelectItem value="health_body">
+                                                    Health
+                                                  </SelectItem>
+                                                  <SelectItem value="fitness">Fitness</SelectItem>
+                                                  <SelectItem value="hobbies">Hobbies</SelectItem>
+                                                  <SelectItem value="learning">Learning</SelectItem>
+                                                  <SelectItem value="relationships">
+                                                    Relationships
+                                                  </SelectItem>
+                                                  {businesses.map(business => (
+                                                    <SelectItem
+                                                      key={business.id}
+                                                      value={`business-${business.id}`}
+                                                    >
+                                                      {business.name}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectContent>
+                                              </Select>
+                                            </div>
+                                          )}
                                           <div>
                                             <label className="text-xs text-slate-500 block mb-1">
-                                              Category
+                                              Goal
                                             </label>
                                             <Select
-                                              value={
-                                                task.category === 'business' && task.business_id
-                                                  ? `business-${task.business_id}`
-                                                  : task.category
-                                              }
+                                              value={task.goal_id || 'none'}
                                               onValueChange={value => {
-                                                const updateData: Record<string, any> = {}
-                                                if (value.startsWith('business-')) {
-                                                  updateData.category = 'business'
-                                                  updateData.business_id = value.replace(
-                                                    'business-',
-                                                    ''
-                                                  )
-                                                } else {
-                                                  updateData.category = value
-                                                  updateData.business_id = null
+                                                const updateData = {
+                                                  goal_id: value === 'none' ? null : value
                                                 }
                                                 updateMutation.mutate({
-                                                  id: task._id,
+                                                  id: taskId,
                                                   data: updateData
                                                 })
                                               }}
@@ -1436,366 +1410,330 @@ export default function TaskTable({
                                                 <SelectValue />
                                               </SelectTrigger>
                                               <SelectContent className="max-w-[calc(100vw-2rem)]">
-                                                <SelectItem value="finances">Finance</SelectItem>
-                                                <SelectItem value="assets">Assets</SelectItem>
-                                                <SelectItem value="health_body">Health</SelectItem>
-                                                <SelectItem value="fitness">Fitness</SelectItem>
-                                                <SelectItem value="hobbies">Hobbies</SelectItem>
-                                                <SelectItem value="learning">Learning</SelectItem>
-                                                <SelectItem value="relationships">
-                                                  Relationships
-                                                </SelectItem>
-                                                {businesses.map(business => (
-                                                  <SelectItem
-                                                    key={business.id}
-                                                    value={`business-${business.id}`}
-                                                  >
-                                                    {business.name}
-                                                  </SelectItem>
-                                                ))}
+                                                <SelectItem value="none">No Goal</SelectItem>
+                                                {allGoals
+                                                  .filter(
+                                                    g =>
+                                                      g.status === 'active' &&
+                                                      g.category === task.category &&
+                                                      g.business_id === task.business_id
+                                                  )
+                                                  .map(goal => (
+                                                    <SelectItem key={goal.id} value={goal.id}>
+                                                      {goal.title}
+                                                    </SelectItem>
+                                                  ))}
                                               </SelectContent>
                                             </Select>
                                           </div>
-                                        )}
-                                        <div>
-                                          <label className="text-xs text-slate-500 block mb-1">
-                                            Goal
-                                          </label>
-                                          <Select
-                                            value={task.goal_id || 'none'}
-                                            onValueChange={value => {
-                                              const updateData = {
-                                                goal_id: value === 'none' ? null : value
-                                              }
-                                              updateMutation.mutate({
-                                                id: task._id,
-                                                data: updateData
-                                              })
-                                            }}
-                                          >
-                                            <SelectTrigger className="h-9 text-sm">
-                                              <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="max-w-[calc(100vw-2rem)]">
-                                              <SelectItem value="none">No Goal</SelectItem>
-                                              {allGoals
-                                                .filter(
-                                                  g =>
-                                                    g.status === 'active' &&
-                                                    g.category === task.category &&
-                                                    g.business_id === task.business_id
-                                                )
-                                                .map(goal => (
-                                                  <SelectItem key={goal.id} value={goal.id}>
-                                                    {goal.title}
-                                                  </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                          </Select>
                                         </div>
-                                      </div>
 
-                                      <div className="task-card-footer flex items-center justify-between gap-3">
-                                        <div className="flex-1">
-                                          <label className="text-xs text-slate-500 block mb-1">
-                                            Due Date
-                                          </label>
-                                          {taskValues[`${task._id}-due_date-editing-mobile`] ? (
-                                            <div
-                                              className="task-card-duedate space-y-1"
-                                              onBlur={e => {
-                                                if (selectOpen) return
-                                                if (
-                                                  !e.currentTarget.parentElement?.contains(
-                                                    e.relatedTarget
-                                                  )
-                                                ) {
-                                                  const timeInput = document.querySelector(
-                                                    `input[data-time-for-mobile="${task._id}"]`
-                                                  ) as HTMLInputElement | null
-                                                  const reminders = reminderValues[task._id] || []
-                                                  handleTaskBlur(task, 'due_date')
+                                        <div className="task-card-footer flex items-center justify-between gap-3">
+                                          <div className="flex-1">
+                                            <label className="text-xs text-slate-500 block mb-1">
+                                              Due Date
+                                            </label>
+                                            {taskValues[`${taskId}-due_date-editing-mobile`] ? (
+                                              <div
+                                                className="task-card-duedate space-y-1"
+                                                onBlur={e => {
+                                                  if (selectOpen) return
                                                   if (
-                                                    timeInput?.value !== task.due_time ||
-                                                    JSON.stringify(reminders) !==
-                                                      JSON.stringify(task.reminders || [])
+                                                    !e.currentTarget.parentElement?.contains(
+                                                      e.relatedTarget
+                                                    )
                                                   ) {
-                                                    updateMutation.mutate({
-                                                      id: task._id,
-                                                      data: {
-                                                        due_time: timeInput?.value || null,
-                                                        reminders
-                                                      }
-                                                    })
-                                                  }
-                                                  setShowReminders({})
-                                                  setReminderValues({})
-                                                  setTaskValues(prev => ({
-                                                    ...prev,
-                                                    [`${task._id}-due_date-editing-mobile`]: false
-                                                  }))
-                                                }
-                                              }}
-                                            >
-                                              <Input
-                                                type="date"
-                                                value={getTaskValue(
-                                                  task._id,
-                                                  'due_date',
-                                                  task.due_date
-                                                )}
-                                                onChange={e =>
-                                                  handleTaskChange(
-                                                    task._id,
-                                                    'due_date',
-                                                    e.target.value
-                                                  )
-                                                }
-                                                autoFocus
-                                                className="h-9 text-sm"
-                                              />
-                                              <Input
-                                                type="time"
-                                                defaultValue={task.due_time || ''}
-                                                data-time-for-mobile={task._id}
-                                                className="h-9 text-sm"
-                                                placeholder="Time"
-                                              />
-                                              {showReminders[task._id] && (
-                                                <div className="space-y-1 mt-2">
-                                                  <div className="text-xs text-slate-600 font-medium">
-                                                    Reminders:
-                                                  </div>
-                                                  {(reminderValues[task._id] || []).map(
-                                                    (totalMinutes, idx) => {
-                                                      let value = totalMinutes
-                                                      let unit = 'minutes'
-
-                                                      if (
-                                                        totalMinutes % 10080 === 0 &&
-                                                        totalMinutes >= 10080
-                                                      ) {
-                                                        value = totalMinutes / 10080
-                                                        unit = 'weeks'
-                                                      } else if (
-                                                        totalMinutes % 1440 === 0 &&
-                                                        totalMinutes >= 1440
-                                                      ) {
-                                                        value = totalMinutes / 1440
-                                                        unit = 'days'
-                                                      } else if (
-                                                        totalMinutes % 60 === 0 &&
-                                                        totalMinutes >= 60
-                                                      ) {
-                                                        value = totalMinutes / 60
-                                                        unit = 'hours'
-                                                      }
-
-                                                      return (
-                                                        <div
-                                                          key={idx}
-                                                          className="flex items-center gap-1"
-                                                        >
-                                                          <Input
-                                                            type="number"
-                                                            value={value}
-                                                            onChange={e => {
-                                                              const newValue =
-                                                                parseInt(e.target.value) || 1
-                                                              const multiplier =
-                                                                unit === 'minutes'
-                                                                  ? 1
-                                                                  : unit === 'hours'
-                                                                    ? 60
-                                                                    : unit === 'days'
-                                                                      ? 1440
-                                                                      : 10080
-                                                              const newMinutes =
-                                                                newValue * multiplier
-
-                                                              const newReminders = [
-                                                                ...(reminderValues[task._id] || [])
-                                                              ]
-                                                              newReminders[idx] = newMinutes
-                                                              setReminderValues(prev => ({
-                                                                ...prev,
-                                                                [task._id]: newReminders
-                                                              }))
-                                                            }}
-                                                            className="h-8 text-xs w-20 flex-1"
-                                                            placeholder="Value"
-                                                            min="1"
-                                                          />
-                                                          <Select
-                                                            value={unit}
-                                                            open={selectOpen}
-                                                            onOpenChange={setSelectOpen}
-                                                            onValueChange={newUnit => {
-                                                              const multiplier =
-                                                                newUnit === 'minutes'
-                                                                  ? 1
-                                                                  : newUnit === 'hours'
-                                                                    ? 60
-                                                                    : newUnit === 'days'
-                                                                      ? 1440
-                                                                      : 10080
-                                                              const newMinutes = value * multiplier
-
-                                                              const newReminders = [
-                                                                ...(reminderValues[task._id] || [])
-                                                              ]
-                                                              newReminders[idx] = newMinutes
-                                                              setReminderValues(prev => ({
-                                                                ...prev,
-                                                                [task._id]: newReminders
-                                                              }))
-                                                            }}
-                                                          >
-                                                            <SelectTrigger className="h-8 flex-1 text-xs">
-                                                              <SelectValue />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                              <SelectItem value="minutes">
-                                                                Minutes
-                                                              </SelectItem>
-                                                              <SelectItem value="hours">
-                                                                Hours
-                                                              </SelectItem>
-                                                              <SelectItem value="days">
-                                                                Days
-                                                              </SelectItem>
-                                                              <SelectItem value="weeks">
-                                                                Weeks
-                                                              </SelectItem>
-                                                            </SelectContent>
-                                                          </Select>
-                                                        </div>
-                                                      )
+                                                    const timeInput = document.querySelector(
+                                                      `input[data-time-for-mobile="${taskId}"]`
+                                                    ) as HTMLInputElement | null
+                                                    const reminders = reminderValues[taskId] || []
+                                                    handleTaskBlur(task, 'due_date')
+                                                    if (
+                                                      timeInput?.value !== task.due_time ||
+                                                      JSON.stringify(reminders) !==
+                                                        JSON.stringify(task.reminders || [])
+                                                    ) {
+                                                      updateMutation.mutate({
+                                                        id: taskId,
+                                                        data: {
+                                                          due_time: timeInput?.value || null,
+                                                          reminders
+                                                        }
+                                                      })
                                                     }
+                                                    setShowReminders({})
+                                                    setReminderValues({})
+                                                    setTaskValues(prev => ({
+                                                      ...prev,
+                                                      [`${taskId}-due_date-editing-mobile`]: false
+                                                    }))
+                                                  }
+                                                }}
+                                              >
+                                                <Input
+                                                  type="date"
+                                                  value={getTaskValue(
+                                                    taskId,
+                                                    'due_date',
+                                                    task.due_date
                                                   )}
-                                                  <div className="flex items-center gap-1">
-                                                    <Button
-                                                      type="button"
-                                                      variant="outline"
-                                                      size="sm"
-                                                      onClick={() => {
-                                                        const newReminders = [
-                                                          ...(reminderValues[task._id] || []),
-                                                          30
-                                                        ]
-                                                        setReminderValues(prev => ({
-                                                          ...prev,
-                                                          [task._id]: newReminders
-                                                        }))
-                                                      }}
-                                                      className="flex-1 text-xs"
-                                                    >
-                                                      Add reminder
-                                                    </Button>
-                                                    {(reminderValues[task._id] || []).length >
-                                                      0 && (
+                                                  onChange={e =>
+                                                    handleTaskChange(
+                                                      taskId,
+                                                      'due_date',
+                                                      e.target.value
+                                                    )
+                                                  }
+                                                  autoFocus
+                                                  className="h-9 text-sm"
+                                                />
+                                                <Input
+                                                  type="time"
+                                                  defaultValue={task.due_time || ''}
+                                                  data-time-for-mobile={taskId}
+                                                  className="h-9 text-sm"
+                                                  placeholder="Time"
+                                                />
+                                                {showReminders[taskId] && (
+                                                  <div className="space-y-1 mt-2">
+                                                    <div className="text-xs text-slate-600 font-medium">
+                                                      Reminders:
+                                                    </div>
+                                                    {(reminderValues[taskId] || []).map(
+                                                      (totalMinutes, idx) => {
+                                                        let value = totalMinutes
+                                                        let unit = 'minutes'
+
+                                                        if (
+                                                          totalMinutes % 10080 === 0 &&
+                                                          totalMinutes >= 10080
+                                                        ) {
+                                                          value = totalMinutes / 10080
+                                                          unit = 'weeks'
+                                                        } else if (
+                                                          totalMinutes % 1440 === 0 &&
+                                                          totalMinutes >= 1440
+                                                        ) {
+                                                          value = totalMinutes / 1440
+                                                          unit = 'days'
+                                                        } else if (
+                                                          totalMinutes % 60 === 0 &&
+                                                          totalMinutes >= 60
+                                                        ) {
+                                                          value = totalMinutes / 60
+                                                          unit = 'hours'
+                                                        }
+
+                                                        return (
+                                                          <div
+                                                            key={idx}
+                                                            className="flex items-center gap-1"
+                                                          >
+                                                            <Input
+                                                              type="number"
+                                                              value={value}
+                                                              onChange={e => {
+                                                                const newValue =
+                                                                  parseInt(e.target.value) || 1
+                                                                const multiplier =
+                                                                  unit === 'minutes'
+                                                                    ? 1
+                                                                    : unit === 'hours'
+                                                                      ? 60
+                                                                      : unit === 'days'
+                                                                        ? 1440
+                                                                        : 10080
+                                                                const newMinutes =
+                                                                  newValue * multiplier
+
+                                                                const newReminders = [
+                                                                  ...(reminderValues[taskId] || [])
+                                                                ]
+                                                                newReminders[idx] = newMinutes
+                                                                setReminderValues(prev => ({
+                                                                  ...prev,
+                                                                  [taskId]: newReminders
+                                                                }))
+                                                              }}
+                                                              className="h-8 text-xs w-20 flex-1"
+                                                              placeholder="Value"
+                                                              min="1"
+                                                            />
+                                                            <Select
+                                                              value={unit}
+                                                              open={selectOpen}
+                                                              onOpenChange={setSelectOpen}
+                                                              onValueChange={newUnit => {
+                                                                const multiplier =
+                                                                  newUnit === 'minutes'
+                                                                    ? 1
+                                                                    : newUnit === 'hours'
+                                                                      ? 60
+                                                                      : newUnit === 'days'
+                                                                        ? 1440
+                                                                        : 10080
+                                                                const newMinutes =
+                                                                  value * multiplier
+
+                                                                const newReminders = [
+                                                                  ...(reminderValues[taskId] || [])
+                                                                ]
+                                                                newReminders[idx] = newMinutes
+                                                                setReminderValues(prev => ({
+                                                                  ...prev,
+                                                                  [taskId]: newReminders
+                                                                }))
+                                                              }}
+                                                            >
+                                                              <SelectTrigger className="h-8 flex-1 text-xs">
+                                                                <SelectValue />
+                                                              </SelectTrigger>
+                                                              <SelectContent>
+                                                                <SelectItem value="minutes">
+                                                                  Minutes
+                                                                </SelectItem>
+                                                                <SelectItem value="hours">
+                                                                  Hours
+                                                                </SelectItem>
+                                                                <SelectItem value="days">
+                                                                  Days
+                                                                </SelectItem>
+                                                                <SelectItem value="weeks">
+                                                                  Weeks
+                                                                </SelectItem>
+                                                              </SelectContent>
+                                                            </Select>
+                                                          </div>
+                                                        )
+                                                      }
+                                                    )}
+                                                    <div className="flex items-center gap-1">
                                                       <Button
                                                         type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8"
-                                                        onClick={e => {
-                                                          e.stopPropagation()
-                                                          const newReminders = reminderValues[
-                                                            task._id
-                                                          ].slice(0, -1)
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                          const newReminders = [
+                                                            ...(reminderValues[taskId] || []),
+                                                            30
+                                                          ]
                                                           setReminderValues(prev => ({
                                                             ...prev,
-                                                            [task._id]: newReminders
+                                                            [taskId]: newReminders
                                                           }))
                                                         }}
+                                                        className="flex-1 text-xs"
                                                       >
-                                                        <X className="w-4 h-4" />
+                                                        Add reminder
                                                       </Button>
-                                                    )}
+                                                      {(reminderValues[taskId] || []).length >
+                                                        0 && (
+                                                        <Button
+                                                          type="button"
+                                                          variant="ghost"
+                                                          size="icon"
+                                                          className="h-8 w-8"
+                                                          onClick={e => {
+                                                            e.stopPropagation()
+                                                            const newReminders = reminderValues[
+                                                              taskId
+                                                            ].slice(0, -1)
+                                                            setReminderValues(prev => ({
+                                                              ...prev,
+                                                              [taskId]: newReminders
+                                                            }))
+                                                          }}
+                                                        >
+                                                          <X className="w-4 h-4" />
+                                                        </Button>
+                                                      )}
+                                                    </div>
                                                   </div>
-                                                </div>
+                                                )}
+                                              </div>
+                                            ) : (
+                                              <div
+                                                onClick={() => {
+                                                  setTaskValues(prev => ({
+                                                    ...prev,
+                                                    [`${taskId}-due_date-editing-mobile`]: true
+                                                  }))
+                                                  setReminderValues(prev => ({
+                                                    ...prev,
+                                                    [taskId]: task.reminders || []
+                                                  }))
+                                                }}
+                                                className="cursor-text text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded"
+                                              >
+                                                {task.due_date ? (
+                                                  <>
+                                                    <div>{formatDateMedium(task.due_date)}</div>
+                                                    {task.due_time && (
+                                                      <div className="text-xs text-slate-500 mt-1">
+                                                        {task.due_time}
+                                                      </div>
+                                                    )}
+                                                    {task.reminders &&
+                                                      task.reminders.length > 0 && (
+                                                        <div className="text-xs text-slate-500 mt-1">
+                                                          🔔 {task.reminders.length}
+                                                        </div>
+                                                      )}
+                                                  </>
+                                                ) : (
+                                                  'Set date...'
+                                                )}
+                                              </div>
+                                            )}
+                                          </div>
+                                          <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-9 w-9 flex-shrink-0 mt-5"
+                                              >
+                                                <MoreHorizontal className="h-4" />
+                                              </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                              {statusFilter === 'active' && (
+                                                <DropdownMenuItem onClick={() => archiveTask(task)}>
+                                                  <Archive className="h-4 w-4 mr-2" />
+                                                  Archive
+                                                </DropdownMenuItem>
                                               )}
-                                            </div>
-                                          ) : (
-                                            <div
-                                              onClick={() => {
-                                                setTaskValues(prev => ({
-                                                  ...prev,
-                                                  [`${task._id}-due_date-editing-mobile`]: true
-                                                }))
-                                                setReminderValues(prev => ({
-                                                  ...prev,
-                                                  [task._id]: task.reminders || []
-                                                }))
-                                              }}
-                                              className="cursor-text text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded"
-                                            >
-                                              {task.due_date ? (
-                                                <>
-                                                  <div>{formatDateMedium(task.due_date)}</div>
-                                                  {task.due_time && (
-                                                    <div className="text-xs text-slate-500 mt-1">
-                                                      {task.due_time}
-                                                    </div>
-                                                  )}
-                                                  {task.reminders && task.reminders.length > 0 && (
-                                                    <div className="text-xs text-slate-500 mt-1">
-                                                      🔔 {task.reminders.length}
-                                                    </div>
-                                                  )}
-                                                </>
-                                              ) : (
-                                                'Set date...'
+                                              {statusFilter === 'archived' && (
+                                                <DropdownMenuItem
+                                                  onClick={() => unarchiveTask(task)}
+                                                >
+                                                  <ArchiveRestore className="h-4 w-4 mr-2" />
+                                                  Unarchive
+                                                </DropdownMenuItem>
                                               )}
-                                            </div>
-                                          )}
+                                              <DropdownMenuItem
+                                                onClick={() => handleDuplicateTask(task)}
+                                              >
+                                                <Copy className="h-4 w-4 mr-2" />
+                                                Duplicate
+                                              </DropdownMenuItem>
+                                              <DropdownMenuItem
+                                                onClick={() => handleDeleteTask(taskId)}
+                                                className="text-rose-600"
+                                              >
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Delete
+                                              </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                          </DropdownMenu>
                                         </div>
-                                        <DropdownMenu>
-                                          <DropdownMenuTrigger asChild>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-9 w-9 flex-shrink-0 mt-5"
-                                            >
-                                              <MoreHorizontal className="h-4 h-4" />
-                                            </Button>
-                                          </DropdownMenuTrigger>
-                                          <DropdownMenuContent align="end">
-                                            {statusFilter === 'active' && (
-                                              <DropdownMenuItem onClick={() => archiveTask(task)}>
-                                                <Archive className="h-4 w-4 mr-2" />
-                                                Archive
-                                              </DropdownMenuItem>
-                                            )}
-                                            {statusFilter === 'archived' && (
-                                              <DropdownMenuItem onClick={() => unarchiveTask(task)}>
-                                                <ArchiveRestore className="h-4 w-4 mr-2" />
-                                                Unarchive
-                                              </DropdownMenuItem>
-                                            )}
-                                            <DropdownMenuItem
-                                              onClick={() => duplicateMutation.mutate(task)}
-                                            >
-                                              <Copy className="h-4 w-4 mr-2" />
-                                              Duplicate
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                              onClick={() => deleteMutation.mutate(task._id)}
-                                              className="text-rose-600"
-                                            >
-                                              <Trash2 className="h-4 w-4 mr-2" />
-                                              Delete
-                                            </DropdownMenuItem>
-                                          </DropdownMenuContent>
-                                        </DropdownMenu>
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                              </Draggable>
+                            )
+                          })}
                           {provided.placeholder}
                         </div>
                       )}
@@ -1806,13 +1744,13 @@ export default function TaskTable({
                 {sortedTasks.length > 0 && (
                   <TablePagination
                     totalItems={sortedTasks.length}
-                    page={page}
-                    perPage={perPage}
+                    page={table.page}
+                    perPage={table.perPage}
                     totalPages={totalPages}
-                    onPageChange={setPage}
+                    onPageChange={table.setPage}
                     onPerPageChange={value => {
-                      setPerPage(value)
-                      setPage(1)
+                      table.setPerPage(value)
+                      table.setPage(1)
                     }}
                   />
                 )}
@@ -1822,7 +1760,7 @@ export default function TaskTable({
         </Tabs>
       </div>
 
-      {selectedTasks.length > 0 && bulkMode && (
+      {selectedTasks.length > 0 && table.bulkMode && (
         <div className="task-table-bulk-actions fixed bottom-4 left-4 right-4 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:w-auto bg-slate-900 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-full shadow-lg flex items-center justify-between lg:justify-start gap-2 lg:gap-4 z-50">
           <span className="text-xs lg:text-sm font-medium">{selectedTasks.length} selected</span>
           <div className="flex items-center gap-1 lg:gap-2">
@@ -1832,7 +1770,7 @@ export default function TaskTable({
                 variant="ghost"
                 className="text-white hover:bg-slate-800 h-8 px-2 lg:px-3"
                 onClick={() =>
-                  bulkUpdateMutation.mutate({ ids: selectedTasks, data: { status: 'completed' } })
+                  handleBulkUpdateTasks({ ids: selectedTasks, data: { status: 'completed' } })
                 }
               >
                 <Check className="w-4 h-4 lg:mr-1" />
@@ -1845,7 +1783,7 @@ export default function TaskTable({
                 variant="ghost"
                 className="text-white hover:bg-slate-800 h-8 px-2 lg:px-3"
                 onClick={() =>
-                  bulkUpdateMutation.mutate({ ids: selectedTasks, data: { status: 'archived' } })
+                  handleBulkUpdateTasks({ ids: selectedTasks, data: { status: 'archived' } })
                 }
               >
                 <Archive className="w-4 h-4 lg:mr-1" />
@@ -1858,7 +1796,7 @@ export default function TaskTable({
                 variant="ghost"
                 className="text-white hover:bg-slate-800 h-8 px-2 lg:px-3"
                 onClick={() =>
-                  bulkUpdateMutation.mutate({ ids: selectedTasks, data: { status: 'pending' } })
+                  handleBulkUpdateTasks({ ids: selectedTasks, data: { status: 'pending' } })
                 }
               >
                 <ArchiveRestore className="w-4 h-4 lg:mr-1" />
@@ -1869,7 +1807,7 @@ export default function TaskTable({
               size="sm"
               variant="ghost"
               className="text-rose-300 hover:bg-rose-900/30 h-8 px-2 lg:px-3"
-              onClick={() => bulkDeleteMutation.mutate(selectedTasks)}
+              onClick={() => handleBulkDeleteTasks(selectedTasks)}
             >
               <Trash2 className="w-4 h-4 lg:mr-1" />
               <span className="hidden lg:inline">Delete</span>
