@@ -1,5 +1,36 @@
-import mongoose, { Schema, Model } from 'mongoose';
-import { ITask } from '@/types/index.js';
+import mongoose, { Schema, Model, Types } from 'mongoose';
+
+export interface ITask {
+  _id?: Types.ObjectId;
+  created_by: Types.ObjectId;
+  title: string;
+  description: string | null;
+  category: string | null;
+  business_id: Types.ObjectId | null;
+  problem_id: Types.ObjectId | null;
+  goal_id: Types.ObjectId | null;
+  important: boolean;
+  due_date: Date | null;
+  due_time: string | null;
+  reminders: any[];
+  status: string;
+  is_recurring: boolean;
+  recurrence_frequency: string | null;
+  recurrence_interval: number;
+  recurrence_days_of_week: string[];
+  recurrence_monthly_type: string;
+  recurrence_end_type: string;
+  recurrence_end_date: Date | null;
+  recurrence_end_count: number | null;
+  excluded_dates: Date[];
+  parent_recurring_task_id: Types.ObjectId | null;
+  order: number | null;
+  is_deleted: boolean;
+  deleted_at: Date | null;
+  deleted_by_process: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 const taskSchema = new Schema<ITask>(
   {
@@ -14,7 +45,11 @@ const taskSchema = new Schema<ITask>(
     category: { type: String, default: null },
     business_id: { type: String, default: null },
     problem_id: { type: String, default: null },
-    goal_id: { type: String, default: null },
+    goal_id: {
+      type: Schema.Types.ObjectId,
+      ref: 'Goal',
+      default: null,
+    },
     important: { type: Boolean, default: false },
     due_date: { type: String, default: null },
     due_time: { type: String, default: null },

@@ -48,7 +48,7 @@ export default function BusinessGoals() {
   return (
     <>
       <Helmet>
-        <title>Business Goals</title>
+        <title>Business Goals | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -71,7 +71,7 @@ export default function BusinessGoals() {
             </p>
           </div>
 
-          <GoalTable filterType="business" businessId={businessId} />
+          <GoalTable filterType="business" businessId={businessId ?? undefined} />
         </div>
       </div>
     </>

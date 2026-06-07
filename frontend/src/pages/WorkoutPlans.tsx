@@ -33,7 +33,7 @@ export default function WorkoutPlans() {
 
   const { data: plans = [] } = useWorkoutPlansQuery()
 
-  const atLimit = canCreate('workoutPlans')
+  const atLimit = !canCreate('workoutPlans')
 
   const { createMutation, updateMutation, deleteMutation } = useWorkoutPlanMutations()
 
@@ -118,7 +118,7 @@ export default function WorkoutPlans() {
   return (
     <>
       <Helmet>
-        <title>Workout Plans</title>
+        <title>Workout Plans | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -133,7 +133,7 @@ export default function WorkoutPlans() {
               </p>
             </div>
             {atLimit ? (
-              <Link to="/Upgrade" className="w-full lg:w-auto">
+              <Link to="/upgrade" className="w-full lg:w-auto">
                 <Button className="w-full bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
                   Limit reached ({data?.usage?.workoutPlans}/{data?.limits?.workoutPlans})
@@ -375,34 +375,53 @@ function WorkoutPlanForm({ open, onClose, onSubmit, plan, isLoading }) {
           <DialogTitle>{plan ? 'Edit Workout Plan' : 'Create Workout Plan'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            placeholder="Plan name"
-            value={formData.name}
-            onChange={e => setFormData({ ...formData, name: e.target.value })}
-            maxLength={200}
-            required
-          />
-          <Textarea
-            placeholder="Description (optional)"
-            value={formData.description}
-            onChange={e => setFormData({ ...formData, description: e.target.value })}
-            maxLength={1000}
-          />
-          <Select
-            value={formData.type}
-            onValueChange={value => setFormData({ ...formData, type: value })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="strength">Strength Training</SelectItem>
-              <SelectItem value="cardio">Cardio</SelectItem>
-              <SelectItem value="flexibility">Flexibility</SelectItem>
-              <SelectItem value="sports">Sports</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
+          <div>
+            <label htmlFor="plan_name" className="text-sm font-medium mb-2 block">
+              Plan name
+            </label>
+            <Input
+              id="plan_name"
+              name="plan_name"
+              placeholder="Plan name"
+              value={formData.name}
+              onChange={e => setFormData({ ...formData, name: e.target.value })}
+              maxLength={200}
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="description" className="text-sm font-medium mb-2 block">
+              Description (optional)
+            </label>
+            <Textarea
+              id="description"
+              name="description"
+              placeholder="Description (optional)"
+              value={formData.description}
+              onChange={e => setFormData({ ...formData, description: e.target.value })}
+              maxLength={1000}
+            />
+          </div>
+          <div>
+            <label htmlFor="type" className="text-sm font-medium mb-2 block">
+              Type
+            </label>
+            <Select
+              value={formData.type}
+              onValueChange={value => setFormData({ ...formData, type: value })}
+            >
+              <SelectTrigger id="type" name="type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="strength">Strength Training</SelectItem>
+                <SelectItem value="cardio">Cardio</SelectItem>
+                <SelectItem value="flexibility">Flexibility</SelectItem>
+                <SelectItem value="sports">Sports</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           <div>
             <label className="text-sm font-medium mb-2 block">Schedule Days</label>
@@ -454,6 +473,8 @@ function WorkoutPlanForm({ open, onClose, onSubmit, plan, isLoading }) {
                   <div key={idx} className="bg-slate-50 rounded-lg p-3 space-y-2">
                     <div className="flex gap-2">
                       <Input
+                        id={`exercise_name_${idx}`}
+                        name={`exercise_name_${idx}`}
                         placeholder="Exercise name"
                         value={exercise.name}
                         onChange={e => updateExercise(idx, 'name', e.target.value)}
@@ -472,18 +493,24 @@ function WorkoutPlanForm({ open, onClose, onSubmit, plan, isLoading }) {
                       {isStrengthType && (
                         <>
                           <Input
+                            id={`exercise_sets_${idx}`}
+                            name={`exercise_sets_${idx}`}
                             type="number"
                             placeholder="Sets"
                             value={exercise.sets}
                             onChange={e => updateExercise(idx, 'sets', e.target.value)}
                           />
                           <Input
+                            id={`exercise_reps_${idx}`}
+                            name={`exercise_reps_${idx}`}
                             type="number"
                             placeholder="Reps"
                             value={exercise.reps}
                             onChange={e => updateExercise(idx, 'reps', e.target.value)}
                           />
                           <Input
+                            id={`exercise_weight_${idx}`}
+                            name={`exercise_weight_${idx}`}
                             type="number"
                             step="0.5"
                             placeholder="Weight (kg)"
@@ -495,6 +522,8 @@ function WorkoutPlanForm({ open, onClose, onSubmit, plan, isLoading }) {
                       {isCardioType && (
                         <>
                           <Input
+                            id={`exercise_distance_${idx}`}
+                            name={`exercise_distance_${idx}`}
                             type="number"
                             step="0.1"
                             placeholder="Distance (km)"
@@ -502,6 +531,8 @@ function WorkoutPlanForm({ open, onClose, onSubmit, plan, isLoading }) {
                             onChange={e => updateExercise(idx, 'distance', e.target.value)}
                           />
                           <Input
+                            id={`exercise_duration_${idx}`}
+                            name={`exercise_duration_${idx}`}
                             type="number"
                             placeholder="Duration (min)"
                             value={exercise.duration}
@@ -512,6 +543,8 @@ function WorkoutPlanForm({ open, onClose, onSubmit, plan, isLoading }) {
                       )}
                       {!isStrengthType && !isCardioType && (
                         <Input
+                          id={`exercise_duration_${idx}`}
+                          name={`exercise_duration_${idx}`}
                           type="number"
                           placeholder="Duration (min)"
                           value={exercise.duration}
@@ -521,12 +554,16 @@ function WorkoutPlanForm({ open, onClose, onSubmit, plan, isLoading }) {
                       )}
                     </div>
                     <Input
+                      id={`exercise_rest_${idx}`}
+                      name={`exercise_rest_${idx}`}
                       type="number"
                       placeholder="Rest time (seconds)"
                       value={exercise.rest_seconds}
                       onChange={e => updateExercise(idx, 'rest_seconds', e.target.value)}
                     />
                     <Input
+                      id={`exercise_notes_${idx}`}
+                      name={`exercise_notes_${idx}`}
                       placeholder="Exercise notes (optional)"
                       value={exercise.notes}
                       onChange={e => updateExercise(idx, 'notes', e.target.value)}

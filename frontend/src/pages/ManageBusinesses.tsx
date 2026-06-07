@@ -112,7 +112,7 @@ export default function ManageBusinesses() {
   return (
     <>
       <Helmet>
-        <title>Manage Businesses</title>
+        <title>Manage Businesses | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -124,7 +124,7 @@ export default function ManageBusinesses() {
               <p className="text-slate-600">Add, edit, or remove your businesses</p>
             </div>
             {atLimit ? (
-              <Link to="/Upgrade">
+              <Link to="/upgrade">
                 <Button className="bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
                   Limit reached ({data?.usage?.business}/{data?.limits?.business})

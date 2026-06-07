@@ -1,6 +1,5 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { backend } from '@/api/backend'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -10,7 +9,11 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Pencil, Trash2 } from 'lucide-react'
-import { format, subMonths, addMonths, getYear } from 'date-fns'
+import { format, subMonths, getYear } from 'date-fns'
+import { useOfflineAccountSnapshotMutations } from '@/hooks/offlineaccountsnapshot/useOfflineAccountSnapshotMutations'
+import { CreateOfflineAccountSnapshotInput } from '@/repositories/offline-account-snapshot.repository'
+import { OfflineAccountSnapshotRecord } from '@/db'
+import { useOfflineAccountSnapshotsQuery } from '@/hooks/offlineaccountsnapshot/useOfflineAccountSnapshots'
 
 function formatAmt(val, currency = 'EUR') {
   if (val == null || val === '') return ''
@@ -207,13 +210,41 @@ export default function OfflineAccountMonthlyTable({
   account: any
   readOnly?: boolean
 }) {
-  const queryClient = useQueryClient()
   const [filter, setFilter] = useState('this_year')
 
-  const { data: allSnapshots = [] } = useQuery({
-    queryKey: ['offlineAccountSnapshots'],
-    queryFn: () => backend.entities.OfflineAccountSnapshot.list('-date', 1000)
-  })
+  const { data: allSnapshots = [] } = useOfflineAccountSnapshotsQuery()
+
+  const { createMutation, updateMutation, deleteMutation } = useOfflineAccountSnapshotMutations()
+
+  const handleCreateAccountSnapshot = async (data: CreateOfflineAccountSnapshotInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleUpdateAccountSnapshot = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<OfflineAccountSnapshotRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleDeleteAccountSnapshot = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   const snapshots = useMemo(
     () => allSnapshots.filter(s => s.account_id === account.id),
@@ -244,17 +275,6 @@ export default function OfflineAccountMonthlyTable({
     }
   }, [snapshotMap])
 
-  // The month just before the first visible month (needed for change calc of first row)
-  const prevMonthOfFirst =
-    months.length > 0 ? format(subMonths(new Date(months[0] + '-01'), 1), 'yyyy-MM') : null
-
-  // Latest snapshot balance for display in the header
-  const latestSnapshotBalance = useMemo(() => {
-    if (snapshots.length === 0) return null
-    const sorted = [...snapshots].sort((a, b) => b.date.localeCompare(a.date))
-    return sorted[0].balance
-  }, [snapshots])
-
   // Calculate sum of changes in the visible range, using last known snapshot when there are gaps
   const changeSum = useMemo(() => {
     let total = 0
@@ -283,21 +303,15 @@ export default function OfflineAccountMonthlyTable({
     }) => {
       const date = `${monthKey}-01`
       if (existingId) {
-        return backend.entities.OfflineAccountSnapshot.update(existingId, { balance, date })
+        return handleUpdateAccountSnapshot({ id: existingId, data: { balance, date } })
       }
-      return backend.entities.OfflineAccountSnapshot.create({
+      return handleCreateAccountSnapshot({
         account_id: account.id,
         currency: account.currency || 'EUR',
         date,
         balance
       })
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['offlineAccountSnapshots'] })
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.OfflineAccountSnapshot.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['offlineAccountSnapshots'] })
+    }
   })
 
   return (
@@ -346,7 +360,7 @@ export default function OfflineAccountMonthlyTable({
                 snapshot={snap}
                 prevSnapshot={prevSnap}
                 onSave={args => saveMutation.mutate(args)}
-                onDelete={id => deleteMutation.mutate(id)}
+                onDelete={id => handleDeleteAccountSnapshot(id)}
                 readOnly={readOnly}
               />
             )

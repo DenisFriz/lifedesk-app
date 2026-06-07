@@ -1,6 +1,4 @@
-import React, { useState, useMemo } from 'react'
-import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import React, { useState, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -16,111 +14,115 @@ import { Plus, Trash2, ArrowUpDown, ListChecks, Lock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { useSubscription } from '@/hooks/useSubscription'
+import { useClientsQuery } from '@/hooks/clients/useClientsQuery'
+import { useClientMutations } from '@/hooks/clients/useClientMutations'
+import { ClientRecord } from '@/db'
+import { CreateClientInput } from '@/repositories/client.repository'
+import { useUserLimit } from '@/contexts/UserLimitContext'
+
+type ClientStatus = 'lead' | 'active' | 'inactive' | 'past'
 
 interface ClientTableProps {
   businessId?: string
 }
 
-type Client = {
-  id: string
-  business_id?: string
-  name: string
-  company?: string
-  email?: string
-  phone?: string
-  status?: string
-  notes?: string
-  is_deleted?: boolean
-  created_date?: string
-}
+const STATUS_COLORS = {
+  lead: 'bg-slate-100 text-slate-700',
+  active: 'bg-emerald-100 text-emerald-700',
+  inactive: 'bg-amber-100 text-amber-700',
+  past: 'bg-rose-100 text-rose-700'
+} as const
 
 export default function ClientTable({ businessId }: ClientTableProps) {
-  const { limit } = useSubscription()
-  const clientLimit = limit('business_clients_limit')
   const [clientValues, setClientValues] = useState<Record<string, any>>({})
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [page, setPage] = useState<number>(1)
-  const [perPage, setPerPage] = useState<number>(20)
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(20)
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
   const [selectedClients, setSelectedClients] = useState<string[]>([])
-  const [bulkMode, setBulkMode] = useState<boolean>(false)
-  const queryClient = useQueryClient()
+  const [bulkMode, setBulkMode] = useState(false)
 
-  const { data: allClients = [] } = useQuery<Client[]>({
-    queryKey: ['clients', businessId],
-    queryFn: async (): Promise<Client[]> => {
-      if (businessId) {
-        const data = (await backend.entities.Client.filter({
-          business_id: businessId
-        })) as Client[]
+  const { canCreate, data: userLimits } = useUserLimit()
 
-        return data.filter(r => !r.is_deleted)
-      }
+  const isOverLimit = !canCreate('clients')
 
-      const data = (await backend.entities.Client.list('-created_date')) as Client[]
+  const { data: allClients = [] } = useClientsQuery({ businessId })
 
-      return data.filter(r => !r.is_deleted)
+  const filteredClients = useMemo(
+    () =>
+      allClients.filter((client: any) => {
+        return statusFilter === 'all' || client.status === statusFilter
+      }),
+    [allClients, statusFilter]
+  )
+
+  const sortedClients = useMemo(() => {
+    return [...filteredClients].sort((a: any, b: any) => {
+      if (!sortBy) return 0
+
+      let aVal = a[sortBy]
+      let bVal = b[sortBy]
+
+      if (aVal === bVal) return 0
+      const comparison = aVal > bVal ? 1 : -1
+      return sortOrder === 'asc' ? comparison : -comparison
+    })
+  }, [filteredClients, sortBy, sortOrder])
+
+  const { updateMutation, createMutation, deleteMutation, bulkDeleteMutation, bulkUpdateMutation } =
+    useClientMutations(businessId)
+
+  const handleUpdateClient = async ({ id, data }: { id: string; data: Partial<ClientRecord> }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
 
-  const filteredClients = allClients.filter((client: any) => {
-    return statusFilter === 'all' || client.status === statusFilter
-  })
-
-  const updateMutation = useMutation<any, any, { id: string; data: any }>({
-    mutationFn: ({ id, data }) => backend.entities.Client.update(id, data),
-    onMutate: async ({ id, data }) => {
-      await queryClient.cancelQueries({ queryKey: ['clients', businessId] })
-      const previousClients = queryClient.getQueryData(['clients', businessId])
-      queryClient.setQueryData(['clients', businessId], (old: any) =>
-        old.map((client: any) => (client.id === id ? { ...client, ...data } : client))
-      )
-      return { previousClients }
-    },
-    onError: (err, variables, context: any) => {
-      queryClient.setQueryData(['clients', businessId], context.previousClients)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients', businessId] })
+  const handleCreateClient = async (data: CreateClientInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
 
-  const createMutation = useMutation<any, any, any>({
-    mutationFn: data => backend.entities.Client.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients', businessId] })
+  const handleDeleteClient = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
 
-  const deleteMutation = useMutation<void, any, string>({
-    mutationFn: id => backend.entities.Client.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients', businessId] })
-    }
-  })
-
-  const bulkDeleteMutation = useMutation<void, any, string[]>({
-    mutationFn: async ids => {
-      await Promise.all(ids.map(id => backend.entities.Client.delete(id)))
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients', businessId] })
+  const handleBulkDeleteClient = async (ids: string[]) => {
+    try {
+      await bulkDeleteMutation.mutateAsync(ids)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setSelectedClients([])
     }
-  })
+  }
 
-  const bulkUpdateMutation = useMutation<void, any, { ids: string[]; data: any }>({
-    mutationFn: async ({ ids, data }) => {
-      await Promise.all(ids.map(id => backend.entities.Client.update(id, data)))
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients', businessId] })
+  const handleBulkUpdateClient = async ({
+    ids,
+    data
+  }: {
+    ids: string[]
+    data: Record<string, any>
+  }) => {
+    try {
+      await bulkUpdateMutation.mutateAsync({ ids, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setSelectedClients([])
     }
-  })
+  }
 
   const handleSort = (field: string): void => {
     if (sortBy === field) {
@@ -132,41 +134,12 @@ export default function ClientTable({ businessId }: ClientTableProps) {
     setPage(1)
   }
 
-  const sortedClients = [...filteredClients].sort((a: any, b: any) => {
-    if (!sortBy) return 0
-
-    let aVal = a[sortBy]
-    let bVal = b[sortBy]
-
-    if (aVal === bVal) return 0
-    const comparison = aVal > bVal ? 1 : -1
-    return sortOrder === 'asc' ? comparison : -comparison
-  })
-
   const paginatedClients = useMemo(() => {
     const startIndex = (page - 1) * perPage
     return sortedClients.slice(startIndex, startIndex + perPage)
   }, [sortedClients, page, perPage])
 
   const totalPages = Math.ceil(sortedClients.length / perPage)
-
-  const getClientValue = (clientId: string, field: string, defaultValue?: any): any => {
-    if (clientValues[`${clientId}-${field}`] !== undefined) {
-      return clientValues[`${clientId}-${field}`]
-    }
-    return defaultValue || ''
-  }
-
-  const handleClientChange = (clientId: string, field: string, value: any): void => {
-    setClientValues(prev => ({ ...prev, [`${clientId}-${field}`]: value }))
-  }
-
-  const handleClientBlur = (client: any, field: string): void => {
-    const value = clientValues[`${client.id}-${field}`]
-    if (value !== undefined && value !== client[field]) {
-      updateMutation.mutate({ id: client.id, data: { [field]: value } })
-    }
-  }
 
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -187,7 +160,7 @@ export default function ClientTable({ businessId }: ClientTableProps) {
       status: 'lead'
     }
     if (businessId) data.business_id = businessId
-    createMutation.mutate(data)
+    handleCreateClient(data)
   }
 
   const toggleSelectAll = (): void => {
@@ -211,12 +184,29 @@ export default function ClientTable({ businessId }: ClientTableProps) {
     }
   }
 
-  const statusColors = {
-    lead: 'bg-slate-100 text-slate-700',
-    active: 'bg-emerald-100 text-emerald-700',
-    inactive: 'bg-amber-100 text-amber-700',
-    past: 'bg-rose-100 text-rose-700'
-  }
+  const getClientValue = useCallback(
+    (clientId: string, field: string, defaultValue?: any): any => {
+      if (clientValues[`${clientId}-${field}`] !== undefined) {
+        return clientValues[`${clientId}-${field}`]
+      }
+      return defaultValue || ''
+    },
+    [clientValues]
+  )
+
+  const handleClientChange = useCallback((clientId: string, field: string, value: any): void => {
+    setClientValues(prev => ({ ...prev, [`${clientId}-${field}`]: value }))
+  }, [])
+
+  const handleClientBlur = useCallback(
+    (client: any, field: string): void => {
+      const value = clientValues[`${client.id}-${field}`]
+      if (value !== undefined && value !== client[field]) {
+        handleUpdateClient({ id: client.id, data: { [field]: value } })
+      }
+    },
+    [clientValues, updateMutation]
+  )
 
   return (
     <>
@@ -235,11 +225,11 @@ export default function ClientTable({ businessId }: ClientTableProps) {
             </SelectContent>
           </Select>
           <div className="flex items-center gap-2">
-            {clientLimit !== Infinity && allClients.length >= clientLimit ? (
-              <Link to="/Upgrade">
+            {isOverLimit ? (
+              <Link to="/upgrade">
                 <Button size="sm" className="bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-1" />
-                  Limit ({allClients.length}/{clientLimit})
+                  Limit ({userLimits?.usage?.clients || 0}/{userLimits?.limits?.clients})
                 </Button>
               </Link>
             ) : (
@@ -275,8 +265,8 @@ export default function ClientTable({ businessId }: ClientTableProps) {
         {filteredClients.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-slate-500 mb-4">No clients found</p>
-            {clientLimit !== Infinity && allClients.length >= clientLimit ? (
-              <Link to="/Upgrade">
+            {isOverLimit ? (
+              <Link to="/upgrade">
                 <Button variant="outline">
                   <Lock className="w-4 h-4 mr-2" />
                   Upgrade to add more
@@ -399,13 +389,16 @@ export default function ClientTable({ businessId }: ClientTableProps) {
                           value={getClientValue(client.id, 'status', client.status)}
                           onValueChange={value => {
                             handleClientChange(client.id, 'status', value)
-                            updateMutation.mutate({ id: client.id, data: { status: value } })
+                            handleUpdateClient({
+                              id: client.id,
+                              data: { status: value as ClientStatus }
+                            })
                           }}
                         >
                           <SelectTrigger
                             className={cn(
                               'h-8 text-xs font-medium border-0 shadow-none px-2 rounded-md',
-                              statusColors[client.status]
+                              STATUS_COLORS[client.status]
                             )}
                           >
                             <SelectValue />
@@ -453,7 +446,7 @@ export default function ClientTable({ businessId }: ClientTableProps) {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                          onClick={() => deleteMutation.mutate(client.id)}
+                          onClick={() => handleDeleteClient(client.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -522,7 +515,7 @@ export default function ClientTable({ businessId }: ClientTableProps) {
               variant="ghost"
               className="text-white hover:bg-slate-800 h-8"
               onClick={() =>
-                bulkUpdateMutation.mutate({ ids: selectedClients, data: { status: 'active' } })
+                handleBulkUpdateClient({ ids: selectedClients, data: { status: 'active' } })
               }
             >
               Mark Active
@@ -531,7 +524,7 @@ export default function ClientTable({ businessId }: ClientTableProps) {
               size="sm"
               variant="ghost"
               className="text-rose-300 hover:bg-rose-900/30 h-8"
-              onClick={() => bulkDeleteMutation.mutate(selectedClients)}
+              onClick={() => handleBulkDeleteClient(selectedClients)}
             >
               <Trash2 className="w-4 h-4 mr-1" />
               Delete

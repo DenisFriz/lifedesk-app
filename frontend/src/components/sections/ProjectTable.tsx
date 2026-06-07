@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -16,37 +16,42 @@ import { Plus, Trash2, ArrowUpDown, ListChecks, Lock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { useSubscription } from '@/hooks/useSubscription'
+import { useProjectsQuery } from '@/hooks/projects/useProjectsQuery'
+import { useProjectMutations } from '@/hooks/projects/useProjectMutations'
+import { ProjectRecord } from '@/db'
+import { CreateProjectInput } from '@/repositories/project.repository'
+import { useUserLimit } from '@/contexts/UserLimitContext'
+
+const statusColors = {
+  planning: 'bg-slate-100 text-slate-700',
+  in_progress: 'bg-blue-100 text-blue-700',
+  on_hold: 'bg-amber-100 text-amber-700',
+  completed: 'bg-emerald-100 text-emerald-700',
+  cancelled: 'bg-rose-100 text-rose-700'
+} as const
+
+type ProjectStatus = 'planning' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled'
 
 interface ProjectTableProps {
   businessId?: string
 }
 
 export default function ProjectTable({ businessId }: ProjectTableProps) {
-  const { limit } = useSubscription()
-  const projectLimit = limit('business_projects_limit')
   const [projectValues, setProjectValues] = useState<Record<string, any>>({})
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [page, setPage] = useState<number>(1)
-  const [perPage, setPerPage] = useState<number>(20)
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(20)
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({})
   const [selectedProjects, setSelectedProjects] = useState<string[]>([])
-  const [bulkMode, setBulkMode] = useState<boolean>(false)
-  const queryClient = useQueryClient()
+  const [bulkMode, setBulkMode] = useState(false)
 
-  const { data: allProjects = [] } = useQuery<any[]>({
-    queryKey: ['projects', businessId],
-    queryFn: async () => {
-      if (businessId) {
-        const data = await backend.entities.Project.filter({ business_id: businessId })
-        return (data as any[]).filter(r => !r.is_deleted)
-      }
-      const data = await backend.entities.Project.list('-created_date')
-      return (data as any[]).filter(r => !r.is_deleted)
-    }
-  })
+  const { canCreate, data: userLimits } = useUserLimit()
+
+  const isOverLimit = !canCreate('projects')
+
+  const { data: allProjects = [] } = useProjectsQuery({ businessId })
 
   const { data: clients = [] } = useQuery<any[]>({
     queryKey: ['clients'],
@@ -57,57 +62,64 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
     return statusFilter === 'all' || project.status === statusFilter
   })
 
-  const updateMutation = useMutation<any, any, { id: string; data: any }>({
-    mutationFn: ({ id, data }) => backend.entities.Project.update(id, data),
-    onMutate: async ({ id, data }) => {
-      await queryClient.cancelQueries({ queryKey: ['projects', businessId] })
-      const previousProjects = queryClient.getQueryData(['projects', businessId])
-      queryClient.setQueryData(['projects', businessId], (old: any) =>
-        old.map((project: any) => (project.id === id ? { ...project, ...data } : project))
-      )
-      return { previousProjects }
-    },
-    onError: (err, variables, context: any) => {
-      queryClient.setQueryData(['projects', businessId], context.previousProjects)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects', businessId] })
-    }
-  })
+  const { updateMutation, createMutation, deleteMutation, bulkDeleteMutation, bulkUpdateMutation } =
+    useProjectMutations()
 
-  const createMutation = useMutation<any, any, any>({
-    mutationFn: data => backend.entities.Project.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects', businessId] })
+  const handleUpdateProject = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<ProjectRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
 
-  const deleteMutation = useMutation<void, any, string>({
-    mutationFn: id => backend.entities.Project.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects', businessId] })
+  const handleCreateProject = async (data: CreateProjectInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
 
-  const bulkDeleteMutation = useMutation<void, any, string[]>({
-    mutationFn: async ids => {
-      await Promise.all(ids.map(id => backend.entities.Project.delete(id)))
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects', businessId] })
+  const handleDeleteProject = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleBulkDeleteProject = async (ids: string[]) => {
+    try {
+      await bulkDeleteMutation.mutateAsync(ids)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setSelectedProjects([])
     }
-  })
+  }
 
-  const bulkUpdateMutation = useMutation<void, any, { ids: string[]; data: any }>({
-    mutationFn: async ({ ids, data }) => {
-      await Promise.all(ids.map(id => backend.entities.Project.update(id, data)))
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects', businessId] })
+  const handleBulkUpdateProject = async ({
+    ids,
+    data
+  }: {
+    ids: string[]
+    data: Record<string, any>
+  }) => {
+    try {
+      await bulkUpdateMutation.mutateAsync({ ids, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setSelectedProjects([])
     }
-  })
+  }
 
   const handleSort = (field: string): void => {
     if (sortBy === field) {
@@ -151,7 +163,7 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
   const handleProjectBlur = (project: any, field: string): void => {
     const value = projectValues[`${project.id}-${field}`]
     if (value !== undefined && value !== project[field]) {
-      updateMutation.mutate({ id: project.id, data: { [field]: value } })
+      handleUpdateProject({ id: project.id, data: { [field]: value } })
     }
   }
 
@@ -174,7 +186,7 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
       status: 'planning'
     }
     if (businessId) data.business_id = businessId
-    createMutation.mutate(data)
+    handleCreateProject(data)
   }
 
   const toggleSelectAll = (): void => {
@@ -203,14 +215,6 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
     return client ? client.name : ''
   }
 
-  const statusColors = {
-    planning: 'bg-slate-100 text-slate-700',
-    in_progress: 'bg-blue-100 text-blue-700',
-    on_hold: 'bg-amber-100 text-amber-700',
-    completed: 'bg-emerald-100 text-emerald-700',
-    cancelled: 'bg-rose-100 text-rose-700'
-  }
-
   return (
     <>
       <div className="bg-white rounded-xl border border-slate-200">
@@ -231,11 +235,11 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
             </Select>
           </div>
           <div className="flex items-center gap-2">
-            {projectLimit !== Infinity && allProjects.length >= projectLimit ? (
-              <Link to="/Upgrade">
+            {isOverLimit ? (
+              <Link to="/upgrade">
                 <Button size="sm" className="bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-1" />
-                  Limit ({allProjects.length}/{projectLimit})
+                  Limit ({userLimits?.usage?.projects || 0}/{userLimits?.limits?.projects})
                 </Button>
               </Link>
             ) : (
@@ -271,8 +275,8 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
         {filteredProjects.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-slate-500 mb-4">No projects found</p>
-            {projectLimit !== Infinity && allProjects.length >= projectLimit ? (
-              <Link to="/Upgrade">
+            {isOverLimit ? (
+              <Link to="/upgrade">
                 <Button variant="outline">
                   <Lock className="w-4 h-4 mr-2" />
                   Upgrade to add more
@@ -407,7 +411,10 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
                           value={getProjectValue(project.id, 'status', project.status)}
                           onValueChange={value => {
                             handleProjectChange(project.id, 'status', value)
-                            updateMutation.mutate({ id: project.id, data: { status: value } })
+                            handleUpdateProject({
+                              id: project.id,
+                              data: { status: value as ProjectStatus }
+                            })
                           }}
                         >
                           <SelectTrigger
@@ -436,7 +443,7 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
                           )}
                           onValueChange={value => {
                             handleProjectChange(project.id, 'client_id', value)
-                            updateMutation.mutate({
+                            handleUpdateProject({
                               id: project.id,
                               data: { client_id: value === 'none' ? null : value }
                             })
@@ -484,7 +491,7 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                          onClick={() => deleteMutation.mutate(project.id)}
+                          onClick={() => handleDeleteProject(project.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -553,7 +560,7 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
               variant="ghost"
               className="text-white hover:bg-slate-800 h-8"
               onClick={() =>
-                bulkUpdateMutation.mutate({ ids: selectedProjects, data: { status: 'completed' } })
+                handleBulkUpdateProject({ ids: selectedProjects, data: { status: 'completed' } })
               }
             >
               Mark Complete
@@ -562,7 +569,7 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
               size="sm"
               variant="ghost"
               className="text-rose-300 hover:bg-rose-900/30 h-8"
-              onClick={() => bulkDeleteMutation.mutate(selectedProjects)}
+              onClick={() => handleBulkDeleteProject(selectedProjects)}
             >
               <Trash2 className="w-4 h-4 mr-1" />
               Delete

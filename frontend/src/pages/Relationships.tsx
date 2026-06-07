@@ -154,8 +154,6 @@ export default function Relationships() {
       return true
     }) || []
 
-  console.log('filtered')
-  console.log(filtered)
   // Sort: overdue first, then by name
   const sorted = [...filtered].sort((a, b) => {
     const aOver = isOverdue(a) ? 0 : 1
@@ -198,7 +196,7 @@ export default function Relationships() {
   return (
     <>
       <Helmet>
-        <title>Relationships</title>
+        <title>Relationships | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -226,7 +224,7 @@ export default function Relationships() {
               </p>
             </div>
             {atLimit ? (
-              <Link to="/Upgrade" className="w-full lg:w-auto">
+              <Link to="/upgrade" className="w-full lg:w-auto">
                 <Button className="w-full bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
                   Limit reached ({data?.usage?.relationships}/{data?.limits?.relationships}),

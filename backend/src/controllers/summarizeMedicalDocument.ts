@@ -30,7 +30,9 @@ export async function summarizeMedicalDocument(req: Request, res: Response) {
       return res.status(400).json({ error: 'Missing file_url or document_id' });
     }
 
-    const document = await MedicalDocument.findOne({ id: document_id });
+    const document = await MedicalDocument.findOne({ id: document_id })
+      .lean()
+      .select('id created_by');
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
     }

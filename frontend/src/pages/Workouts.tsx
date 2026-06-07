@@ -24,6 +24,22 @@ import { useWorkoutMutations } from '@/hooks/workouts/useWorkoutMutations'
 import { CreateWorkoutInput } from '@/repositories/workout.repository'
 import { WorkoutRecord } from '@/db'
 
+const workoutTypeColors = {
+  strength: 'bg-blue-100 text-blue-700',
+  cardio: 'bg-red-100 text-red-700',
+  flexibility: 'bg-purple-100 text-purple-700',
+  sports: 'bg-green-100 text-green-700',
+  other: 'bg-slate-100 text-slate-700'
+} as const
+
+const workoutTypeLabels = {
+  strength: 'Strength',
+  cardio: 'Cardio',
+  flexibility: 'Flexibility',
+  sports: 'Sports',
+  other: 'Other'
+} as const
+
 export default function Workouts() {
   const [showForm, setShowForm] = useState(false)
   const [editingWorkout, setEditingWorkout] = useState(null)
@@ -59,7 +75,7 @@ export default function Workouts() {
 
   const { data: workouts = [] } = useWorkoutsQuery()
 
-  const atLimit = canCreate('workouts')
+  const atLimit = !canCreate('workouts')
 
   const { createMutation, updateMutation, deleteMutation } = useWorkoutMutations()
 
@@ -115,26 +131,10 @@ export default function Workouts() {
   const filteredWorkouts =
     filterType === 'all' ? workouts : workouts.filter(w => w.type === filterType)
 
-  const workoutTypeColors = {
-    strength: 'bg-blue-100 text-blue-700',
-    cardio: 'bg-red-100 text-red-700',
-    flexibility: 'bg-purple-100 text-purple-700',
-    sports: 'bg-green-100 text-green-700',
-    other: 'bg-slate-100 text-slate-700'
-  }
-
-  const workoutTypeLabels = {
-    strength: 'Strength',
-    cardio: 'Cardio',
-    flexibility: 'Flexibility',
-    sports: 'Sports',
-    other: 'Other'
-  }
-
   return (
     <>
       <Helmet>
-        <title>Workouts</title>
+        <title>Workouts | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -168,10 +168,10 @@ export default function Workouts() {
                 </Button>
               </Link>
               {atLimit ? (
-                <Link to="/Upgrade" className="flex-1 lg:flex-initial">
+                <Link to="/upgrade" className="flex-1 lg:flex-initial">
                   <Button className="w-full bg-amber-500 hover:bg-amber-600">
                     <Lock className="w-4 h-4 mr-2" />
-                    Limit reached ({data?.usage?.workouts || 0}/{data?.remaining?.workouts})
+                    Limit reached ({data?.usage?.workouts || 0}/{data?.limits?.workouts})
                   </Button>
                 </Link>
               ) : (
@@ -231,7 +231,6 @@ export default function Workouts() {
               </Card>
             ) : (
               filteredWorkouts.map(workout => {
-                const overLimit = canCreate('workouts')
                 const card = (
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
@@ -263,7 +262,7 @@ export default function Workouts() {
                           )}
                         </div>
                       </div>
-                      {!overLimit && (
+                      {!atLimit && (
                         <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
@@ -312,11 +311,12 @@ export default function Workouts() {
                     </CardContent>
                   </Card>
                 )
-                return overLimit ? (
+                /* return atLimit ? (
                   <OverLimitItem key={workout.id}>{card}</OverLimitItem>
                 ) : (
                   <Fragment key={workout.id}>{card}</Fragment>
-                )
+                ) */
+                return <Fragment key={workout.id}>{card}</Fragment>
               })
             )}
           </div>

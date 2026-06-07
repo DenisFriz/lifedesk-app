@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, ReactNode } from 'react'
+import { createContext, useContext, useMemo, ReactNode, useCallback } from 'react'
 
 import { backend, UsageKey, UserUsageResponse } from '@/api/backend'
 import { useQuery, UseQueryResult } from '@tanstack/react-query'
@@ -22,23 +22,29 @@ type Props = {
 export function UserLimitProvider({ children }: Props) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['usage'],
-    queryFn: backend.auth.usage
+    queryFn: backend.user.usage
   })
 
-  const canCreate = (key: UsageKey) => {
-    if (!data) return false
+  const canCreate = useCallback(
+    (key: UsageKey) => {
+      if (!data) return false
 
-    const limit = data.limits[key]
-    const used = data.usage[key]
+      const limit = data.limits[key]
+      const used = data.usage[key]
 
-    if (limit === null) return true
-    return used < limit
-  }
+      if (limit === null) return true
+      return used < limit
+    },
+    [data]
+  )
 
-  const remaining = (key: UsageKey) => {
-    if (!data) return null
-    return data.remaining[key]
-  }
+  const remaining = useCallback(
+    (key: UsageKey) => {
+      if (!data) return null
+      return data.remaining[key]
+    },
+    [data]
+  )
 
   const value = useMemo<UserLimitContextType>(() => {
     return {
@@ -49,7 +55,7 @@ export function UserLimitProvider({ children }: Props) {
       remaining,
       error
     }
-  }, [data, isLoading, error])
+  }, [data, isLoading, error, refetch, canCreate, remaining])
 
   return <UserLimitContext.Provider value={value}>{children}</UserLimitContext.Provider>
 }

@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -15,12 +15,15 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import TaskFormSimple from './TaskFormSimple'
 import { useTasksQuery } from '@/hooks/tasks/useTasksQuery'
+import { useTaskMutations } from '@/hooks/tasks/useTaskMutations'
+import { useGoalsQuery } from '@/hooks/goals/useGoalsQuery'
+import { useProblemsQuery } from '@/hooks/problems/useProblemsQuery'
 
 const priorityColors = {
   high: 'bg-rose-50 text-rose-700 border-rose-200',
   medium: 'bg-amber-50 text-amber-700 border-amber-200',
   low: 'bg-emerald-50 text-emerald-700 border-emerald-200'
-}
+} as const
 
 interface TaskSectionProps {
   category: string
@@ -30,49 +33,52 @@ interface TaskSectionProps {
 export default function TaskSection({ category, initialTaskData }: TaskSectionProps) {
   const [showForm, setShowForm] = useState(false)
   const [editingTask, setEditingTask] = useState<any | null>(null)
-  const queryClient = useQueryClient()
 
   const { data: tasks = [] } = useTasksQuery({ category })
 
-  const { data: problems = [] } = useQuery<any[]>({
-    queryKey: ['problems', category],
-    queryFn: () => backend.entities.Problem.filter({ category })
-  })
+  const { data: problems = [] } = useProblemsQuery({ category })
 
-  const { data: goals = [] } = useQuery<any[]>({
-    queryKey: ['goals', category],
-    queryFn: () => backend.entities.Goal.filter({ category })
-  })
+  const { data: goals = [] } = useGoalsQuery({ category })
 
-  const createMutation = useMutation<any, any, any>({
-    mutationFn: data => backend.entities.Task.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', category] })
+  const { createMutation, updateMutation, deleteMutation } = useTaskMutations()
+
+  const handleCreateTask = async (data: any) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
     }
-  })
+  }
 
-  const updateMutation = useMutation<any, any, { id: string; data: any }>({
-    mutationFn: ({ id, data }) => backend.entities.Task.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', category] })
+  const handleUpdateTask = async (data: any) => {
+    try {
+      await updateMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
       setEditingTask(null)
     }
-  })
+  }
 
-  const deleteMutation = useMutation<void, any, string>({
-    mutationFn: id => backend.entities.Task.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', category] })
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setShowForm(false)
+      setEditingTask(null)
     }
-  })
+  }
 
   const handleSubmit = (data: any): void => {
     if (editingTask) {
-      updateMutation.mutate({ id: editingTask.id, data: { ...data, category } })
+      handleUpdateTask({ id: editingTask.id, data: { ...data, category } })
     } else {
-      createMutation.mutate({ ...data, category })
+      handleCreateTask({ ...data, status: 'pending', category })
     }
   }
 
@@ -82,13 +88,13 @@ export default function TaskSection({ category, initialTaskData }: TaskSectionPr
   }
 
   const handleToggleComplete = (task: any): void => {
-    updateMutation.mutate({
+    handleUpdateTask({
       id: task.id,
       data: { status: task.status === 'completed' ? 'pending' : 'completed' }
     })
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialTaskData) {
       setEditingTask(initialTaskData)
       setShowForm(true)
@@ -187,7 +193,7 @@ export default function TaskSection({ category, initialTaskData }: TaskSectionPr
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => deleteMutation.mutate(task.id)}
+                        onClick={() => handleDeleteTask(task.id)}
                         className="text-rose-600"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />

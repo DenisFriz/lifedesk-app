@@ -42,7 +42,9 @@ export async function createCheckoutSession(
 
     const existingSubscription = await Subscription.findOne({
       user_email: req.user.email,
-    }).lean();
+    })
+      .lean()
+      .select('stripe_subscription_id stripe_customer_id id');
 
     let stripeSubscriptionId =
       existingSubscription?.stripe_subscription_id || null;
@@ -91,7 +93,9 @@ export async function createCheckoutSession(
             } else {
               const user = await User.findOne({
                 email: req.user.email,
-              }).lean();
+              })
+                .lean()
+                .select('id');
               await Subscription.create({
                 user_id: user?.id || req.user.id,
                 user_email: req.user.email,

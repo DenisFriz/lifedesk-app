@@ -22,7 +22,6 @@ export function useVehicleMutations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicles'] })
-      queryClient.invalidateQueries({ queryKey: ['usage'] })
     }
   })
 
@@ -34,7 +33,6 @@ export function useVehicleMutations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicles'] })
-      queryClient.invalidateQueries({ queryKey: ['usage'] })
     }
   })
 

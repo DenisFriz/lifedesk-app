@@ -50,7 +50,7 @@ export const hobbyRepository = {
 
     await db.hobbies.put(hobby)
 
-    await enqueueMutation('learning', 'create', {
+    await enqueueMutation('hobbies', 'create', {
       ...data,
       optimisticId
     })

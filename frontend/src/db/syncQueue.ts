@@ -15,10 +15,28 @@ const entityMap: Record<string, any> = {
   medicaldocuments: backend.entities.MedicalDocument,
   workouts: backend.entities.Workout,
   workoutplans: backend.entities.WorkoutPlan,
-  progressphotos: backend.entities.ProgressPhoto
+  progressphotos: backend.entities.ProgressPhoto,
+  hobbies: backend.entities.Hobby,
+  businesses: backend.entities.Business,
+  bodymeasurements: backend.entities.BodyMeasurement,
+  incomes: backend.entities.Income,
+  expenses: backend.entities.Expense,
+  problems: backend.entities.Problem,
+  timeentries: backend.entities.TimeEntry,
+  projects: backend.entities.Project,
+  clients: backend.entities.Client,
+  marketingstrategies: backend.entities.MarketingStrategy,
+  marketingcampaigns: backend.entities.MarketingCampaign,
+  marketingcontents: backend.entities.MarketingContent,
+  offlineaccounts: backend.entities.OfflineAccount,
+  offlineaccountSnapshots: backend.entities.OfflineAccountSnapshot,
+  recurringincomes: backend.entities.RecurringIncome,
+  recurringexpenses: backend.entities.RecurringExpense,
+  communityideas: backend.entities.CommunityIdea
 }
 
 let isSyncing = false
+let syncRequested = false
 
 export const OPTIMISTIC_ID_PREFIX = 'offline_'
 
@@ -45,14 +63,13 @@ export async function enqueueMutation(
   window.dispatchEvent(new CustomEvent('syncqueue:updated'))
 }
 
-function isDependentOnCreate(item, resolvedIds) {
-  const id = item.payload.id
-  return isOptimisticId(id) && !resolvedIds.has(id)
-}
-
 export async function processSyncQueue(queryClient?: QueryClient): Promise<void> {
-  if (isSyncing) return
+  if (isSyncing) {
+    syncRequested = true
+    return
+  }
   isSyncing = true
+  syncRequested = false
 
   const resolvedIds = new Map()
 
@@ -151,8 +168,21 @@ export async function processSyncQueue(queryClient?: QueryClient): Promise<void>
 
           await db.syncQueue.delete(item.localId!)
           queryClient?.invalidateQueries({ queryKey: [item.entityName] })
-        } catch {
-          await db.syncQueue.update(item.localId!, { status: 'pending' })
+        } catch (error) {
+          const is403 = (error as any)?.status === 403
+          if (is403) {
+            await db.syncQueue.delete(item.localId!)
+            if (item.operation === 'create') {
+              const optimisticId = (item.payload as any).optimisticId || (item.payload as any).id
+              const store = (db as any)[item.entityName]
+              if (store && optimisticId) {
+                await store.delete(optimisticId).catch(() => {})
+              }
+            }
+            queryClient?.invalidateQueries({ queryKey: [item.entityName] })
+          } else {
+            await db.syncQueue.update(item.localId!, { status: 'pending' })
+          }
         }
       }
     }
@@ -172,8 +202,14 @@ export async function processSyncQueue(queryClient?: QueryClient): Promise<void>
         refetchType: 'all'
       })
     }
+
+    queryClient?.invalidateQueries({ queryKey: ['usage'] })
   } finally {
     isSyncing = false
+    if (syncRequested) {
+      syncRequested = false
+      processSyncQueue(queryClient)
+    }
   }
 }
 

@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { backend } from '@/api/backend'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Pencil, Trash2, Target, ChevronDown, ChevronUp, Lock } from 'lucide-react'
 import { STRATEGY_STATUSES } from './marketingConstants'
 import StrategyFormDialog from './StrategyFormDialog'
 import { cn } from '@/lib/utils'
-import { useSubscription } from '@/hooks/useSubscription'
+import { useMarketingStrategiesQuery } from '@/hooks/marketingstrategies/useMarketingStrategiesQuery'
+import { CreateMarketingStrategyInput } from '@/repositories/marketing-strategy.repository'
+import { useMarketingStrategyMutations } from '@/hooks/marketingstrategies/useMarketingStratrgyMutations'
+import { MarketingStrategyRecord } from '@/db'
+import { useUserLimit } from '@/contexts/UserLimitContext'
 
 const statusInfo = Object.fromEntries(STRATEGY_STATUSES.map(s => [s.value, s]))
 
@@ -118,97 +120,59 @@ function StrategyCard({ strategy, onEdit, onDelete }) {
   )
 }
 
-type StrategyFormData = {
-  name?: string
-  main_goal?: string
-  main_channels?: string[]
-  target_audience?: string
-  usp?: string
-  core_message?: string
-  notes?: string
-  smart_specific?: string
-  smart_measurable?: string
-  smart_achievable?: string
-  smart_relevant?: string
-  smart_time_bound?: string
-}
-
-type UpdateStrategyPayload = {
-  id: string
-  data: Record<string, any>
-}
-
-type MarketingStrategy = {
-  id: string
-  business_id?: string
-  name: string
-  status?: string
-  main_goal?: string
-  main_channels?: string[]
-  target_audience?: string
-  usp?: string
-  core_message?: string
-  notes?: string
-  smart_specific?: string
-  smart_measurable?: string
-  smart_achievable?: string
-  smart_relevant?: string
-  smart_time_bound?: string
-  is_deleted?: boolean
-}
-
 export default function StrategyList({ businessId }) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState(null)
-  const queryClient = useQueryClient()
-  const { limit, planName } = useSubscription()
-  const strategyLimit = limit('business_strategy_limit')
 
-  const { data: strategies = [] } = useQuery<MarketingStrategy[]>({
-    queryKey: ['marketing_strategies', businessId],
-    queryFn: async (): Promise<MarketingStrategy[]> => {
-      const res = businessId
-        ? await backend.entities.MarketingStrategy.filter({
-            business_id: businessId,
-            is_deleted: false
-          })
-        : await backend.entities.MarketingStrategy.filter({ is_deleted: false }, '-created_date')
+  const { canCreate, data: userLimits } = useUserLimit()
 
-      return res as MarketingStrategy[]
-    }
-  })
+  const isOverLimit = !canCreate('marketingStrategy')
 
-  const createMutation = useMutation({
-    mutationFn: (data: StrategyFormData) =>
-      backend.entities.MarketingStrategy.create({
-        ...data,
-        business_id: businessId
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['marketing_strategies', businessId] })
+  const { data: strategies = [] } = useMarketingStrategiesQuery({ businessId })
+
+  const { createMutation, updateMutation, deleteMutation } = useMarketingStrategyMutations()
+
+  const handleCreateMarketingStrategy = async (data: CreateMarketingStrategyInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setDialogOpen(false)
     }
-  })
+  }
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: UpdateStrategyPayload) =>
-      backend.entities.MarketingStrategy.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['marketing_strategies', businessId] })
+  const handleUpdateMarketingStrategy = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<MarketingStrategyRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setDialogOpen(false)
       setEditing(null)
     }
-  })
+  }
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.MarketingStrategy.delete(id),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['marketing_strategies', businessId] })
-  })
+  const handleDeleteMarketingStrategy = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setDialogOpen(false)
+      setEditing(null)
+    }
+  }
 
   const handleSave = form => {
-    if (editing) updateMutation.mutate({ id: editing.id, data: form })
-    else createMutation.mutate(form)
+    if (editing) handleUpdateMarketingStrategy({ id: editing.id, data: form })
+    else handleCreateMarketingStrategy(form)
   }
 
   const handleEdit = s => {
@@ -216,7 +180,7 @@ export default function StrategyList({ businessId }) {
     setDialogOpen(true)
   }
   const handleDelete = id => {
-    if (confirm('Delete this strategy?')) deleteMutation.mutate(id)
+    if (confirm('Delete this strategy?')) handleDeleteMarketingStrategy(id)
   }
 
   return (
@@ -224,9 +188,9 @@ export default function StrategyList({ businessId }) {
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-slate-500">
           {strategies.length} {strategies.length === 1 ? 'strategy' : 'strategies'}
-          {strategyLimit !== Infinity && ` / ${strategyLimit}`}
+          {isOverLimit ? ` / ${userLimits?.limits?.marketingStrategy}` : ''}
         </p>
-        {strategies.length >= strategyLimit ? (
+        {isOverLimit ? (
           <Button
             size="sm"
             variant="outline"
@@ -253,7 +217,7 @@ export default function StrategyList({ businessId }) {
         <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
           <Target className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <p className="text-slate-500 mb-4">No marketing strategies yet</p>
-          {strategies.length < strategyLimit && (
+          {isOverLimit && (
             <Button
               variant="outline"
               onClick={() => {

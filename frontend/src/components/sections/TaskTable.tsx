@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react'
-import { backend } from '@/api/backend'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import UsageLimitGate from '@/components/subscription/UsageLimitGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,6 +51,7 @@ import { useGoalsQuery } from '@/hooks/goals/useGoalsQuery'
 import { useTasksQuery } from '@/hooks/tasks/useTasksQuery'
 import { useTableState } from '@/hooks/useTableState'
 import { TaskRecord } from '@/db'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
 
 interface TaskTableProps {
   filterType?: 'all' | 'important' | 'category' | 'business'
@@ -104,14 +104,7 @@ export default function TaskTable({
 
   const { data: allTasks = [] } = useTasksQuery()
 
-  const { data: businesses = [] } = useQuery<any[]>({
-    queryKey: ['businesses'],
-    queryFn: async () => {
-      const data = await backend.entities.Business.list('order')
-      return (data as any[]).filter(r => !r.is_deleted)
-    },
-    enabled: isActive
-  })
+  const { data: businesses = [] } = useBusinessesQuery({ enabled: isActive })
 
   const { data: allGoals = [] } = useGoalsQuery({ enabled: isActive })
 
@@ -142,6 +135,7 @@ export default function TaskTable({
   }
 
   const handleDuplicateTask = async (data: Record<string, any>) => {
+    if (!canCreate('tasks')) return
     try {
       await duplicateMutation.mutateAsync(data)
     } catch (e) {
@@ -799,7 +793,7 @@ export default function TaskTable({
                                         )}
                                       >
                                         <Select
-                                          value={taskId || 'none'}
+                                          value={task.goal_id || 'none'}
                                           onValueChange={value => {
                                             const updateData = {
                                               goal_id: value === 'none' ? null : value

@@ -1,31 +1,111 @@
-import mongoose, { Schema, Model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
-import { ITimeEntry } from '@/types/index.js';
+import mongoose, { Schema, Model, Types } from 'mongoose';
+
+export interface ITimeEntry {
+  _id: Types.ObjectId;
+  created_by: Types.ObjectId;
+  date: string;
+  start_time: string;
+  end_time?: string | null;
+  duration?: number | null;
+  description: string;
+  notes?: string | null;
+  section_id?: string | null;
+  client_id?: Types.ObjectId | null;
+  project_id?: Types.ObjectId | null;
+  is_running: boolean;
+  is_deleted: boolean;
+  deleted_at?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const timeEntrySchema = new Schema<ITimeEntry>(
   {
-    id: { type: String, default: () => uuidv4(), unique: true, index: true },
-    created_by: { type: String, index: true, required: true },
-    project_id: String,
-    task_id: String,
-    duration_minutes: Number,
-    description: String,
-    date: String,
-    notes: String,
-    is_deleted: { type: Boolean, default: false },
-    deleted_at: String,
-    deleted_by_process: String,
-    created_at: { type: String, default: () => new Date().toISOString() },
-    updated_at: { type: String, default: () => new Date().toISOString() },
+    created_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+
+    date: {
+      type: String,
+      required: true,
+      index: true,
+    },
+
+    start_time: {
+      type: String,
+      required: true,
+    },
+
+    end_time: {
+      type: String,
+      default: null,
+    },
+
+    duration: {
+      type: Number,
+      default: null,
+      min: 0,
+    },
+
+    description: {
+      type: String,
+      default: '',
+      maxlength: 1000,
+    },
+
+    notes: {
+      type: String,
+      default: null,
+      maxlength: 5000,
+    },
+
+    section_id: {
+      type: String,
+      default: null,
+      index: true,
+    },
+
+    client_id: {
+      type: Schema.Types.ObjectId,
+      ref: 'Client',
+      default: null,
+      index: true,
+    },
+
+    project_id: {
+      type: Schema.Types.ObjectId,
+      ref: 'Project',
+      default: null,
+      index: true,
+    },
+
+    is_running: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    is_deleted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    deleted_at: {
+      type: String,
+      default: null,
+    },
   },
-  { timestamps: false, versionKey: false },
+  {
+    timestamps: true,
+    versionKey: false,
+  },
 );
 
-timeEntrySchema.pre<ITimeEntry>('save', function (this: ITimeEntry) {
-  this.updated_at = new Date().toISOString();
-});
-
-export const TimeEntry: Model<ITimeEntry> = mongoose.model<ITimeEntry>(
+export const TimeEntry: Model<ITimeEntry> = mongoose.model(
   'TimeEntry',
   timeEntrySchema,
 );

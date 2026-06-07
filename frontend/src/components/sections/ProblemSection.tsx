@@ -1,6 +1,4 @@
-import React, { useState } from 'react'
-import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Plus, AlertCircle, MoreHorizontal, Pencil, Trash2, CheckCircle } from 'lucide-react'
@@ -12,12 +10,16 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import ProblemForm from './ProblemForm'
+import { useProblemsQuery } from '@/hooks/problems/useProblemsQuery'
+import { useProblemMutations } from '@/hooks/problems/useProblemMutations'
+import { CreateProblemInput } from '@/repositories/problem.repository'
+import { ProblemRecord } from '@/db'
 
 const priorityColors = {
   high: 'bg-rose-50 text-rose-700 border-rose-200',
   medium: 'bg-amber-50 text-amber-700 border-amber-200',
   low: 'bg-emerald-50 text-emerald-700 border-emerald-200'
-}
+} as const
 
 interface ProblemSectionProps {
   category: string
@@ -25,44 +27,55 @@ interface ProblemSectionProps {
 }
 
 export default function ProblemSection({ category, onCreateTask }: ProblemSectionProps) {
-  const [showForm, setShowForm] = useState<boolean>(false)
+  const [showForm, setShowForm] = useState(false)
   const [editingProblem, setEditingProblem] = useState<any | null>(null)
-  const queryClient = useQueryClient()
 
-  const { data: problems = [] } = useQuery<any[]>({
-    queryKey: ['problems', category],
-    queryFn: () => backend.entities.Problem.filter({ category })
-  })
+  const { data: problems = [] } = useProblemsQuery({ category })
 
-  const createMutation = useMutation<any, any, any>({
-    mutationFn: data => backend.entities.Problem.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['problems', category] })
+  const { createMutation, updateMutation, deleteMutation } = useProblemMutations()
+
+  const handleCreateProblem = async (data: CreateProblemInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
     }
-  })
+  }
 
-  const updateMutation = useMutation<any, any, { id: string; data: any }>({
-    mutationFn: ({ id, data }) => backend.entities.Problem.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['problems', category] })
+  const handleUpdateProblem = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<ProblemRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
       setEditingProblem(null)
     }
-  })
+  }
 
-  const deleteMutation = useMutation<void, any, string>({
-    mutationFn: id => backend.entities.Problem.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['problems', category] })
+  const handleDeleteProblem = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setShowForm(false)
     }
-  })
+  }
 
   const handleSubmit = (data: any): void => {
     if (editingProblem) {
-      updateMutation.mutate({ id: editingProblem.id, data: { ...data, category } })
+      handleUpdateProblem({ id: editingProblem.id, data: { ...data, category } })
     } else {
-      createMutation.mutate({ ...data, category })
+      handleCreateProblem({ ...data, category })
     }
   }
 
@@ -72,7 +85,7 @@ export default function ProblemSection({ category, onCreateTask }: ProblemSectio
   }
 
   const handleResolve = (problem: any): void => {
-    updateMutation.mutate({
+    handleUpdateProblem({
       id: problem.id,
       data: { status: problem.status === 'resolved' ? 'active' : 'resolved' }
     })
@@ -150,7 +163,7 @@ export default function ProblemSection({ category, onCreateTask }: ProblemSectio
                       Mark resolved
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => deleteMutation.mutate(problem.id)}
+                      onClick={() => handleDeleteProblem(problem.id)}
                       className="text-rose-600"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />

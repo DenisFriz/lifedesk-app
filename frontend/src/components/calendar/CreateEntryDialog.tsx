@@ -124,7 +124,7 @@ export default function CreateEntryDialog({
               </p>
             </div>
             <Link
-              to="/Upgrade"
+              to="/upgrade"
               onClick={handleClose}
               className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >

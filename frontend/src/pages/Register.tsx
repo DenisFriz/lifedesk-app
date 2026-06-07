@@ -4,6 +4,7 @@ import { apiFetch } from '@/api/apiClient'
 import { Mail, Lock } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { Helmet } from 'react-helmet-async'
+import { SEO } from '@/lib/seo'
 import { Checkbox } from '@/components/ui/checkbox'
 import GoogleAuth from '@/components/GoogleAuth'
 
@@ -54,7 +55,7 @@ export default function Register() {
       })
 
       await login(data.accessToken)
-      navigate('/Home', { replace: true })
+      navigate('/home', { replace: true })
     } catch (err) {
       setError(err.data.message || err.message || 'Registration failed')
     } finally {
@@ -73,7 +74,7 @@ export default function Register() {
 
       await login(data.accessToken)
 
-      navigate('/Home', { replace: true })
+      navigate('/home', { replace: true })
     } catch (err: any) {
       setError(err?.data?.message || err.message || 'Google login failed')
     } finally {
@@ -101,7 +102,12 @@ export default function Register() {
   return (
     <>
       <Helmet>
-        <title>Registration</title>
+        <title>{SEO.register.title}</title>
+        <meta name="description" content={SEO.register.description} />
+        <meta property="og:title" content={SEO.register.title} />
+        <meta property="og:description" content={SEO.register.description} />
+        <meta property="og:url" content={SEO.register.canonical} />
+        <link rel="canonical" href={SEO.register.canonical} />
       </Helmet>
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
         <div className="w-full max-w-md">
@@ -111,7 +117,7 @@ export default function Register() {
             <div className="p-8 sm:p-10 md:pt-12 md:pb-10 md:px-10">
               <button
                 type="button"
-                onClick={() => navigate('/Login')}
+                onClick={() => navigate('/login')}
                 className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 font-medium transition-colors -mb-2"
               >
                 <svg

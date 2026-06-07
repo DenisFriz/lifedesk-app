@@ -9,7 +9,6 @@ export interface IPlaidConnection {
 
 export interface IUser {
   _id: Types.ObjectId;
-  id: string;
   email: string;
   passwordHash: string | null;
   full_name: string;
@@ -20,6 +19,8 @@ export interface IUser {
   auth_provider: 'local' | 'google';
   google_id: string | null;
   google_avatar_url: string | null;
+  profile_image_url: string | null;
+  profile_image_public_id: string | null;
   email_verified: boolean;
   emailVerificationCode: string | null;
   emailVerificationExpires: Date | null;
@@ -105,90 +106,6 @@ export interface IUserPlan {
   updated_at: string;
 }
 
-export interface ITask {
-  _id?: Types.ObjectId;
-  created_by: Types.ObjectId;
-  title: string;
-  description: string | null;
-  category: string | null;
-  business_id: string | null;
-  problem_id: string | null;
-  goal_id: string | null;
-  important: boolean;
-  due_date: string | null;
-  due_time: string | null;
-  reminders: any[];
-  status: string;
-  is_recurring: boolean;
-  recurrence_frequency: string | null;
-  recurrence_interval: number;
-  recurrence_days_of_week: string[];
-  recurrence_monthly_type: string;
-  recurrence_end_type: string;
-  recurrence_end_date: string | null;
-  recurrence_end_count: number | null;
-  excluded_dates: string[];
-  parent_recurring_task_id: string | null;
-  order: number | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  deleted_by_process: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface IGoal {
-  _id?: Types.ObjectId;
-  created_by: Types.ObjectId;
-  title: string;
-  description: string | null;
-  category: string | null;
-  business_id: string | null;
-  problem_id: string | null;
-  important: boolean;
-  target_date: string | null;
-  target_time: string | null;
-  reminders: any[];
-  status: string;
-  is_recurring: boolean;
-  recurrence_frequency: string | null;
-  recurrence_interval: number;
-  recurrence_days_of_week: string[];
-  recurrence_monthly_type: string;
-  recurrence_end_type: string;
-  recurrence_end_date: string | null;
-  recurrence_end_count: number | null;
-  excluded_dates: string[];
-  parent_recurring_goal_id: string | null;
-  order: number | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  deleted_by_process: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface IProblem {
-  _id?: Types.ObjectId;
-  id: string;
-  created_by: string;
-  title: string;
-  description: string | null;
-  category: string | null;
-  problem_type: string | null;
-  business_id: string | null;
-  important: boolean;
-  show_in_timeline: boolean;
-  date_occurred: string | null;
-  date_ended: string | null;
-  status: string;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  deleted_by_process: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface IEvent {
   _id?: Types.ObjectId;
   created_by: Types.ObjectId;
@@ -213,45 +130,6 @@ export interface IEvent {
   excluded_dates: string[];
   parent_recurring_event_id: string | null;
   order: number | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  deleted_by_process: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface IProject {
-  _id?: Types.ObjectId;
-  id: string;
-  created_by: string;
-  name: string;
-  description: string | null;
-  business_id: string | null;
-  status: string;
-  priority: string;
-  start_date: string | null;
-  deadline: string | null;
-  client_id: string | null;
-  revenue_target: number | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  deleted_by_process: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface IClient {
-  _id?: Types.ObjectId;
-  id: string;
-  created_by: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  company: string | null;
-  status: string;
-  lifetime_value: number | null;
-  notes: string | null;
-  business_id: string | null;
   is_deleted: boolean;
   deleted_at: string | null;
   deleted_by_process: string | null;
@@ -297,29 +175,6 @@ export interface ILearning {
   rating: number | null;
   key_takeaways: string | null;
   author: string | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  deleted_by_process: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ICommunityIdea {
-  id: string;
-  created_by: string;
-  title: string;
-  description: string | null;
-  category: 'new_feature' | 'optimization' | 'ui_ux' | 'bug_fix' | 'other';
-  status:
-    | 'new'
-    | 'under_review'
-    | 'planned'
-    | 'in_progress'
-    | 'implemented'
-    | 'rejected';
-  likes_count: number;
-  comments_count: number;
-  anonymous: boolean;
   is_deleted: boolean;
   deleted_at: string | null;
   deleted_by_process: string | null;
@@ -396,54 +251,6 @@ export interface IOfflineAccount {
   updated_at: string;
 }
 
-export interface IMarketingStrategy {
-  _id?: Types.ObjectId;
-  id: string;
-  created_by: string;
-  name: string;
-  business_id: string | null;
-  main_goal: string | null;
-  smart_specific: string | null;
-  smart_measurable: string | null;
-  smart_achievable: string | null;
-  smart_relevant: string | null;
-  smart_time_bound: string | null;
-  target_audience: string | null;
-  usp: string | null;
-  core_message: string | null;
-  main_channels: string[];
-  notes: string | null;
-  status: string;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  deleted_by_process: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface IMarketingCampaign {
-  _id?: Types.ObjectId;
-  id: string;
-  created_by: string;
-  name: string;
-  business_id: string | null;
-  strategy_id: string | null;
-  campaign_type: string | null;
-  goal: string | null;
-  channel: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  budget: number | null;
-  status: string;
-  kpis: any[];
-  notes: string | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  deleted_by_process: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface IIdea {
   _id?: Types.ObjectId;
   id: string;
@@ -462,28 +269,6 @@ export interface IIdea {
   updated_at: string;
 }
 
-export interface IContentIdea {
-  _id?: Types.ObjectId;
-  id: string;
-  created_by: string;
-  title: string;
-  business_id: string | null;
-  campaign_id: string | null;
-  description: string | null;
-  type: string | null;
-  platform: string | null;
-  status: string;
-  publish_date: string | null;
-  cta: string | null;
-  asset_url: string | null;
-  notes: string | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  deleted_by_process: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface ICommunityComment {
   _id?: Types.ObjectId;
   id: string;
@@ -491,78 +276,6 @@ export interface ICommunityComment {
   idea_id: string | null;
   content: string | null;
   author_display_name: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface IIncome {
-  _id?: Types.ObjectId;
-  id: string;
-  created_by: string;
-  amount: number | null;
-  category: string | null;
-  description: string | null;
-  date: string | null;
-  notes: string | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  deleted_by_process: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface IExpense {
-  _id?: Types.ObjectId;
-  id: string;
-  created_by: string;
-  amount: number | null;
-  category: string | null;
-  description: string | null;
-  date: string | null;
-  notes: string | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  deleted_by_process: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface IRecurringIncome {
-  _id?: Types.ObjectId;
-  id: string;
-  created_by: string;
-  title: string;
-  amount: number | null;
-  category: string | null;
-  description: string | null;
-  frequency: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  active: boolean;
-  notes: string | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  deleted_by_process: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface IRecurringExpense {
-  _id?: Types.ObjectId;
-  id: string;
-  created_by: string;
-  title: string;
-  amount: number | null;
-  category: string | null;
-  description: string | null;
-  frequency: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  active: boolean;
-  notes: string | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  deleted_by_process: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -633,7 +346,7 @@ export interface IMedicalDocument {
 export interface ITangibleAsset {
   _id?: Types.ObjectId;
   id: string;
-  created_by: string;
+  created_by: Types.ObjectId;
   title: string;
   category: string | null;
   current_value: number | null;
@@ -659,23 +372,6 @@ export interface IBankBalanceSnapshot {
   balance: number | null;
   available: number | null;
   currency: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ITimeEntry {
-  _id?: Types.ObjectId;
-  id: string;
-  created_by: string;
-  project_id: string | null;
-  task_id: string | null;
-  duration_minutes: number | null;
-  description: string | null;
-  date: string | null;
-  notes: string | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  deleted_by_process: string | null;
   created_at: string;
   updated_at: string;
 }

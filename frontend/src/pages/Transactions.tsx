@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef, Fragment } from 'react'
+import { useLocation } from 'react-router-dom'
 import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import {
   ArrowUpDown,
@@ -42,6 +43,14 @@ import {
 } from '@/components/finances/categories'
 import { formatCurrency, formatDateMedium } from '@/components/utils/formatters'
 import { Helmet } from 'react-helmet-async'
+import { useIncomeMutations } from '@/hooks/incomes/useIncomeMutations'
+import { CreateIncomeInput } from '@/repositories/income.repository'
+import { ExpenseRecord, IncomeRecord } from '@/db'
+import { useIncomesQuery } from '@/hooks/incomes/useIncomesQuery'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
+import { useExpensesQuery } from '@/hooks/expenses/useExpensesQuery'
+import { useExpenseMutations } from '@/hooks/expenses/useExpenseMutations'
+import { CreateExpenseInput } from '@/repositories/expense.repository'
 
 type Business = {
   id: string
@@ -50,7 +59,8 @@ type Business = {
 }
 
 export default function Transactions() {
-  const urlParams = new URLSearchParams(window.location.search)
+  const location = useLocation()
+  const urlParams = new URLSearchParams(location.search)
   const businessId = urlParams.get('businessId')
   const [isScrolled, setIsScrolled] = useState(false)
   const headerRef = useRef(null)
@@ -105,78 +115,89 @@ export default function Transactions() {
   const [perPage, setPerPage] = useState(20)
   const queryClient = useQueryClient()
 
-  const { data: income = [] } = useQuery({
-    queryKey: ['income', businessId],
-    queryFn: () => {
-      if (businessId) {
-        return backend.entities.Income.filter({ business_id: businessId })
-      }
-      return backend.entities.Income.list('-date')
+  const { data: incomes = [] } = useIncomesQuery()
+
+  const { data: expenses = [] } = useExpensesQuery()
+
+  const {
+    deleteMutation: deleteIncomeMutation,
+    updateMutation: updateIncomeMutation,
+    createMutation: createIncomeMutation
+  } = useIncomeMutations()
+
+  const {
+    deleteMutation: deleteExpenseMutation,
+    updateMutation: updateExpenseMutation,
+    createMutation: createExpenseMutation
+  } = useExpenseMutations()
+
+  const handleDeleteIncome = async (id: string) => {
+    try {
+      await deleteIncomeMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
 
-  const { data: expenses = [] } = useQuery({
-    queryKey: ['expenses', businessId],
-    queryFn: () => {
-      if (businessId) {
-        return backend.entities.Expense.filter({ business_id: businessId })
-      }
-      return backend.entities.Expense.list('-date')
+  const handleDeleteExpense = async (id: string) => {
+    try {
+      await deleteExpenseMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
 
-  const deleteIncomeMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.Income.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['income'] })
-  })
-
-  const deleteExpenseMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.Expense.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] })
-  })
-
-  const updateIncomeMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      backend.entities.Income.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['income'] })
+  const handleUpdateIncome = async ({ id, data }: { id: string; data: Partial<IncomeRecord> }) => {
+    try {
+      await updateIncomeMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowIncomeForm(false)
       setEditingItem(null)
       setEditingField(null)
     }
-  })
+  }
 
-  const updateExpenseMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      backend.entities.Expense.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] })
-      setShowExpenseForm(false)
+  const handleUpdateExpense = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<ExpenseRecord>
+  }) => {
+    try {
+      await updateExpenseMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setShowIncomeForm(false)
       setEditingItem(null)
       setEditingField(null)
     }
-  })
+  }
 
-  const createIncomeMutation = useMutation({
-    mutationFn: (data: any) => backend.entities.Income.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['income'] })
+  const handleCreateIncome = async (data: CreateIncomeInput) => {
+    try {
+      await createIncomeMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowIncomeForm(false)
     }
-  })
+  }
 
-  const createExpenseMutation = useMutation({
-    mutationFn: (data: any) => backend.entities.Expense.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] })
+  const handleCreateExpense = async (data: CreateExpenseInput) => {
+    try {
+      await createExpenseMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowExpenseForm(false)
     }
-  })
+  }
 
-  const { data: businesses = [] } = useQuery({
-    queryKey: ['businesses'],
-    queryFn: () => backend.entities.Business.list('order')
-  })
+  const { data: businesses = [] } = useBusinessesQuery()
 
   const getDateRange = () => {
     const now = new Date()
@@ -201,9 +222,14 @@ export default function Transactions() {
   const filteredTransactions = useMemo(() => {
     const dateRange = getDateRange()
     let transactions = [
-      ...income.map(i => ({ ...i, type: 'income', isRecurring: false })),
+      ...incomes.map(i => ({ ...i, type: 'income', isRecurring: false })),
       ...expenses.map(e => ({ ...e, type: 'expense', isRecurring: false }))
     ]
+
+    // Filter by business ID if present
+    if (businessId) {
+      transactions = transactions.filter(t => String(t.business_id) === String(businessId))
+    }
 
     // Filter by date range
     if (dateRange) {
@@ -241,7 +267,17 @@ export default function Transactions() {
       const comparison = aVal > bVal ? 1 : -1
       return sortOrder === 'asc' ? comparison : -comparison
     })
-  }, [income, expenses, sortBy, sortOrder, searchQuery, timePeriod, customStartDate, customEndDate])
+  }, [
+    incomes,
+    expenses,
+    sortBy,
+    sortOrder,
+    searchQuery,
+    timePeriod,
+    customStartDate,
+    customEndDate,
+    businessId
+  ])
 
   const allTransactions = useMemo(() => {
     const startIndex = (page - 1) * perPage
@@ -249,49 +285,6 @@ export default function Transactions() {
   }, [filteredTransactions, page, perPage])
 
   const totalPages = Math.ceil(filteredTransactions.length / perPage)
-
-  /*  const chartData = useMemo(() => {
-    const dateRange = getDateRange()
-    let filteredTransactions = [
-      ...income.map(i => ({ ...i, type: 'income' })),
-      ...expenses.map(e => ({ ...e, type: 'expense' }))
-    ]
-
-    if (dateRange) {
-      filteredTransactions = filteredTransactions.filter(t => {
-        if (!t.date) return false // Skip transactions without a date
-        const transactionDate = startOfDay(new Date(t.date))
-        // Check if date is valid
-        if (isNaN(transactionDate.getTime())) return false
-        return transactionDate >= dateRange.start && transactionDate <= dateRange.end
-      })
-    }
-
-    const groupedByDate = {}
-    filteredTransactions.forEach(t => {
-      const dateKey = t.date.slice(0, 10) // 'yyyy-MM-dd'
-      if (!groupedByDate[dateKey]) {
-        groupedByDate[dateKey] = {
-          dateKey,
-          label: format(parseISO(t.date), 'MMM dd'),
-          income: 0,
-          expenses: 0
-        }
-      }
-      if (t.type === 'income') {
-        groupedByDate[dateKey].income += t.amount || 0
-      } else {
-        groupedByDate[dateKey].expenses += t.amount || 0
-      }
-    })
-
-    return Object.values(groupedByDate)
-      .sort((a, b) => a.dateKey.localeCompare(b.dateKey))
-      .map(item => ({
-        date: item.label,
-        cashFlow: item.income - item.expenses
-      }))
-  }, [income, expenses, timePeriod, customStartDate, customEndDate]) */
 
   const handleSort = field => {
     if (sortBy === field) {
@@ -318,27 +311,27 @@ export default function Transactions() {
 
       // Convert between income and expense based on sign
       if (isNegative && transaction.type === 'income') {
-        createExpenseMutation.mutate({
+        handleCreateExpense({
           title: transaction.title,
           amount: absValue,
           date: transaction.date,
           category: transaction.category,
           notes: transaction.notes
-        })
+        } as any)
 
-        deleteIncomeMutation.mutate(transaction.id)
+        handleDeleteIncome(transaction.id)
         setEditingField(null)
         return
       } else if (!isNegative && transaction.type === 'expense') {
-        createIncomeMutation.mutate({
+        handleCreateIncome({
           title: transaction.title,
           amount: absValue,
           date: transaction.date,
           category: transaction.category,
           notes: transaction.notes
-        })
+        } as any)
 
-        deleteExpenseMutation.mutate(transaction.id)
+        handleDeleteExpense(transaction.id)
         setEditingField(null)
         return
       }
@@ -347,12 +340,12 @@ export default function Transactions() {
     }
 
     if (transaction.type === 'income') {
-      updateIncomeMutation.mutate({
+      handleUpdateIncome({
         id: transaction.id,
         data: { [field]: field === 'amount' ? parseFloat(value as string) : value }
       })
     } else {
-      updateExpenseMutation.mutate({
+      handleUpdateExpense({
         id: transaction.id,
         data: { [field]: field === 'amount' ? parseFloat(value as string) : value }
       })
@@ -375,32 +368,32 @@ export default function Transactions() {
 
   const handleDelete = transaction => {
     if (transaction.type === 'income') {
-      deleteIncomeMutation.mutate(transaction.id)
+      handleDeleteIncome(transaction.id)
     } else {
-      deleteExpenseMutation.mutate(transaction.id)
+      handleDeleteExpense(transaction.id)
     }
   }
 
   const handleIncomeSubmit = data => {
     if (editingItem) {
-      updateIncomeMutation.mutate({ id: editingItem.id, data })
+      handleUpdateIncome({ id: editingItem.id, data })
     } else {
-      createIncomeMutation.mutate(data)
+      handleCreateIncome(data)
     }
   }
 
   const handleExpenseSubmit = data => {
     if (editingItem) {
-      updateExpenseMutation.mutate({ id: editingItem.id, data })
+      handleUpdateExpense({ id: editingItem.id, data })
     } else {
-      createExpenseMutation.mutate(data)
+      handleCreateExpense(data)
     }
   }
 
   return (
     <>
       <Helmet>
-        <title>Transactions</title>
+        <title>Transactions | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -483,7 +476,7 @@ export default function Transactions() {
           </div>
 
           <CashFlowKPIs
-            income={income}
+            income={incomes}
             expenses={expenses}
             timePeriod={timePeriod}
             customStartDate={customStartDate}
@@ -625,12 +618,12 @@ export default function Transactions() {
                                 const updateValue = value
 
                                 if (transaction.type === 'income') {
-                                  updateIncomeMutation.mutate({
+                                  handleUpdateIncome({
                                     id: transaction.id,
                                     data: { [field]: updateValue }
                                   })
                                 } else {
-                                  updateExpenseMutation.mutate({
+                                  handleUpdateExpense({
                                     id: transaction.id,
                                     data: { [field]: updateValue }
                                   })
@@ -758,12 +751,12 @@ export default function Transactions() {
                                 onChange={e => setEditValue(e.target.value)}
                                 onBlur={() => {
                                   if (transaction.type === 'income') {
-                                    updateIncomeMutation.mutate({
+                                    handleUpdateIncome({
                                       id: transaction.id,
                                       data: { date: editValue }
                                     })
                                   } else {
-                                    updateExpenseMutation.mutate({
+                                    handleUpdateExpense({
                                       id: transaction.id,
                                       data: { date: editValue }
                                     })
@@ -773,12 +766,12 @@ export default function Transactions() {
                                 onKeyDown={e => {
                                   if (e.key === 'Enter') {
                                     if (transaction.type === 'income') {
-                                      updateIncomeMutation.mutate({
+                                      handleUpdateIncome({
                                         id: transaction.id,
                                         data: { date: editValue }
                                       })
                                     } else {
-                                      updateExpenseMutation.mutate({
+                                      handleUpdateExpense({
                                         id: transaction.id,
                                         data: { date: editValue }
                                       })
@@ -951,6 +944,7 @@ export default function Transactions() {
           onSubmit={handleIncomeSubmit}
           income={editingItem}
           isLoading={createIncomeMutation.isPending || updateIncomeMutation.isPending}
+          defaultBusinessId={businessId}
         />
 
         <ExpenseForm
@@ -962,6 +956,7 @@ export default function Transactions() {
           onSubmit={handleExpenseSubmit}
           expense={editingItem}
           isLoading={createExpenseMutation.isPending || updateExpenseMutation.isPending}
+          defaultBusinessId={businessId}
         />
 
         <AddToBudgetModal

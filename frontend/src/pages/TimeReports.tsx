@@ -160,7 +160,7 @@ export default function TimeReports() {
   return (
     <>
       <Helmet>
-        <title>Time Reports</title>
+        <title>Time Reports | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen p-6 page-bg">
         <div className="max-w-7xl mx-auto">

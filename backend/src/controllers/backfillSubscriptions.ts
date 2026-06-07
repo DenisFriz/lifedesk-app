@@ -73,9 +73,13 @@ export async function backfillSubscriptions(
 
         const existing = await Subscription.findOne({
           stripe_subscription_id: sub.id,
-        });
+        })
+          .lean()
+          .select('_id stripe_subscription_id');
 
         if (!dry_run) {
+          let user = null;
+
           if (existing) {
             await Subscription.updateOne(
               { stripe_subscription_id: sub.id },
@@ -87,7 +91,9 @@ export async function backfillSubscriptions(
               stripe_subscription_id: sub.id,
             });
           } else {
-            const user = await User.findOne({ email: user_email });
+            user = await User.findOne({ email: user_email })
+              .lean()
+              .select('_id subscription_tier');
 
             const stripeCustomerId =
               typeof sub.customer === 'string'
@@ -106,7 +112,11 @@ export async function backfillSubscriptions(
             });
           }
 
-          const user = await User.findOne({ email: user_email });
+          if (!user && user_email) {
+            user = await User.findOne({ email: user_email })
+              .lean()
+              .select('_id subscription_tier');
+          }
 
           if (user && user.subscription_tier !== plan_name) {
             await User.updateOne(

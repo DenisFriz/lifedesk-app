@@ -1,9 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type ComponentType } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Plus, Package, Home, Car } from 'lucide-react'
-import { Package as PackageIcon } from 'lucide-react'
 import CarAssetCard from '@/components/assets/CarAssetCard'
 import EstateAssetCard from '@/components/assets/EstateAssetCard'
 import TangibleAssetCard from '@/components/assets/TangibleAssetCard'
@@ -12,18 +11,62 @@ import EstateAssetForm from '@/components/assets/EstateAssetForm'
 import TangibleAssetForm from '@/components/assets/TangibleAssetForm'
 import { formatCurrency } from '@/components/utils/formatters'
 import { Helmet } from 'react-helmet-async'
+import { VehicleRecord } from '@/db'
 
 type TangibleAsset = {
   id: string
   category: 'vehicle' | 'real_estate' | string
-  current_value?: number
-  purchase_price?: number
+  current_value?: number | null
+  purchase_price?: number | null
+  title?: string
+  make?: string | null
+  model?: string | null
+  year?: number | null
+  color?: string | null
+  fuel_type?: string | null
+  transmission?: string | null
+  mileage?: number | null
+  license_plate?: string | null
+  vin?: string | null
+  purchase_date?: string | null
+  insurance_expiry?: string | null
+  inspection_expiry?: string | null
+  notes?: string | null
+  repairs?: Array<{
+    date?: string | null
+    cost?: number | null
+    description: string
+    images: Array<{ url: string; public_id: string; uploadedAt: string }>
+  }>
+  images?: Array<{ url: string; public_id: string; uploadedAt: string }>
+  address?: string | null
+  property_type?: string | null
+  area_sqm?: number | null
+  rooms?: number | null
+  floor?: number | null
+  year_built?: number | null
+  mortgage_amount?: number | null
+  monthly_rent?: number | null
+  description?: string | null
+  location?: string | null
+  is_deleted?: boolean
+  createdAt?: string
+  updatedAt?: string
 }
 
 export default function TangibleAssets() {
-  const [carForm, setCarForm] = useState({ open: false, asset: null })
-  const [estateForm, setEstateForm] = useState({ open: false, asset: null })
-  const [otherForm, setOtherForm] = useState({ open: false, asset: null })
+  const [carForm, setCarForm] = useState<{ open: boolean; asset: TangibleAsset | null }>({
+    open: false,
+    asset: null
+  })
+  const [estateForm, setEstateForm] = useState<{ open: boolean; asset: TangibleAsset | null }>({
+    open: false,
+    asset: null
+  })
+  const [otherForm, setOtherForm] = useState<{ open: boolean; asset: TangibleAsset | null }>({
+    open: false,
+    asset: null
+  })
   const [isScrolled, setIsScrolled] = useState(false)
   const headerRef = useRef(null)
   const queryClient = useQueryClient()
@@ -80,12 +123,28 @@ export default function TangibleAssets() {
 
   const isLoading2 = createMutation.isPending || updateMutation.isPending
 
-  const cars = assets.filter(a => a.category === 'vehicle')
+  const cars = assets.filter(a => a.category === 'vehicle') as unknown as VehicleRecord[]
   const estates = assets.filter(a => a.category === 'real_estate')
   const others = assets.filter(a => a.category !== 'vehicle' && a.category !== 'real_estate')
   const totalValue = assets.reduce((sum, a) => sum + (a.current_value || a.purchase_price || 0), 0)
 
-  const SectionHeader = ({ icon: Icon, title, count, value, onAdd, addLabel }) => (
+  type SectionHeaderProps = {
+    icon: ComponentType<{ className?: string }>
+    title: string
+    count: number
+    value: number
+    onAdd: () => void
+    addLabel: string
+  }
+
+  const SectionHeader = ({
+    icon: Icon,
+    title,
+    count,
+    value,
+    onAdd,
+    addLabel
+  }: SectionHeaderProps) => (
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-2">
         <Icon className="w-5 h-5 text-slate-600" />
@@ -105,7 +164,7 @@ export default function TangibleAssets() {
   return (
     <>
       <Helmet>
-        <title>Tangible Assets</title>
+        <title>Tangible Assets | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -118,7 +177,7 @@ export default function TangibleAssets() {
           )}
           <div ref={headerRef} className="py-6 sm:py-8">
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
-              <PackageIcon className="w-8 h-8 sm:w-9 sm:h-9" />
+              <Package className="w-8 h-8 sm:w-9 sm:h-9" />
               Physical Assets
             </h1>
             <p className="text-sm sm:text-base text-slate-600 text-center lg:text-left">
@@ -159,8 +218,10 @@ export default function TangibleAssets() {
                       <CarAssetCard
                         key={asset.id}
                         asset={asset}
-                        onEdit={a => setCarForm({ open: true, asset: a })}
-                        onDelete={id => deleteMutation.mutate(id)}
+                        onEdit={(a: VehicleRecord) =>
+                          setCarForm({ open: true, asset: a as unknown as TangibleAsset })
+                        }
+                        onDelete={(id: string) => deleteMutation.mutate(id)}
                       />
                     ))}
                   </div>
@@ -191,8 +252,8 @@ export default function TangibleAssets() {
                       <EstateAssetCard
                         key={asset.id}
                         asset={asset}
-                        onEdit={a => setEstateForm({ open: true, asset: a })}
-                        onDelete={id => deleteMutation.mutate(id)}
+                        onEdit={(a: TangibleAsset) => setEstateForm({ open: true, asset: a })}
+                        onDelete={(id: string) => deleteMutation.mutate(id)}
                       />
                     ))}
                   </div>
@@ -220,8 +281,8 @@ export default function TangibleAssets() {
                       <TangibleAssetCard
                         key={asset.id}
                         asset={asset}
-                        onEdit={a => setOtherForm({ open: true, asset: a })}
-                        onDelete={id => deleteMutation.mutate(id)}
+                        onEdit={(a: TangibleAsset) => setOtherForm({ open: true, asset: a })}
+                        onDelete={(id: string) => deleteMutation.mutate(id)}
                       />
                     ))}
                   </div>

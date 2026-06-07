@@ -30,6 +30,9 @@ import { Helmet } from 'react-helmet-async'
 import { useSound } from '@/contexts/SoundContext'
 import { Switch } from '@/components/ui/switch'
 import EmailVerificationModal from '@/components/EmailVerificationModal'
+import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload'
+import { useAuth } from '@/lib/AuthContext'
+import { useCommunityIdeasQuery } from '@/hooks/communityideas/useCommunityIdeasQuery'
 
 const tierConfig = {
   free: { icon: Zap, color: 'bg-slate-100 text-slate-700', label: 'Free' },
@@ -37,7 +40,7 @@ const tierConfig = {
   plus: { icon: Zap, color: 'bg-indigo-100 text-indigo-700', label: 'Plus' },
   pro: { icon: Crown, color: 'bg-purple-100 text-purple-700', label: 'Pro' },
   enterprise: { icon: Crown, color: 'bg-amber-100 text-amber-700', label: 'Enterprise' }
-}
+} as const
 
 const statusColors: Record<string, string> = {
   new: 'bg-slate-100 text-slate-700',
@@ -46,10 +49,11 @@ const statusColors: Record<string, string> = {
   in_progress: 'bg-amber-100 text-amber-700',
   implemented: 'bg-green-100 text-green-700',
   rejected: 'bg-red-100 text-red-700'
-}
+} as const
 
 export default function Profile() {
   const queryClient = useQueryClient()
+
   const [isEditing, setIsEditing] = useState(false)
   const [fullName, setFullName] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -59,18 +63,15 @@ export default function Profile() {
 
   const [searchParams] = useSearchParams()
   const checkoutStatus = searchParams.get('checkout')
+
   const { planName, subscription } = useSubscription()
   const navigate = useNavigate()
 
+  const { upload } = useCloudinaryUpload()
+
   const { soundEnabled, setSoundEnabled } = useSound()
 
-  const { data: user, isLoading } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: async () => {
-      const userData = await backend.auth.me()
-      return userData
-    }
-  })
+  const { user, isLoadingAuth: isLoading } = useAuth()
 
   // On successful checkout, invalidate cached user + subscription data so plan shows immediately
   useEffect(() => {
@@ -81,7 +82,7 @@ export default function Profile() {
   }, [checkoutStatus, queryClient])
 
   const updateMutation = useMutation({
-    mutationFn: (data: Record<string, any>) => backend.auth.updateMe(data),
+    mutationFn: (data: Record<string, any>) => backend.user.updateMe(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUser'] })
       setIsEditing(false)
@@ -104,22 +105,33 @@ export default function Profile() {
   const handleProfileImageUpload = async (e: any) => {
     const file = e.target.files[0]
     if (!file) return
+
     const allowedTypes = ['image/jpeg', 'image/png']
     if (!allowedTypes.includes(file.type)) {
       alert('Only JPG and PNG files are allowed.')
       e.target.value = ''
       return
     }
+
     if (file.size > 5 * 1024 * 1024) {
       alert('File size must be 5 MB or less.')
       e.target.value = ''
       return
     }
+
     setUploadingImage(true)
+
     try {
-      const result = await backend.integrations.Core.UploadFile({ file })
-      const file_url = (result as any).file_url
-      await backend.auth.updateMe({ profile_image: file_url })
+      const result = await upload(file)
+
+      const file_url = result.secure_url
+      const public_id = result.public_id
+
+      await backend.user.updateMe({
+        profile_image_url: file_url,
+        profile_image_public_id: public_id
+      })
+
       queryClient.invalidateQueries({ queryKey: ['currentUser'] })
     } finally {
       setUploadingImage(false)
@@ -127,7 +139,7 @@ export default function Profile() {
   }
 
   const handleDeleteProfileImage = async () => {
-    await backend.auth.updateMe({ profile_image: null })
+    await backend.user.deleteAvatar()
     queryClient.invalidateQueries({ queryKey: ['currentUser'] })
   }
 
@@ -159,12 +171,7 @@ export default function Profile() {
   const currentTier = tierConfig[user?.subscription_tier || 'free'] ?? tierConfig.free
   const TierIcon = currentTier.icon
 
-  const { data: myIdeas = [] } = useQuery({
-    queryKey: ['myIdeas', user?.email],
-    queryFn: () =>
-      backend.entities.CommunityIdea.filter({ created_by: user.email }, '-created_date'),
-    enabled: !!user?.email
-  })
+  const { data: myIdeas = [] } = useCommunityIdeasQuery()
 
   const { data: myComments = [] } = useQuery({
     queryKey: ['myComments', user?.email],
@@ -183,7 +190,7 @@ export default function Profile() {
 
   const updateSubscription = useMutation({
     mutationFn: (subscription: 'free' | 'plus' | 'pro') =>
-      backend.auth.changeSubscription(subscription),
+      backend.user.changeSubscription(subscription),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usage'] })
       queryClient.invalidateQueries({ queryKey: ['currentUser'] })
@@ -208,7 +215,7 @@ export default function Profile() {
   return (
     <>
       <Helmet>
-        <title>Profile</title>
+        <title>Profile | LifeDesk</title>
       </Helmet>
       <EmailVerificationModal
         open={verifyModalOpen}
@@ -233,11 +240,19 @@ export default function Profile() {
                 <div className="flex items-center gap-4">
                   <div className="relative group">
                     <div className="w-20 h-20 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border-2 border-slate-200">
-                      {user?.profile_image ? (
+                      {user?.profile_image || user?.google_avatar_url ? (
                         <img
-                          src={user.profile_image}
+                          src={user.profile_image || user.google_avatar_url}
                           alt="Profile"
                           className="w-full h-full object-cover"
+                          onError={e => {
+                            const target = e.currentTarget
+                            if (user.google_avatar_url && target.src !== user.google_avatar_url) {
+                              target.src = user.google_avatar_url
+                            } else {
+                              target.style.display = 'none'
+                            }
+                          }}
                         />
                       ) : (
                         <User className="w-8 h-8 text-slate-400" />
@@ -425,13 +440,13 @@ export default function Profile() {
                   </div>
                 </div>
                 {planName === 'free' ? (
-                  <Link to="/Upgrade">
+                  <Link to="/upgrade">
                     <Button className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
                       <Sparkles className="w-4 h-4" /> Upgrade
                     </Button>
                   </Link>
                 ) : (
-                  <Link to="/Upgrade">
+                  <Link to="/upgrade">
                     <Button variant="outline" size="sm">
                       Manage
                     </Button>
@@ -492,7 +507,7 @@ export default function Profile() {
                             </p>
                           )}
                           <p className="text-xs text-slate-400 mt-1">
-                            {format(new Date(idea.created_date), 'MMM d, yyyy')}
+                            {format(new Date(idea.createdAt), 'MMM d, yyyy')}
                           </p>
                         </div>
                         <Badge
@@ -583,7 +598,7 @@ export default function Profile() {
             {user?.role === 'admin' && (
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <h2 className="text-lg font-semibold text-slate-900 mb-4">Admin Tools</h2>
-                <Link to="/AdminUsers">
+                <Link to="/admin-users">
                   <Button
                     variant="outline"
                     className="w-full justify-start text-slate-600 hover:text-slate-700 hover:bg-slate-50"

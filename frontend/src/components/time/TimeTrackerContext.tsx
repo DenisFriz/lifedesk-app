@@ -12,10 +12,11 @@ import { backend } from '@/api/backend'
 import { format } from 'date-fns'
 import IdleDialog from './IdleDialog'
 import LongRunningDialog from './LongRunningDialog'
-import { TimeEntry } from '@/types/entities'
+import { db, TimeEntryRecord } from '@/db'
+import { timeEntryRepository } from '@/repositories/timeentry.repository'
 
 interface TimeTrackerContextValue {
-  runningEntry: TimeEntry | null
+  runningEntry: TimeEntryRecord | null
   stopTimerMutation: UseMutationResult<any, any, string, any>
   isPaused: boolean
   elapsedTime: number
@@ -65,12 +66,8 @@ export const TimeTrackerProvider = ({ children }: TimeTrackerProviderProps) => {
   const { data: runningEntry } = useQuery({
     queryKey: ['runningTimeEntry'],
     queryFn: async () => {
-      const entries = (await backend.entities.TimeEntry.filter(
-        { is_running: true },
-        '-created_date',
-        1
-      )) as TimeEntry[]
-      return entries[0] || null
+      const entry = await db.timeentries.filter(e => e.is_running && !e.is_deleted).first()
+      return entry || null
     }
   })
 
@@ -124,7 +121,7 @@ export const TimeTrackerProvider = ({ children }: TimeTrackerProviderProps) => {
     mutationFn: async (entryId: string) => {
       const now = new Date()
       const endTime = format(now, 'HH:mm:ss')
-      const entry = queryClient.getQueryData<TimeEntry>(['runningTimeEntry'])
+      const entry = queryClient.getQueryData<TimeEntryRecord>(['runningTimeEntry'])
       const startTime = entry ? new Date(`${entry.date}T${entry.start_time}`) : now
       const durationMs = now.getTime() - startTime.getTime()
       const newDurationMinutes = Math.round(durationMs / 60000)
@@ -132,7 +129,7 @@ export const TimeTrackerProvider = ({ children }: TimeTrackerProviderProps) => {
       const previousDuration = entry?.duration || 0
       const totalDuration = previousDuration + newDuration
 
-      return backend.entities.TimeEntry.update(entryId, {
+      return timeEntryRepository.update(entryId, {
         end_time: endTime,
         duration: totalDuration,
         is_running: false
@@ -140,7 +137,7 @@ export const TimeTrackerProvider = ({ children }: TimeTrackerProviderProps) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['runningTimeEntry'] })
-      queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
+      queryClient.invalidateQueries({ queryKey: ['timeentries'] })
       setElapsedTime(0)
       setIsPaused(false)
       longRunningAlertedRef.current.clear()
@@ -243,7 +240,7 @@ export const TimeTrackerProvider = ({ children }: TimeTrackerProviderProps) => {
     if (runningEntry) {
       const currentDuration = runningEntry.duration || 0
       const newDuration = Math.max(0, currentDuration - idleMinutes)
-      backend.entities.TimeEntry.update(runningEntry.id, { duration: newDuration }).then(() => {
+      timeEntryRepository.update(runningEntry.id, { duration: newDuration }).then(() => {
         queryClient.invalidateQueries({ queryKey: ['runningTimeEntry'] })
       })
       setElapsedTime(prev => Math.max(0, prev - idleMinutes * 60))

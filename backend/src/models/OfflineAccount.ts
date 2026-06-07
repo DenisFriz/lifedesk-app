@@ -1,28 +1,77 @@
-import mongoose, { Schema, Model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
-import { IOfflineAccount } from '@/types/index.js';
+import mongoose, { Schema, Model, Types } from 'mongoose';
+
+export interface IOfflineAccount {
+  _id?: Types.ObjectId;
+  created_by: Types.ObjectId;
+  name: string;
+  balance: number;
+  currency: string;
+  notes: string | null;
+  is_deleted: boolean;
+  deleted_at: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 const offlineAccountSchema = new Schema<IOfflineAccount>(
   {
-    id: { type: String, default: () => uuidv4(), unique: true, index: true },
-    created_by: { type: String, index: true, required: true },
-    name: { type: String, required: true },
-    balance: Number,
-    currency: { type: String, default: 'USD' },
-    notes: String,
-    is_deleted: { type: Boolean, default: false },
-    deleted_at: String,
-    deleted_by_process: String,
-    created_at: { type: String, default: () => new Date().toISOString() },
-    updated_at: { type: String, default: () => new Date().toISOString() },
-  },
-  { timestamps: false, versionKey: false },
-);
+    created_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
 
-offlineAccountSchema.pre<IOfflineAccount>(
-  'save',
-  function (this: IOfflineAccount) {
-    this.updated_at = new Date().toISOString();
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    balance: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+
+    currency: {
+      type: String,
+      required: true,
+      default: 'EUR',
+      enum: [
+        'EUR',
+        'USD',
+        'GBP',
+        'CHF',
+        'CZK',
+        'PLN',
+        'HUF',
+        'RON',
+        'BGN',
+        'DKK',
+        'SEK',
+        'NOK',
+      ],
+    },
+
+    notes: {
+      type: String,
+      default: null,
+    },
+
+    is_deleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    deleted_at: {
+      type: Date,
+      default: null,
+    },
+  },
+  {
+    timestamps: true,
+    versionKey: false,
   },
 );
 

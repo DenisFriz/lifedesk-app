@@ -4,6 +4,7 @@ export interface IProgressPhoto {
   _id: Types.ObjectId;
   created_by: Types.ObjectId;
   image_url: string;
+  public_id: string | null;
   date: Date;
   description: string | null;
   body_area:
@@ -37,6 +38,13 @@ const progressPhotoSchema = new Schema<IProgressPhoto>(
       required: true,
       trim: true,
       maxlength: 2000,
+    },
+
+    public_id: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 500,
     },
 
     date: {

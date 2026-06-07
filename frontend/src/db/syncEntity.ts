@@ -1,15 +1,24 @@
 import {
   normalizeBusiness,
+  normalizeClient,
   normalizeEstate,
   normalizeEvent,
+  normalizeExpense,
   normalizeGoal,
   normalizeHobby,
+  normalizeIncome,
   normalizeLearning,
+  normalizeMarketingCampaign,
+  normalizeMarketingContent,
+  normalizeMarketingStrategy,
   normalizeMedicalDocument,
   normalizeOtherAsset,
+  normalizeProblem,
   normalizeProgressPhoto,
+  normalizeProject,
   normalizeRelationShip,
   normalizeTask,
+  normalizeTimeEntry,
   normalizeVehicle,
   normalizeWorkout,
   normalizeWorkoutPlan
@@ -77,6 +86,42 @@ const syncMap: Record<string, SyncEntityMap> = {
   businesses: {
     table: db.businesses,
     normalize: normalizeBusiness
+  },
+  incomes: {
+    table: db.incomes,
+    normalize: normalizeIncome
+  },
+  expenses: {
+    table: db.expenses,
+    normalize: normalizeExpense
+  },
+  problems: {
+    table: db.problems,
+    normalize: normalizeProblem
+  },
+  timeentries: {
+    table: db.timeentries,
+    normalize: normalizeTimeEntry
+  },
+  projects: {
+    table: db.projects,
+    normalize: normalizeProject
+  },
+  clients: {
+    table: db.clients,
+    normalize: normalizeClient
+  },
+  marketingstrategies: {
+    table: db.marketingstrategies,
+    normalize: normalizeMarketingStrategy
+  },
+  marketingcampaigns: {
+    table: db.marketingcampaigns,
+    normalize: normalizeMarketingCampaign
+  },
+  marketingcontents: {
+    table: db.marketingcontents,
+    normalize: normalizeMarketingContent
   }
 }
 

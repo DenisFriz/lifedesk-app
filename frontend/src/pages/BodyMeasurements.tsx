@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import {
@@ -87,7 +87,7 @@ const METRIC_GROUPS = [
       { key: 'stress_level', label: 'Stress Level', unit: '/100', step: '1' }
     ]
   }
-]
+] as const
 
 const ALL_NUMERIC_FIELDS = METRIC_GROUPS.flatMap(g => g.fields.map(f => f.key))
 
@@ -124,7 +124,7 @@ export default function BodyMeasurements() {
 
   const { data: measurements = [] } = useBodyMeasurementsQuery()
 
-  const atLimit = canCreate('bodyMeasurements')
+  const atLimit = !canCreate('bodyMeasurements')
 
   const { createMutation, updateMutation, deleteMutation } = useBodyMeasurementMutations()
 
@@ -178,7 +178,7 @@ export default function BodyMeasurements() {
   return (
     <>
       <Helmet>
-        <title>Body Measurements</title>
+        <title>Body Measurements | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -200,7 +200,7 @@ export default function BodyMeasurements() {
               </p>
             </div>
             {atLimit ? (
-              <Link to="/Upgrade" className="w-full lg:w-auto">
+              <Link to="/upgrade" className="w-full lg:w-auto">
                 <Button className="w-full bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
                   Limit reached ({data?.usage?.bodyMeasurements || 0}/
@@ -234,7 +234,6 @@ export default function BodyMeasurements() {
               </Card>
             ) : (
               measurements.map(m => {
-                const overLimit = canCreate('bodyMeasurements')
                 const card = (
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -242,7 +241,7 @@ export default function BodyMeasurements() {
                         <Calendar className="w-4 h-4" />
                         {format(new Date(m.date), 'MMMM d, yyyy')}
                       </div>
-                      {!overLimit && (
+                      {!atLimit && (
                         <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
@@ -317,11 +316,12 @@ export default function BodyMeasurements() {
                     </CardContent>
                   </Card>
                 )
-                return overLimit ? (
+                /* return atLimit ? (
                   <OverLimitItem key={m.id}>{card}</OverLimitItem>
                 ) : (
-                  <React.Fragment key={m.id}>{card}</React.Fragment>
-                )
+                  <Fragment key={m.id}>{card}</Fragment>
+                ) */
+                return <Fragment key={m.id}>{card}</Fragment>
               })
             )}
           </div>
@@ -351,7 +351,7 @@ function MeasurementForm({ open, onClose, onSubmit, measurement, isLoading }) {
 
   const [formData, setFormData] = useState(emptyForm())
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (measurement) {
       setFormData({
         date: measurement.date || new Date().toISOString().split('T')[0],
@@ -381,12 +381,19 @@ function MeasurementForm({ open, onClose, onSubmit, measurement, isLoading }) {
           <DialogTitle>{measurement ? 'Edit Measurement' : 'Add Measurement'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleFormSubmit} className="space-y-6">
-          <Input
-            type="date"
-            value={formData.date}
-            onChange={e => set('date', e.target.value)}
-            required
-          />
+          <div>
+            <label htmlFor="date" className="text-sm font-medium mb-2 block">
+              Date
+            </label>
+            <Input
+              id="date"
+              name="date"
+              type="date"
+              value={formData.date}
+              onChange={e => set('date', e.target.value)}
+              required
+            />
+          </div>
 
           {METRIC_GROUPS.map(group => {
             const Icon = group.icon
@@ -400,6 +407,8 @@ function MeasurementForm({ open, onClose, onSubmit, measurement, isLoading }) {
                   {group.fields.map(f => (
                     <Input
                       key={f.key}
+                      id={f.key}
+                      name={f.key}
                       type="number"
                       step={f.step}
                       placeholder={`${f.label}${f.unit ? ` (${f.unit})` : ''}`}
@@ -412,11 +421,18 @@ function MeasurementForm({ open, onClose, onSubmit, measurement, isLoading }) {
             )
           })}
 
-          <Textarea
-            placeholder="Notes (optional)"
-            value={formData.notes}
-            onChange={e => set('notes', e.target.value)}
-          />
+          <div>
+            <label htmlFor="notes" className="text-sm font-medium mb-2 block">
+              Notes (optional)
+            </label>
+            <Textarea
+              id="notes"
+              name="notes"
+              placeholder="Notes (optional)"
+              value={formData.notes}
+              onChange={e => set('notes', e.target.value)}
+            />
+          </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel

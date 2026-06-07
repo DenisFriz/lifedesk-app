@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,6 @@ import {
   ChevronUp,
   Lock
 } from 'lucide-react'
-import { useSubscription } from '@/hooks/useSubscription'
 import { Link } from 'react-router-dom'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -33,6 +32,12 @@ import OnlineAccountMonthlyTable from '@/components/finances/OnlineAccountMonthl
 import { formatCurrency } from '@/components/utils/formatters'
 import { Helmet } from 'react-helmet-async'
 import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useIncomesQuery } from '@/hooks/incomes/useIncomesQuery'
+import { useExpensesQuery } from '@/hooks/expenses/useExpensesQuery'
+import { useOfflineAccountsQuery } from '@/hooks/offlineaccounts/useOfflineAccountsQuery'
+import { useOfflineAccountMutations } from '@/hooks/offlineaccounts/useOfflineAccountMutations'
+import { CreateOfflineAccountInput } from '@/repositories/offline-account.repository'
+import { OfflineAccountRecord } from '@/db'
 
 const CHANGE_PERIOD_OPTIONS = [
   { value: 'this_month', label: 'This Month' },
@@ -75,9 +80,9 @@ function OfflineAccountForm({
     notes: account?.notes || ''
   })
 
-  const handleSubmit = e => {
+  const handleSubmit = (e: any) => {
     e.preventDefault()
-    onSubmit({ ...form, balance: account?.balance ?? 0 })
+    onSubmit({ ...form, balance: account?.balance ?? 0, created_by: account.id })
   }
 
   return (
@@ -209,8 +214,8 @@ function OfflineAccountCard({ account, latestBalance, onEdit, onDelete, isOverLi
             <p className="font-semibold text-slate-900 text-sm truncate">{account.name}</p>
             {isOverLimit ? (
               <p className="text-xs text-amber-600">
-                Over plan limit — read only.{' '}
-                <Link to="/Upgrade" className="underline">
+                Over plan limit - read only.{' '}
+                <Link to="/upgrade" className="underline">
                   Upgrade
                 </Link>
               </p>
@@ -302,30 +307,18 @@ type OfflineAccount = {
   created_date: string
 }
 
-type CreateOfflineAccountInput = {
-  name: string
-  balance: number
-  currency: string
-  notes?: string
-}
-
 export default function Accounts() {
   const queryClient = useQueryClient()
   const [showBankConnect, setShowBankConnect] = useState(false)
   const [showOfflineForm, setShowOfflineForm] = useState(false)
   const [editingAccount, setEditingAccount] = useState(null)
   const [changePeriod, setChangePeriod] = useState('this_month')
-  const { limit, can } = useSubscription()
 
   const { canCreate, data: UserLimitData } = useUserLimit()
 
-  const { data: offlineAccounts = [] } = useQuery<OfflineAccount[]>({
-    queryKey: ['offlineAccounts'],
-    queryFn: () =>
-      backend.entities.OfflineAccount.filter({ is_deleted: false }, '-created_date') as Promise<
-        OfflineAccount[]
-      >
-  })
+  const atLimit = !canCreate('offlineBankAccount')
+
+  const { data: offlineAccounts = [] } = useOfflineAccountsQuery()
 
   const { data: allSnapshots = [] } = useQuery<OfflineAccountSnapshot[]>({
     queryKey: ['offlineAccountSnapshots'],
@@ -336,7 +329,7 @@ export default function Accounts() {
   })
 
   // Compute latest snapshot balance per account
-  const latestBalanceByAccount = React.useMemo(() => {
+  const latestBalanceByAccount = useMemo(() => {
     const map = {}
     allSnapshots.forEach(s => {
       if (!map[s.account_id] || s.date > map[s.account_id].date) {
@@ -359,38 +352,45 @@ export default function Accounts() {
 
   const totalBankBalance = bankAccounts.reduce((sum, a) => sum + (a.balance || 0), 0)
 
-  const { data: income = [] } = useQuery({
-    queryKey: ['income'],
-    queryFn: () => backend.entities.Income.list('-date')
-  })
+  const { data: income = [] } = useIncomesQuery()
 
-  const { data: expenses = [] } = useQuery({
-    queryKey: ['expenses'],
-    queryFn: () => backend.entities.Expense.list('-date')
-  })
+  const { data: expenses = [] } = useExpensesQuery()
 
-  const createMutation = useMutation({
-    mutationFn: (data: CreateOfflineAccountInput) => backend.entities.OfflineAccount.create(data),
+  const { createMutation, updateMutation, deleteMutation } = useOfflineAccountMutations()
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['offlineAccounts'] })
+  const handleCreateOfflineAccount = async (data: CreateOfflineAccountInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowOfflineForm(false)
     }
-  })
+  }
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<OfflineAccount> }) =>
-      backend.entities.OfflineAccount.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['offlineAccounts'] })
-      setEditingAccount(null)
+  const handleUpdateOfflineAccount = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<OfflineAccountRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setEditingAccount(false)
     }
-  })
+  }
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.OfflineAccount.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['offlineAccounts'] })
-  })
+  const handleDeleteOfflineAccount = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   const totalOfflineBalance = offlineAccounts.reduce((sum, a) => {
     const snap = latestBalanceByAccount[a.id]
@@ -437,7 +437,7 @@ export default function Accounts() {
   return (
     <>
       <Helmet>
-        <title>Accounts</title>
+        <title>Accounts | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -462,7 +462,6 @@ export default function Accounts() {
               </Button>
               {(() => {
                 const offlineLimit = UserLimitData?.limits?.offlineBankAccount || 0
-                const atLimit = canCreate('offlineBankAccount')
                 return (
                   <TooltipProvider>
                     <Tooltip>
@@ -484,7 +483,7 @@ export default function Accounts() {
                           <p>
                             Limit reached ({offlineLimit} offline account
                             {offlineLimit !== 1 ? 's' : ''} on your plan).{' '}
-                            <Link to="/Upgrade" className="underline">
+                            <Link to="/upgrade" className="underline">
                               Upgrade
                             </Link>{' '}
                             for more.
@@ -590,14 +589,14 @@ export default function Accounts() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {offlineAccounts.map((account, idx) => (
+                {offlineAccounts.map(account => (
                   <OfflineAccountCard
                     key={account.id}
                     account={account}
                     latestBalance={latestBalanceByAccount[account.id]?.balance ?? null}
                     onEdit={setEditingAccount}
-                    onDelete={id => deleteMutation.mutate(id)}
-                    isOverLimit={idx >= limit('finance_offline_accounts_limit')}
+                    onDelete={id => handleDeleteOfflineAccount(id)}
+                    isOverLimit={!atLimit}
                   />
                 ))}
               </div>
@@ -612,7 +611,7 @@ export default function Accounts() {
               <DialogTitle>Add Offline Account</DialogTitle>
             </DialogHeader>
             <OfflineAccountForm
-              onSubmit={data => createMutation.mutate(data)}
+              onSubmit={data => handleCreateOfflineAccount(data)}
               onClose={() => setShowOfflineForm(false)}
             />
           </DialogContent>
@@ -627,7 +626,7 @@ export default function Accounts() {
             {editingAccount && (
               <OfflineAccountForm
                 account={editingAccount}
-                onSubmit={data => updateMutation.mutate({ id: editingAccount.id, data })}
+                onSubmit={data => handleUpdateOfflineAccount({ id: editingAccount.id, data })}
                 onClose={() => setEditingAccount(null)}
               />
             )}
@@ -638,8 +637,8 @@ export default function Accounts() {
         <BankConnectionManager
           open={showBankConnect}
           onClose={() => setShowBankConnect(false)}
-          canConnectBank={can('finance_connect_bank')}
-          realBankAccountsLimit={limit('finance_real_bank_accounts_limit')}
+          canConnectBank={atLimit}
+          realBankAccountsLimit={UserLimitData?.limits?.offlineBankAccount}
           onTransactionsImported={() => {
             queryClient.invalidateQueries({ queryKey: ['income'] })
             queryClient.invalidateQueries({ queryKey: ['expenses'] })

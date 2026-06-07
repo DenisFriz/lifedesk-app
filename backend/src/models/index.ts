@@ -21,10 +21,11 @@ export { MedicalDocument } from './MedicalDocument.js';
 export { TangibleAsset } from './TangibleAsset.js';
 export { WorkoutPlan } from './WorkoutPlan.js';
 export { OfflineAccount } from './OfflineAccount.js';
+export { OfflineAccountSnapshot } from './OfflineAccountSnapshot.js';
 export { MarketingStrategy } from './MarketingStrategy.js';
 export { MarketingCampaign } from './MarketingCampaign.js';
 export { Idea } from './Idea.js';
-export { ContentIdea } from './ContentIdea.js';
+export { MarketingContent } from './MarketingContent.js';
 export { CommunityComment } from './CommunityComment.js';
 export { BankBalanceSnapshot } from './BankBalanceSnapshot.js';
 export { TimeEntry } from './TimeEntry.js';
@@ -58,7 +59,7 @@ import { OfflineAccount } from './OfflineAccount.js';
 import { MarketingStrategy } from './MarketingStrategy.js';
 import { MarketingCampaign } from './MarketingCampaign.js';
 import { Idea } from './Idea.js';
-import { ContentIdea } from './ContentIdea.js';
+import { MarketingContent } from './MarketingContent.js';
 import { CommunityComment } from './CommunityComment.js';
 import { BankBalanceSnapshot } from './BankBalanceSnapshot.js';
 import { TimeEntry } from './TimeEntry.js';
@@ -70,6 +71,7 @@ import { Vehicle } from './Vehicle.js';
 import { Estate } from './Estate.js';
 import { OtherAsset } from './OtherAsset.js';
 import { RelationShip } from './RelationShip.js';
+import { OfflineAccountSnapshot } from './OfflineAccountSnapshot.js';
 
 export const modelMap: Record<string, mongoose.Model<any>> = {
   user: User,
@@ -99,10 +101,11 @@ export const modelMap: Record<string, mongoose.Model<any>> = {
   tangibleasset: TangibleAsset,
   workoutplan: WorkoutPlan,
   offlineaccount: OfflineAccount,
+  offlineaccountsnapshot: OfflineAccountSnapshot,
   marketingstrategy: MarketingStrategy,
   marketingcampaign: MarketingCampaign,
   idea: Idea,
-  contentidea: ContentIdea,
+  marketingcontent: MarketingContent,
   communitycomment: CommunityComment,
   bankbalancesnapshot: BankBalanceSnapshot,
   subscription: Subscription,

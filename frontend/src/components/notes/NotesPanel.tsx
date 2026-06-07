@@ -56,10 +56,10 @@ function NotesPanelContent({ collapsed }: NotesPanelContentProps) {
   const { toast } = useToast()
   const { limit } = useSubscription()
   const linesLimit = limit('quick_notes_lines_limit')
-  const [content, setContent] = useState<string>('')
-  const [savedContent, setSavedContent] = useState<string>('')
-  const [isMobile, setIsMobile] = useState<boolean>(false)
-  const [isSaved, setIsSaved] = useState<boolean>(false)
+  const [content, setContent] = useState('')
+  const [savedContent, setSavedContent] = useState('')
+  const [isMobile, setIsMobile] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
   const [activeTab, setActiveTab] = useState<string>(() => {
     const saved = localStorage.getItem('notesActiveTab')
     return saved || 'general'

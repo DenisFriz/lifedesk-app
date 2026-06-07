@@ -1,8 +1,22 @@
 import type { Request, Response } from 'express';
 
+let cachedRates: any = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 export async function getExchangeRates(req: Request, res: Response) {
   try {
-    const fiatResponse = await fetch('https://open.er-api.com/v6/latest/EUR');
+    if (cachedRates && Date.now() - cacheTimestamp < CACHE_TTL) {
+      return res.json(cachedRates);
+    }
+
+    const [fiatResponse, cryptoResponse] = await Promise.all([
+      fetch('https://open.er-api.com/v6/latest/EUR'),
+      fetch(
+        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether,binancecoin,solana,ripple,usd-coin,cardano,avalanche-2,dogecoin&vs_currencies=eur',
+      ).catch(() => null),
+    ]);
+
     if (!fiatResponse.ok) {
       return res.status(500).json({ error: 'Failed to fetch exchange rates' });
     }
@@ -62,10 +76,6 @@ export async function getExchangeRates(req: Request, res: Response) {
       }
     });
 
-    const cryptoResponse = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether,binancecoin,solana,ripple,usd-coin,cardano,avalanche-2,dogecoin&vs_currencies=eur',
-    ).catch(() => null);
-
     if (cryptoResponse?.ok) {
       const cryptoData = (await cryptoResponse.json()) as any;
       const cryptoMap: Record<string, string> = {
@@ -89,13 +99,16 @@ export async function getExchangeRates(req: Request, res: Response) {
       });
     }
 
-    res.json({
+    cachedRates = {
       base: 'EUR',
       date: new Date(fiatData.time_last_update_unix * 1000)
         .toISOString()
         .split('T')[0],
       rates: filteredRates,
-    });
+    };
+    cacheTimestamp = Date.now();
+
+    res.json(cachedRates);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

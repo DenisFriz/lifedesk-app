@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect, FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,6 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { CalendarIcon, Repeat } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { GoalRecord, ProblemRecord } from '@/db'
 
 interface TaskFormData {
   title: string
@@ -36,8 +37,8 @@ interface TaskFormSimpleProps {
   onClose: () => void
   onSubmit: (data: TaskFormData) => void
   task?: any
-  problems?: any[]
-  goals?: any[]
+  problems?: ProblemRecord[]
+  goals?: GoalRecord[]
   isLoading?: boolean
 }
 
@@ -93,7 +94,7 @@ export default function TaskFormSimple({
     }
   }, [task, open])
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
     onSubmit(formData)
   }

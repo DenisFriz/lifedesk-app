@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useLayout } from '@/Layout'
 import { Button } from '@/components/ui/button'
 import { useSubscription } from '@/hooks/useSubscription'
@@ -64,6 +64,10 @@ import { useTasksQuery } from '@/hooks/tasks/useTasksQuery'
 import { useGoalsQuery } from '@/hooks/goals/useGoalsQuery'
 import { useEventsQuery } from '@/hooks/events/useEventsQuery'
 import { useTaskMutations } from '@/hooks/tasks/useTaskMutations'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
+import { useGoalMutations } from '@/hooks/goals/useGoalMutations'
+import { useWorkoutPlansQuery } from '@/hooks/workoutplans/useWorkoutPlansQuery'
+import { useEventMutations } from '@/hooks/events/useEventMutations'
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -158,19 +162,16 @@ export default function Calendar() {
 
   const { data: events = [] } = useEventsQuery()
 
-  const {
-    updateMutation: updateTaskMutation,
-    createMutation,
-    deleteMutation,
-    duplicateMutation,
-    bulkDeleteMutation,
-    bulkUpdateMutation
-  } = useTaskMutations()
+  const { updateMutation: updateTaskMutation, deleteMutation: deleteTaskMutation } =
+    useTaskMutations()
 
-  const { data: workoutPlans = [] } = useQuery({
-    queryKey: ['workoutPlans'],
-    queryFn: () => backend.entities.WorkoutPlan.list('-created_date')
-  })
+  const { updateMutation: updateGoalMutation, deleteMutation: deleteGoalMutation } =
+    useGoalMutations()
+
+  const { updateMutation: updateEventMutation, deleteMutation: deleteEventMutation } =
+    useEventMutations()
+
+  const { data: workoutPlans = [] } = useWorkoutPlansQuery()
 
   const queryClient = useQueryClient()
 
@@ -182,53 +183,51 @@ export default function Calendar() {
     }
   }
 
-  /*   const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
-      backend.entities.Task.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+  const handleUpdateGoal = async ({ id, data }: { id: string; data: Record<string, any> }) => {
+    try {
+      await updateGoalMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
     }
-  }) */
+  }
 
-  const updateGoalMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
-      backend.entities.Goal.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] })
+  const handleUpdateEvent = async ({ id, data }: { id: string; data: Record<string, any> }) => {
+    try {
+      await updateEventMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
 
-  const updateEventMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
-      backend.entities.Event.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['events'] })
-    }
-  })
-
-  const deleteTaskMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.Task.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await deleteTaskMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
       toast.success('Task deleted')
     }
-  })
+  }
 
-  const deleteGoalMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.Goal.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] })
+  const handleDeleteGoal = async (id: string) => {
+    try {
+      await deleteGoalMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
       toast.success('Goal deleted')
     }
-  })
+  }
 
-  const deleteEventMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.Event.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['events'] })
+  const handleDeleteEvent = async (id: string) => {
+    try {
+      await deleteEventMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
       toast.success('Event deleted')
     }
-  })
+  }
 
   const handleDuplicate = (item: any, itemType: string) => {
     const { id, created_date, updated_date, ...itemData } = item
@@ -256,11 +255,11 @@ export default function Calendar() {
       setDeleteDialogOpen(true)
     } else {
       if (itemType === 'task') {
-        deleteTaskMutation.mutate(item.id)
+        handleDeleteTask(item.id)
       } else if (itemType === 'goal') {
-        deleteGoalMutation.mutate(item.id)
+        handleDeleteGoal(item.id)
       } else if (itemType === 'event') {
-        deleteEventMutation.mutate(item.id)
+        handleDeleteEvent(item.id)
       }
     }
   }
@@ -272,11 +271,11 @@ export default function Calendar() {
 
     if (deleteType === 'all') {
       if (itemType === 'task') {
-        deleteTaskMutation.mutate(item.id)
+        handleDeleteTask(item.id)
       } else if (itemType === 'goal') {
-        deleteGoalMutation.mutate(item.id)
+        handleDeleteGoal(item.id)
       } else if (itemType === 'event') {
-        deleteEventMutation.mutate(item.id)
+        handleDeleteEvent(item.id)
       }
     } else if (deleteType === 'single') {
       const dateToExclude =
@@ -332,7 +331,7 @@ export default function Calendar() {
         }
       })
     } else if (type === 'goal') {
-      updateGoalMutation.mutate({
+      handleUpdateGoal({
         id: item.id,
         data: {
           ...item,
@@ -354,7 +353,7 @@ export default function Calendar() {
         newEndDate = formatDate(endDate)
       }
 
-      updateEventMutation.mutate({
+      handleUpdateEvent({
         id: item.id,
         data: {
           ...item,
@@ -368,10 +367,7 @@ export default function Calendar() {
     setDraggedItem(null)
   }
 
-  const { data: businesses = [] } = useQuery({
-    queryKey: ['businesses'],
-    queryFn: () => backend.entities.Business.list('order')
-  })
+  const { data: businesses = [] } = useBusinessesQuery()
 
   const generateRecurringInstances = (item, itemType) => {
     if (!item.is_recurring) return [item]
@@ -530,7 +526,7 @@ export default function Calendar() {
     return instances.length > 0 ? instances : [item]
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (businesses.length > 0) {
       const saved = localStorage.getItem('calendarSelectedBusinessIds')
       const savedIds = saved ? JSON.parse(saved) : []
@@ -623,31 +619,31 @@ export default function Calendar() {
     })
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem('calendarShowTasks', JSON.stringify(showTasks))
   }, [showTasks])
 
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem('calendarShowGoals', JSON.stringify(showGoals))
   }, [showGoals])
 
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem('calendarShowEvents', JSON.stringify(showEvents))
   }, [showEvents])
 
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem('calendarShowGoogle', JSON.stringify(showGoogleCalendar))
   }, [showGoogleCalendar])
 
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem('calendarShowWorkoutPlans', JSON.stringify(showWorkoutPlans))
   }, [showWorkoutPlans])
 
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem('calendarShowImportant', JSON.stringify(showImportant))
   }, [showImportant])
 
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem('calendarViewType', viewType)
 
     // Scroll to 7 AM in week view
@@ -884,7 +880,7 @@ export default function Calendar() {
   return (
     <>
       <Helmet>
-        <title>Calendar</title>
+        <title>Calendar | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -17,6 +17,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom'
 import { useSubscription } from '@/hooks/useSubscription'
 import { Helmet } from 'react-helmet-async'
+import { SEO } from '@/lib/seo'
 
 const FREE_FEATURES = [
   '10 Goals / 20 Tasks',
@@ -116,7 +117,7 @@ export default function Upgrade() {
 
   const { data: user, error: userError } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => backend.auth.me(),
+    queryFn: () => backend.user.me(),
     retry: 1
   })
 
@@ -158,7 +159,7 @@ export default function Upgrade() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Something went wrong</h1>
           <p className="text-slate-600 mb-4">Unable to load upgrade information.</p>
-          <Link to="/Profile">
+          <Link to="/profile">
             <Button>Go back</Button>
           </Link>
         </div>
@@ -172,7 +173,7 @@ export default function Upgrade() {
     const res = await backend.functions.invoke<BillingPortalResponse>(
       'createBillingPortalSession',
       {
-        return_url: `${window.location.origin}/Profile`
+        return_url: `${window.location.origin}/profile`
       }
     )
 
@@ -198,7 +199,7 @@ export default function Upgrade() {
 
     const res = await backend.functions.invoke<DowngradeResponse>('downgradeToPlan', {
       plan_name: 'plus',
-      return_url: `${window.location.origin}/Profile`
+      return_url: `${window.location.origin}/profile`
     })
 
     setLoading(null)
@@ -206,7 +207,7 @@ export default function Upgrade() {
     if (res.data?.success) {
       queryClient.invalidateQueries({ queryKey: ['currentUser'] })
       queryClient.invalidateQueries({ queryKey: ['subscription'] })
-      navigate('/Profile?checkout=success')
+      navigate('/profile?checkout=success')
     }
   }
 
@@ -215,8 +216,8 @@ export default function Upgrade() {
 
     const res = await backend.functions.invoke<CheckoutSessionResponse>('createCheckoutSession', {
       plan_name: 'plus',
-      success_url: `${window.location.origin}/Profile?checkout=success`,
-      cancel_url: `${window.location.origin}/Upgrade`
+      success_url: `${window.location.origin}/profile?checkout=success`,
+      cancel_url: `${window.location.origin}/upgrade`
     })
 
     if (res.data?.url) {
@@ -234,8 +235,8 @@ export default function Upgrade() {
 
     const res = await backend.functions.invoke<CheckoutSessionResponse>('createCheckoutSession', {
       plan_name: 'pro',
-      success_url: `${window.location.origin}/Profile?checkout=success`,
-      cancel_url: `${window.location.origin}/Upgrade`
+      success_url: `${window.location.origin}/profile?checkout=success`,
+      cancel_url: `${window.location.origin}/upgrade`
     })
 
     if (res.data?.url) {
@@ -248,12 +249,17 @@ export default function Upgrade() {
   return (
     <>
       <Helmet>
-        <title>Upgrade</title>
+        <title>{SEO.upgrade.title}</title>
+        <meta name="description" content={SEO.upgrade.description} />
+        <meta property="og:title" content={SEO.upgrade.title} />
+        <meta property="og:description" content={SEO.upgrade.description} />
+        <meta property="og:url" content={SEO.upgrade.canonical} />
+        <link rel="canonical" href={SEO.upgrade.canonical} />
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="mb-8 flex items-center gap-4">
-            <Link to="/Profile">
+            <Link to="/profile">
               <Button variant="ghost" size="sm" className="gap-2">
                 <ArrowLeft className="w-4 h-4" /> Back
               </Button>

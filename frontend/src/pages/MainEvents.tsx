@@ -94,7 +94,7 @@ export default function MainEvents() {
   return (
     <>
       <Helmet>
-        <title>Main Events</title>
+        <title>Main Events | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen page-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

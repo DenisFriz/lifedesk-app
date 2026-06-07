@@ -1,28 +1,64 @@
-import React, { createContext, useState, useContext, useEffect } from 'react'
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { backend } from '@/api/backend'
 import { setToken } from '@/api/apiClient'
-import type { User, AuthContextValue, AuthError } from '@/types'
+import type { AuthContextValue, AuthError } from '@/types'
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null)
+  const queryClient = useQueryClient()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [authError, setAuthError] = useState<AuthError | null>(null)
 
-  useEffect(() => {
-    checkAppState()
-  }, [])
+  const {
+    data: user = null,
+    isLoading: isLoadingUser,
+    error: queryError
+  } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => backend.user.me(),
+    enabled: isAuthenticated,
+    retry: false
+  })
 
-  const checkAppState = async () => {
+  const isLoadingAuth = isCheckingAuth || (isAuthenticated && isLoadingUser)
+
+  // Handle deleted accounts
+  useEffect(() => {
+    if (user?.is_deleted) {
+      console.warn('User account has been deleted')
+      setIsAuthenticated(false)
+      setAuthError({
+        type: 'account_deleted',
+        message: 'Your account has been deleted'
+      })
+      queryClient.setQueryData(['currentUser'], null)
+    }
+  }, [user, queryClient])
+
+  // Handle query errors (401, 403, etc.)
+  useEffect(() => {
+    if (queryError) {
+      const status = (queryError as any)?.status
+      if (status === 401 || status === 403) {
+        setIsAuthenticated(false)
+        setAuthError({
+          type: 'auth_required',
+          message: 'Authentication required'
+        })
+      }
+    }
+  }, [queryError])
+
+  const checkAppState = useCallback(async () => {
     try {
       setAuthError(null)
 
       if (await backend.auth.isAuthenticated()) {
-        await checkUserAuth()
+        setIsAuthenticated(true)
       } else {
-        setIsLoadingAuth(false)
         setIsAuthenticated(false)
       }
     } catch (error) {
@@ -31,70 +67,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         type: 'unknown',
         message: error instanceof Error ? error.message : 'An unexpected error occurred'
       })
-      setIsLoadingAuth(false)
+    } finally {
+      setIsCheckingAuth(false)
     }
-  }
+  }, [])
 
-  const checkUserAuth = async () => {
-    try {
-      setIsLoadingAuth(true)
-      const currentUser = await backend.auth.me()
+  useEffect(() => {
+    checkAppState()
+  }, [checkAppState])
 
-      if (currentUser?.is_deleted) {
-        console.warn('User account has been deleted')
-        setIsLoadingAuth(false)
-        setIsAuthenticated(false)
-        setAuthError({
-          type: 'account_deleted',
-          message: 'Your account has been deleted'
-        })
-        return
-      }
-
-      setUser(currentUser)
-      setIsAuthenticated(true)
-      setIsLoadingAuth(false)
-    } catch (error) {
-      console.error('User auth check failed:', error)
-      setIsLoadingAuth(false)
-      setIsAuthenticated(false)
-
-      const status = (error as any)?.status
-      if (status === 401 || status === 403) {
-        setAuthError({
-          type: 'auth_required',
-          message: 'Authentication required'
-        })
-      }
-    }
-  }
-
-  const logout = () => {
-    setUser(null)
+  const logout = useCallback(() => {
     setIsAuthenticated(false)
+    queryClient.removeQueries({ queryKey: ['currentUser'] })
     backend.auth.logout()
-  }
+  }, [queryClient])
 
-  const login = async (token: string) => {
-    setToken(token)
-    await checkAppState()
-  }
-
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated,
-        isLoadingAuth,
-        authError,
-        logout,
-        login,
-        checkAppState
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const login = useCallback(
+    async (token: string) => {
+      setToken(token)
+      await checkAppState()
+    },
+    [checkAppState]
   )
+
+  const value = useMemo(
+    () => ({
+      user,
+      isAuthenticated,
+      isLoadingAuth,
+      authError,
+      logout,
+      login,
+      checkAppState
+    }),
+    [user, isAuthenticated, isLoadingAuth, authError, logout, login, checkAppState]
+  )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = (): AuthContextValue => {

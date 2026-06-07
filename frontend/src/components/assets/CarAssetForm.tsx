@@ -13,10 +13,12 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { CalendarPlus, Info, Plus, Trash2, ImagePlus, X, Lock } from 'lucide-react'
-import { backend } from '@/api/backend'
 import VehicleCalendarDialog from './VehicleCalendarDialog'
-import { useSubscription } from '@/hooks/useSubscription'
+import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload'
+import { deleteCloudinaryImage } from '@/api/cloudinaryService'
 import { Link } from 'react-router-dom'
+import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useAuth } from '@/lib/AuthContext'
 
 const MAX_REPAIR_IMAGES = 5
 const MAX_IMAGE_SIZE_MB = 5
@@ -43,13 +45,6 @@ const empty = {
   images: []
 }
 
-async function uploadImage(file) {
-  const { file_url } = (await backend.integrations.Core.UploadFile({ file })) as {
-    file_url: string
-  }
-  return file_url
-}
-
 export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading }) {
   const [f, setF] = useState(empty)
   const [calDialog, setCalDialog] = useState(null) // { title, date }
@@ -57,8 +52,11 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
   const [uploadingRepairImg, setUploadingRepairImg] = useState(null)
   const vehicleImgRef = useRef<HTMLInputElement | null>(null)
   const repairImgRefs = useRef({})
+  const uploadedPublicIdsRef = useRef<string[]>([])
+  const { upload } = useCloudinaryUpload()
 
   useEffect(() => {
+    uploadedPublicIdsRef.current = []
     if (asset) {
       setF({
         title: asset.title || '',
@@ -90,6 +88,7 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
 
   const handleSubmit = e => {
     e.preventDefault()
+    uploadedPublicIdsRef.current = []
     onSubmit({
       ...f,
       category: 'vehicle',
@@ -104,6 +103,14 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
         cost: r.cost ? parseFloat(r.cost) : undefined
       }))
     })
+  }
+
+  const handleClose = async () => {
+    if (uploadedPublicIdsRef.current.length) {
+      await Promise.allSettled(uploadedPublicIdsRef.current.map(id => deleteCloudinaryImage(id)))
+      uploadedPublicIdsRef.current = []
+    }
+    onClose()
   }
 
   const addRepair = () => {
@@ -136,13 +143,29 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
     }
 
     setUploadingImages(true)
-    const urls = await Promise.all(toUpload.map(uploadImage))
-    setF(prev => ({ ...prev, images: [...(prev.images || []), ...urls] }))
+    const uploaded = await Promise.all(
+      toUpload.map(file =>
+        upload(file, 'temp').then(r => {
+          uploadedPublicIdsRef.current.push(r.public_id)
+          return { url: r.secure_url, public_id: r.public_id }
+        })
+      )
+    )
+    setF(prev => ({ ...prev, images: [...(prev.images || []), ...uploaded] }))
     setUploadingImages(false)
     e.target.value = ''
   }
 
-  const removeVehicleImage = idx => {
+  const removeVehicleImage = async idx => {
+    const img = f.images[idx]
+    if (img?.public_id) {
+      try {
+        await deleteCloudinaryImage(img.public_id)
+      } catch (err) {
+        console.error('Failed to delete image from Cloudinary:', err)
+      }
+      uploadedPublicIdsRef.current = uploadedPublicIdsRef.current.filter(id => id !== img.public_id)
+    }
     setF(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }))
   }
 
@@ -161,34 +184,55 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
     }
 
     setUploadingRepairImg(idx)
-    const urls = await Promise.all(toUpload.map(uploadImage))
-    updateRepair(idx, 'images', [...existing, ...urls])
+    const uploaded = await Promise.all(
+      toUpload.map(file =>
+        upload(file, 'temp').then(r => {
+          uploadedPublicIdsRef.current.push(r.public_id)
+          return { url: r.secure_url, public_id: r.public_id }
+        })
+      )
+    )
+    updateRepair(idx, 'images', [...existing, ...uploaded])
     setUploadingRepairImg(null)
     e.target.value = ''
   }
 
-  const removeRepairImage = (repairIdx, imgIdx) => {
+  const removeRepairImage = async (repairIdx, imgIdx) => {
+    const img = f.repairs[repairIdx].images[imgIdx]
+    if (img?.public_id) {
+      try {
+        await deleteCloudinaryImage(img.public_id)
+      } catch (err) {
+        console.error('Failed to delete image from Cloudinary:', err)
+      }
+      uploadedPublicIdsRef.current = uploadedPublicIdsRef.current.filter(id => id !== img.public_id)
+    }
     const images = f.repairs[repairIdx].images.filter((_, i) => i !== imgIdx)
     updateRepair(repairIdx, 'images', images)
   }
 
-  const { planName, limit: getLimit } = useSubscription()
-  const isFree = planName === 'free'
-  const repairLimit = getLimit('assets_repair_history_entries_limit')
-  const photoLimit = getLimit('assets_vehicle_photos_limit')
+  const { data } = useUserLimit()
+  const photoLimit = data?.limits?.vehicle_photos || 5
+  const repairLimit = data?.limits.vehicle_repairs || 1
+
+  const { user } = useAuth()
+  const isFree = user.subscription_tier === 'free'
+
   const vehicleName = f.title || [f.make, f.model].filter(Boolean).join(' ') || 'Vehicle'
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onClose}>
+      <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-lg bg-white max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{asset ? 'Edit Vehicle' : 'Add Vehicle'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label>Name / Title *</Label>
+              <Label htmlFor="title">Name / Title *</Label>
               <Input
+                id="title"
+                name="title"
                 value={f.title}
                 onChange={e => set('title', e.target.value)}
                 placeholder="e.g. My BMW X5"
@@ -200,10 +244,10 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
             <div className="space-y-2">
               <Label>Vehicle Photos</Label>
               <div className="flex flex-wrap gap-2">
-                {(f.images || []).map((url, idx) => (
+                {(f.images || []).map((img, idx) => (
                   <div key={idx} className="relative w-20 h-20">
                     <img
-                      src={url}
+                      src={img.url}
                       alt=""
                       className="w-20 h-20 object-cover rounded-lg border border-slate-200"
                     />
@@ -249,16 +293,20 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Make</Label>
+                <Label htmlFor="make">Make</Label>
                 <Input
+                  id="make"
+                  name="make"
                   value={f.make}
                   onChange={e => set('make', e.target.value)}
                   placeholder="e.g. BMW"
                 />
               </div>
               <div className="space-y-2">
-                <Label>Model</Label>
+                <Label htmlFor="model">Model</Label>
                 <Input
+                  id="model"
+                  name="model"
                   value={f.model}
                   onChange={e => set('model', e.target.value)}
                   placeholder="e.g. X5"
@@ -268,8 +316,10 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Year</Label>
+                <Label htmlFor="year">Year</Label>
                 <Input
+                  id="year"
+                  name="year"
                   type="number"
                   value={f.year}
                   onChange={e => set('year', e.target.value)}
@@ -277,8 +327,10 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
                 />
               </div>
               <div className="space-y-2">
-                <Label>Color</Label>
+                <Label htmlFor="color">Color</Label>
                 <Input
+                  id="color"
+                  name="color"
                   value={f.color}
                   onChange={e => set('color', e.target.value)}
                   placeholder="Black"
@@ -288,9 +340,9 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Fuel Type</Label>
+                <Label htmlFor="fuel_type">Fuel Type</Label>
                 <Select value={f.fuel_type} onValueChange={v => set('fuel_type', v)}>
-                  <SelectTrigger>
+                  <SelectTrigger id="fuel_type" name="fuel_type">
                     <SelectValue placeholder="Select..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -303,9 +355,9 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Transmission</Label>
+                <Label htmlFor="transmission">Transmission</Label>
                 <Select value={f.transmission} onValueChange={v => set('transmission', v)}>
-                  <SelectTrigger>
+                  <SelectTrigger id="transmission" name="transmission">
                     <SelectValue placeholder="Select..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -318,8 +370,10 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Mileage (km)</Label>
+                <Label htmlFor="mileage">Mileage (km)</Label>
                 <Input
+                  id="mileage"
+                  name="mileage"
                   type="number"
                   value={f.mileage}
                   onChange={e => set('mileage', e.target.value)}
@@ -327,8 +381,10 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
                 />
               </div>
               <div className="space-y-2">
-                <Label>License Plate</Label>
+                <Label htmlFor="license_plate">License Plate</Label>
                 <Input
+                  id="license_plate"
+                  name="license_plate"
                   value={f.license_plate}
                   onChange={e => set('license_plate', e.target.value)}
                   placeholder="AB 1234 CD"
@@ -337,8 +393,10 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
             </div>
 
             <div className="space-y-2">
-              <Label>VIN</Label>
+              <Label htmlFor="vin">VIN</Label>
               <Input
+                id="vin"
+                name="vin"
                 value={f.vin}
                 onChange={e => set('vin', e.target.value)}
                 placeholder="Vehicle Identification Number"
@@ -347,8 +405,10 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Purchase Price</Label>
+                <Label htmlFor="purchase_price">Purchase Price</Label>
                 <Input
+                  id="purchase_price"
+                  name="purchase_price"
                   type="number"
                   step="0.01"
                   value={f.purchase_price}
@@ -357,8 +417,10 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
                 />
               </div>
               <div className="space-y-2">
-                <Label>Current Value</Label>
+                <Label htmlFor="current_value">Current Value</Label>
                 <Input
+                  id="current_value"
+                  name="current_value"
                   type="number"
                   step="0.01"
                   value={f.current_value}
@@ -369,8 +431,10 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
             </div>
 
             <div className="space-y-2">
-              <Label>Purchase Date</Label>
+              <Label htmlFor="purchase_date">Purchase Date</Label>
               <Input
+                id="purchase_date"
+                name="purchase_date"
                 type="date"
                 value={f.purchase_date}
                 onChange={e => set('purchase_date', e.target.value)}
@@ -403,6 +467,8 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
               ) : (
                 <div className="flex gap-2">
                   <Input
+                    id="insurance_expiry"
+                    name="insurance_expiry"
                     type="date"
                     value={f.insurance_expiry}
                     onChange={e => set('insurance_expiry', e.target.value)}
@@ -436,7 +502,7 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
             {/* Inspection Expiry (TÜV) */}
             <div className="space-y-2">
               <div className="flex items-center gap-1">
-                <Label>Inspection Expiry</Label>
+                <Label htmlFor="inspection_expiry">Inspection Expiry</Label>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -469,6 +535,8 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
               ) : (
                 <div className="flex gap-2">
                   <Input
+                    id="inspection_expiry"
+                    name="inspection_expiry"
                     type="date"
                     value={f.inspection_expiry}
                     onChange={e => set('inspection_expiry', e.target.value)}
@@ -504,7 +572,7 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
               <div className="flex items-center justify-between">
                 <Label>Repairs</Label>
                 {(f.repairs || []).length >= repairLimit ? (
-                  <Link to="/Upgrade" onClick={onClose}>
+                  <Link to="/upgrade" onClick={onClose}>
                     <Button
                       type="button"
                       variant="outline"
@@ -533,11 +601,15 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
                       <div className="flex gap-2 items-start">
                         <div className="flex-1 grid grid-cols-2 gap-2">
                           <Input
+                            id={`repair_date_${idx}`}
+                            name={`repair_date_${idx}`}
                             type="date"
                             value={r.date}
                             onChange={e => updateRepair(idx, 'date', e.target.value)}
                           />
                           <Input
+                            id={`repair_cost_${idx}`}
+                            name={`repair_cost_${idx}`}
                             type="number"
                             step="0.01"
                             value={r.cost}
@@ -545,6 +617,8 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
                             placeholder="Cost"
                           />
                           <Input
+                            id={`repair_description_${idx}`}
+                            name={`repair_description_${idx}`}
                             value={r.description}
                             onChange={e => updateRepair(idx, 'description', e.target.value)}
                             placeholder="Description"
@@ -565,10 +639,10 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
                       {/* Repair images */}
                       <div>
                         <div className="flex flex-wrap gap-2 mb-2">
-                          {(r.images || []).map((url, imgIdx) => (
+                          {(r.images || []).map((img, imgIdx) => (
                             <div key={imgIdx} className="relative w-16 h-16">
                               <img
-                                src={url}
+                                src={img.url}
                                 alt=""
                                 className="w-16 h-16 object-cover rounded-md border border-slate-200"
                               />
@@ -614,8 +688,10 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
             </div>
 
             <div className="space-y-2">
-              <Label>Notes</Label>
+              <Label htmlFor="description">Notes</Label>
               <Textarea
+                id="description"
+                name="description"
                 value={f.description}
                 onChange={e => set('description', e.target.value)}
                 placeholder="Any additional notes..."
@@ -624,7 +700,7 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
             </div>
 
             <div className="flex gap-3 pt-2">
-              <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+              <Button type="button" variant="outline" onClick={handleClose} className="flex-1">
                 Cancel
               </Button>
               <Button

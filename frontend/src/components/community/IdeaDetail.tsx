@@ -13,7 +13,7 @@ import {
 import { ThumbsUp, MessageCircle, Send, Lock } from 'lucide-react'
 import { formatDistanceToNow, parseISO } from 'date-fns'
 import { Link } from 'react-router-dom'
-import { Idea } from '@/types/entities'
+import { CommunityIdeaRecord } from '@/db'
 
 interface IdeaComment {
   id: string
@@ -42,12 +42,12 @@ const STATUS_STYLES = {
 }
 
 interface IdeaDetailProps {
-  idea: Idea | null
+  idea: CommunityIdeaRecord | null
   comments: IdeaComment[]
   hasVoted: boolean
-  onVote: (idea: Idea | null) => void
+  onVote: (idea: CommunityIdeaRecord | null) => void
   onComment: (comment: string) => void
-  onStatusChange: (idea: Idea, status: string) => void
+  onStatusChange: (idea: CommunityIdeaRecord, status: string) => void
   isAdmin: boolean
   isLoading: boolean
   canLike: boolean
@@ -89,9 +89,9 @@ export default function IdeaDetail({
             {STATUS_OPTIONS.find(s => s.value === idea.status)?.label || 'New'}
           </Badge>
           <span className="text-xs text-slate-400">by {idea.created_by?.split('@')[0]}</span>
-          {idea.created_date && (
+          {idea.createdAt && (
             <span className="text-xs text-slate-400">
-              · {formatDistanceToNow(parseISO(idea.created_date), { addSuffix: true })}
+              · {formatDistanceToNow(parseISO(idea.createdAt), { addSuffix: true })}
             </span>
           )}
         </div>
@@ -115,7 +115,7 @@ export default function IdeaDetail({
               {hasVoted ? 'Liked' : 'Like'} · {idea.likes_count || 0}
             </Button>
           ) : (
-            <Link to="/Upgrade">
+            <Link to="/upgrade">
               <Button variant="outline" size="sm" className="text-slate-400 border-slate-200">
                 <Lock className="w-4 h-4 mr-1" />
                 Like · {idea.likes_count || 0} · Upgrade
@@ -188,7 +188,7 @@ export default function IdeaDetail({
               </Button>
             </form>
           ) : (
-            <Link to="/Upgrade">
+            <Link to="/upgrade">
               <div className="flex items-center gap-2 p-3 rounded-lg border border-dashed border-slate-200 text-slate-400 text-sm cursor-pointer hover:border-indigo-300 hover:text-indigo-500 transition-colors">
                 <Lock className="w-4 h-4" />
                 Upgrade your plan to leave comments

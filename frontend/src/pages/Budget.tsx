@@ -611,7 +611,7 @@ export default function Budget() {
   return (
     <>
       <Helmet>
-        <title>Budget</title>
+        <title>Budget | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -910,7 +910,7 @@ export default function Budget() {
                                     <TooltipContent>
                                       <p>
                                         Limit reached ({budgetLimit} total entries on your plan).{' '}
-                                        <Link to="/Upgrade" className="underline">
+                                        <Link to="/upgrade" className="underline">
                                           Upgrade
                                         </Link>{' '}
                                         for more.
@@ -1365,7 +1365,7 @@ export default function Budget() {
                                     <TooltipContent>
                                       <p>
                                         Limit reached ({budgetLimit} total entries on your plan).{' '}
-                                        <Link to="/Upgrade" className="underline">
+                                        <Link to="/upgrade" className="underline">
                                           Upgrade
                                         </Link>{' '}
                                         for more.

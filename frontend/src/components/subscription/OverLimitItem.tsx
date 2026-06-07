@@ -17,7 +17,7 @@ export default function OverLimitItem({ children, className }: Props) {
       {/* Lock overlay */}
       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150">
         <Link
-          to="/Upgrade"
+          to="/upgrade"
           className="flex items-center gap-2 bg-slate-800/90 text-white text-xs font-medium rounded-full px-3 py-1.5 shadow-lg pointer-events-auto hover:bg-slate-700 transition-colors"
         >
           <Lock className="w-3 h-3" />

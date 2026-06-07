@@ -33,6 +33,30 @@ export const progressPhotosRepository = {
 
     return updated
   },
+  create: async (data: CreateProgressPhotoInput) => {
+    const optimisticId = generateOptimisticId()
+
+    const now = new Date().toISOString()
+
+    const progressPhoto: ProgressPhotoRecord = {
+      ...data,
+
+      id: optimisticId,
+      serverId: null,
+      is_deleted: false,
+      createdAt: now,
+      updatedAt: now
+    }
+
+    await db.progressphotos.put(progressPhoto)
+
+    await enqueueMutation('progressphotos', 'create', {
+      ...data,
+      optimisticId
+    })
+
+    return progressPhoto
+  },
   delete: async (id: string) => {
     let existing = await db.progressphotos.get(id)
 

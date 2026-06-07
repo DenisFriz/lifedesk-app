@@ -6,7 +6,9 @@ export async function analyzeSubscriptionDuplicates(
   res: Response,
 ) {
   try {
-    const subs = await Subscription.find().lean();
+    const subs = await Subscription.find()
+      .lean()
+      .select('stripe_subscription_id user_email created_at _id');
 
     const byStripeId: Record<string, any[]> = {};
     const byEmail: Record<string, any[]> = {};

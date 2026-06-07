@@ -58,7 +58,9 @@ export async function syncSubscriptionFromStripe(req: Request, res: Response) {
 
         const existing = await Subscription.findOne({
           stripe_subscription_id: sub.id,
-        }).lean();
+        })
+          .lean()
+          .select('_id');
 
         if (existing) {
           await Subscription.findOneAndUpdate(

@@ -40,7 +40,7 @@ export default function DeleteAccountDialog({
 
     const load = async () => {
       try {
-        const res = await backend.auth.deleteRequest()
+        const res = await backend.user.deleteRequest()
 
         if (res.requiresReauth) {
           setAuthRequired(res.provider)
@@ -86,7 +86,7 @@ export default function DeleteAccountDialog({
     setError('')
 
     try {
-      const response = await backend.auth.reauthPassword(password)
+      const response = await backend.user.reauthPassword(password)
 
       if (!response.success) {
         setError('Reauthentication failed')
@@ -131,7 +131,7 @@ export default function DeleteAccountDialog({
           return
         }
 
-        const response = await backend.auth.googleReauth(accessToken)
+        const response = await backend.user.googleReauth(accessToken)
 
         if (!response.success) {
           setError('Google re-authentication failed. Please try again.')

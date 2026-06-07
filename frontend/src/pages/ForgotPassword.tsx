@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
+import { SEO } from '@/lib/seo'
 import { apiFetch } from '@/api/apiClient'
 
 function MailSendComponent({ email }: { email: string }) {
@@ -112,7 +113,9 @@ export default function ForgotPassword() {
   return (
     <>
       <Helmet>
-        <title>Forgot password</title>
+        <title>{SEO.forgotPassword.title}</title>
+        <meta name="description" content={SEO.forgotPassword.description} />
+        <link rel="canonical" href="https://lifedesk.app/ForgotPassword" />
       </Helmet>
       {isSent ? (
         <MailSendComponent email={email} />
@@ -128,7 +131,7 @@ export default function ForgotPassword() {
                     <div className="space-y-4 sm:space-y-6">
                       <button
                         type="button"
-                        onClick={() => navigate('/Login')}
+                        onClick={() => navigate('/login')}
                         className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 font-medium transition-colors -mb-2"
                       >
                         <svg

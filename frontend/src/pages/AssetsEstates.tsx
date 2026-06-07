@@ -19,7 +19,7 @@ export default function AssetsEstates() {
 
   const { canCreate, data } = useUserLimit()
 
-  const atLimit = canCreate('estate')
+  const atLimit = !canCreate('estate')
   const totalValue = estates?.reduce((s, a) => s + (a.current_value || a.purchase_price || 0), 0)
   const totalMortgage = estates?.reduce((s, a) => s + (a.mortgage_amount || 0), 0)
   const totalEquity = totalValue - totalMortgage
@@ -64,7 +64,7 @@ export default function AssetsEstates() {
   return (
     <>
       <Helmet>
-        <title>Assets Estates</title>
+        <title>Assets Estates | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -76,7 +76,7 @@ export default function AssetsEstates() {
               <p className="text-slate-600 mt-1">Track your real estate properties</p>
             </div>
             {atLimit ? (
-              <Link to="/Upgrade">
+              <Link to="/upgrade">
                 <Button
                   variant="outline"
                   className="border-amber-300 text-amber-700 hover:bg-amber-50"
@@ -122,7 +122,7 @@ export default function AssetsEstates() {
               <h3 className="text-lg font-semibold text-slate-900 mb-2">No estates added yet</h3>
               <p className="text-slate-600 mb-4">Start tracking your properties</p>
               {atLimit ? (
-                <Link to="/Upgrade">
+                <Link to="/upgrade">
                   <Button
                     variant="outline"
                     className="border-amber-300 text-amber-700 hover:bg-amber-50"

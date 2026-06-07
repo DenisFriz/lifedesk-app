@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react'
 import { backend } from '@/api/backend'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { offlineCreate } from '@/hooks/useOfflineFirst'
 import UsageLimitGate from '@/components/subscription/UsageLimitGate'
+import { useTaskMutations } from '@/hooks/tasks/useTaskMutations'
+import { taskRepository } from '@/repositories/task.repository'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -60,30 +61,28 @@ import { GoalCreateInput } from '@/repositories/goal.repository'
 
 function TasksToggleButton({
   goal,
+  goalId,
   compactView,
   expandedGoals,
   getGoalTasks,
   toggleExpandGoal,
-  queryClient
+  onCreateTask
+}: {
+  goal: any
+  goalId: string
+  compactView: boolean
+  expandedGoals: Record<string, boolean>
+  getGoalTasks: (id: string) => any[]
+  toggleExpandGoal: (id: string) => void
+  onCreateTask: () => void
 }) {
-  const taskCount = getGoalTasks(goal._id).length
-  const isExpanded = expandedGoals[goal._id]
+  const taskCount = getGoalTasks(goalId).length
+  const isExpanded = expandedGoals[goalId]
   const handleClick = () => {
     if (taskCount > 0) {
-      toggleExpandGoal(goal._id)
+      toggleExpandGoal(goalId)
     } else {
-      offlineCreate('tasks', backend.entities.Task, {
-        title: 'New Task',
-        status: 'pending',
-        category: goal.category,
-        business_id: goal.business_id || null,
-        goal_id: goal._id
-      }).then(newTask => {
-        queryClient.setQueryData(['tasks'], old =>
-          old ? [newTask, ...old.filter(t => t.id !== newTask.id)] : [newTask]
-        )
-        toggleExpandGoal(goal._id)
-      })
+      onCreateTask()
     }
   }
   const colorCls =
@@ -172,6 +171,12 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
     bulkUpdateMutation
   } = useGoalMutations()
 
+  const {
+    createMutation: createTaskMutation,
+    updateMutation: updateTaskMutation,
+    deleteMutation: deleteTaskMutation
+  } = useTaskMutations()
+
   const { data: allGoals = [] } = useGoalsQuery()
 
   const { data: businesses = [] } = useBusinessesQuery()
@@ -189,7 +194,9 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
   if (filterType === 'important') {
     filteredGoals = allGoals.filter(g => g.important)
   } else if (filterType === 'business') {
-    filteredGoals = allGoals.filter(g => g.category === 'business' && g.business_id === businessId)
+    filteredGoals = allGoals.filter(
+      g => g.business_id != null && String(g.business_id) === String(businessId)
+    )
   } else if (filterType === 'category') {
     filteredGoals = allGoals.filter(g => g.category === category)
   }
@@ -235,7 +242,8 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
     }
   }
 
-  const handleDeleteDuplicateGoal = async (data: Record<string, any>) => {
+  const handleDuplicateGoal = async (data: Record<string, any>) => {
+    if (!canCreate('goals')) return
     try {
       await duplicateMutation.mutateAsync(data)
     } catch (e) {
@@ -583,33 +591,10 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
       })
   }
 
-  const updateTaskMutation = useMutation<any, any, { id: string; data: Record<string, any> }>({
-    mutationFn: ({ id, data }) => backend.entities.Task.update(id, data),
-    onMutate: async ({ id, data }) => {
-      await queryClient.cancelQueries({ queryKey: ['tasks'] })
-      const previousTasks = queryClient.getQueryData(['tasks'])
-      queryClient.setQueryData(['tasks'], (oldTasks: any) => {
-        if (!oldTasks) return oldTasks
-        return oldTasks.map((task: any) => (task.id === id ? { ...task, ...data } : task))
-      })
-      return { previousTasks }
-    },
-    onError: (err, variables, context: any) => {
-      if (context?.previousTasks) {
-        queryClient.setQueryData(['tasks'], context.previousTasks)
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
-    }
-  })
-
   const updateTaskOrderMutation = useMutation<any, any, { id: string; order: number }[]>({
     mutationFn: async updatedTasks => {
       return Promise.all(
-        updatedTasks.map((task: any) =>
-          backend.entities.Task.update(task.id, { order: task.order })
-        )
+        updatedTasks.map((task: any) => taskRepository.update(task.id, { order: task.order }))
       )
     },
     onMutate: async newOrderTasks => {
@@ -1416,7 +1401,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                                     variant="ghost"
                                                     size="icon"
                                                     className="h-8 w-8"
-                                                    onClick={() => handleDeleteDuplicateGoal(goal)}
+                                                    onClick={() => handleDuplicateGoal(goal)}
                                                   >
                                                     <Copy className="h-4 w-4 text-slate-600" />
                                                   </Button>
@@ -1494,11 +1479,21 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                             </TooltipProvider>
                                             <TasksToggleButton
                                               goal={goal}
+                                              goalId={goalId}
                                               compactView={table.compactView}
                                               expandedGoals={expandedGoals}
                                               getGoalTasks={getGoalTasks}
                                               toggleExpandGoal={toggleExpandGoal}
-                                              queryClient={queryClient}
+                                              onCreateTask={() => {
+                                                createTaskMutation.mutate({
+                                                  title: 'New Task',
+                                                  status: 'pending',
+                                                  category: goal.category,
+                                                  business_id: goal.business_id || null,
+                                                  goal_id: goalId
+                                                })
+                                                toggleExpandGoal(goalId)
+                                              }}
                                             />
                                           </div>
                                         </td>
@@ -1570,6 +1565,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                                             }
                                                             playSound={playSound}
                                                             queryClient={queryClient}
+                                                            deleteTaskMutation={deleteTaskMutation}
                                                             getGoalTasks={getGoalTasks}
                                                           />
                                                         ))}
@@ -1637,30 +1633,12 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                             >
                                               <Button
                                                 onClick={() => {
-                                                  const data = {
+                                                  createTaskMutation.mutate({
                                                     title: 'New Task',
                                                     status: 'pending',
                                                     category: goal.category,
                                                     business_id: goal.business_id || null,
                                                     goal_id: goalId
-                                                  }
-                                                  offlineCreate(
-                                                    'tasks',
-                                                    backend.entities.Task,
-                                                    data
-                                                  ).then(newTask => {
-                                                    queryClient.setQueryData(
-                                                      ['tasks'],
-                                                      (old: any) =>
-                                                        old
-                                                          ? [
-                                                              newTask,
-                                                              ...old.filter(
-                                                                t => t.id !== newTask.id
-                                                              )
-                                                            ]
-                                                          : [newTask]
-                                                    )
                                                   })
                                                 }}
                                                 size="sm"
@@ -2030,7 +2008,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                                 </DropdownMenuItem>
                                               )}
                                               <DropdownMenuItem
-                                                onClick={() => handleDeleteDuplicateGoal(goal)}
+                                                onClick={() => handleDuplicateGoal(goal)}
                                               >
                                                 <Copy className="h-4 w-4 mr-2" />
                                                 Duplicate
@@ -2330,14 +2308,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                                           </DropdownMenuItem>
                                                           <DropdownMenuItem
                                                             onClick={() => {
-                                                              playSound('delete')
-                                                              backend.entities.Task.delete(
-                                                                task.id
-                                                              ).then(() => {
-                                                                queryClient.invalidateQueries({
-                                                                  queryKey: ['tasks']
-                                                                })
-                                                              })
+                                                              deleteTaskMutation.mutate(task.id)
                                                             }}
                                                             className="text-rose-600"
                                                           >
@@ -2359,31 +2330,17 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                           <div className="text-right mt-2">
                                             <Button
                                               onClick={() => {
-                                                const data = {
+                                                createTaskMutation.mutate({
                                                   title: 'New Task',
                                                   status: 'pending',
                                                   category: goal.category,
                                                   business_id: goal.business_id || null,
                                                   goal_id: goalId
-                                                }
-                                                offlineCreate(
-                                                  'tasks',
-                                                  backend.entities.Task,
-                                                  data
-                                                ).then(newTask => {
-                                                  queryClient.setQueryData(['tasks'], (old: any) =>
-                                                    old
-                                                      ? [
-                                                          newTask,
-                                                          ...old.filter(t => t.id !== newTask.id)
-                                                        ]
-                                                      : [newTask]
-                                                  )
-                                                  setExpandedRelatedTasks(prev => ({
-                                                    ...prev,
-                                                    [goalId]: true
-                                                  }))
                                                 })
+                                                setExpandedRelatedTasks(prev => ({
+                                                  ...prev,
+                                                  [goalId]: true
+                                                }))
                                               }}
                                               size="sm"
                                               variant="ghost"

@@ -254,7 +254,7 @@ const LayoutContent = memo(
 
       const isActive =
         location.pathname === itemPath &&
-        (!item.businessId || String(item.businessId) === String(currentBusinessId))
+        String(item.businessId ?? '') === String(currentBusinessId ?? '')
 
       const hasChildren = item.children && item.children.length > 0
       const uniqueName = parentName ? `${parentName} > ${item.name}` : item.name
@@ -351,8 +351,6 @@ const LayoutContent = memo(
             ? `${createPageUrl(item.page)}?businessId=${item.businessId}`
             : createPageUrl(item.page))
         const handleLinkClick = () => {
-          const scrollPos = (navRef.current as any)?.getScrollTop() || 0
-          if (navRef.current) localStorage.setItem('sidebarScrollPosition', scrollPos.toString())
           if (onNavigate) onNavigate()
         }
 
@@ -491,8 +489,6 @@ const LayoutContent = memo(
           ? `${createPageUrl(item.page)}?businessId=${item.businessId}`
           : createPageUrl(item.page))
       const handleLinkClick = () => {
-        const scrollPos = (navRef.current as any)?.getScrollTop() || 0
-        if (navRef.current) localStorage.setItem('sidebarScrollPosition', scrollPos.toString())
         if (onNavigate) onNavigate()
       }
 
@@ -692,7 +688,7 @@ const LayoutContent = memo(
 
             {user && ['free', 'plus'].includes(user?.subscription_tier ?? 'free') && !collapsed && (
               <Link
-                to="/Upgrade"
+                to="/upgrade"
                 onClick={() => setMobileMenuOpen && setMobileMenuOpen(false)}
                 className="mx-3 my-2 flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
                 style={{
@@ -899,11 +895,19 @@ const LayoutContent = memo(
                     className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors"
                   >
                     <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {user?.profile_image ? (
+                      {user?.profile_image || user?.google_avatar_url ? (
                         <img
-                          src={user.profile_image}
+                          src={user.profile_image || user.google_avatar_url}
                           alt="Profile"
                           className="w-full h-full object-cover"
+                          onError={e => {
+                            const target = e.currentTarget
+                            if (user.google_avatar_url && target.src !== user.google_avatar_url) {
+                              target.src = user.google_avatar_url
+                            } else {
+                              target.style.display = 'none'
+                            }
+                          }}
                         />
                       ) : (
                         <UserIcon className="w-4 h-4 text-indigo-600" />
@@ -938,11 +942,19 @@ const LayoutContent = memo(
                     className="flex items-center justify-center w-full"
                   >
                     <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center hover:bg-indigo-200 transition-colors overflow-hidden">
-                      {user?.profile_image ? (
+                      {user?.profile_image || user?.google_avatar_url ? (
                         <img
-                          src={user.profile_image}
+                          src={user.profile_image || user.google_avatar_url}
                           alt="Profile"
                           className="w-full h-full object-cover"
+                          onError={e => {
+                            const target = e.currentTarget
+                            if (user.google_avatar_url && target.src !== user.google_avatar_url) {
+                              target.src = user.google_avatar_url
+                            } else {
+                              target.style.display = 'none'
+                            }
+                          }}
                         />
                       ) : (
                         <UserIcon className="w-4 h-4 text-indigo-600" />

@@ -4,12 +4,13 @@ export interface User {
   id: string
   email: string
   full_name: string
-  profile_image?: string
+  profile_image?: string | null
+  profile_image_public_id?: string | null
+  google_avatar_url?: string
   subscription_tier: 'free' | 'plus' | 'pro'
   role: string
-  is_deleted?: boolean
-  terms_accepted_at?: string
   email_verified: boolean
+  is_deleted?: boolean
 }
 
 export interface AuthError {

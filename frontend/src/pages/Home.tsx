@@ -195,7 +195,7 @@ export default function Home() {
   return (
     <>
       <Helmet>
-        <title>Home</title>
+        <title>Home | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">

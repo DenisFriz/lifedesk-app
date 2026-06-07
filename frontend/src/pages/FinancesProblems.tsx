@@ -13,7 +13,7 @@ export default function FinancesProblems() {
   return (
     <>
       <Helmet>
-        <title>Finances Problems</title>
+        <title>Finances Problems | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

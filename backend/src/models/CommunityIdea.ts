@@ -1,52 +1,62 @@
-import mongoose, { Schema, Model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
-import { ICommunityIdea } from '@/types/index.js';
+import mongoose, { Schema, Model, Types } from 'mongoose';
 
-const CommunityIdeaSchema = new Schema<ICommunityIdea>(
+export interface ICommunityIdea {
+  _id: Types.ObjectId;
+  created_by: Types.ObjectId;
+  title: string;
+  description: string;
+  category: 'new_feature' | 'optimization' | 'ui_ux' | 'bug_fix' | 'other';
+  likes_count: number;
+  comments_count: number;
+  anonymous: boolean;
+  liked_by: Types.ObjectId[];
+  status: 'new' | 'under_review' | 'planned' | 'in_progress' | 'implemented';
+  is_deleted: boolean;
+  deleted_at?: string | null;
+  deleted_by_process?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const communityIdeaSchema = new Schema<ICommunityIdea>(
   {
-    id: { type: String, default: () => uuidv4(), unique: true, index: true },
-
-    created_by: { type: String, required: true, index: true },
+    created_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
 
     title: {
       type: String,
       required: true,
-      maxlength: 200,
+      trim: true,
+      maxlength: 50,
     },
 
     description: {
       type: String,
-      default: null,
-      maxlength: 3000,
+      required: true,
+      trim: true,
+      maxlength: 500,
     },
 
     category: {
       type: String,
-      required: true,
       enum: ['new_feature', 'optimization', 'ui_ux', 'bug_fix', 'other'],
-    },
-
-    status: {
-      type: String,
-      enum: [
-        'new',
-        'under_review',
-        'planned',
-        'in_progress',
-        'implemented',
-        'rejected',
-      ],
-      default: 'new',
+      default: 'new_feature',
     },
 
     likes_count: {
       type: Number,
       default: 0,
+      min: 0,
     },
 
     comments_count: {
       type: Number,
       default: 0,
+      min: 0,
     },
 
     anonymous: {
@@ -54,22 +64,38 @@ const CommunityIdeaSchema = new Schema<ICommunityIdea>(
       default: false,
     },
 
-    is_deleted: { type: Boolean, default: false },
-    deleted_at: { type: String, default: null },
-    deleted_by_process: { type: String, default: null },
+    liked_by: {
+      type: [Schema.Types.ObjectId],
+      ref: 'User',
+      default: [],
+    },
 
-    created_at: { type: String, default: () => new Date().toISOString() },
-    updated_at: { type: String, default: () => new Date().toISOString() },
+    status: {
+      type: String,
+      enum: ['new', 'under_review', 'planned', 'in_progress', 'implemented'],
+      default: 'new',
+    },
+
+    is_deleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    deleted_at: {
+      type: String,
+      default: null,
+    },
+
+    deleted_by_process: {
+      type: String,
+      default: null,
+    },
   },
   {
-    timestamps: false,
+    timestamps: true,
     versionKey: false,
   },
 );
 
-CommunityIdeaSchema.pre<ICommunityIdea>('save', function () {
-  this.updated_at = new Date().toISOString();
-});
-
 export const CommunityIdea: Model<ICommunityIdea> =
-  mongoose.model<ICommunityIdea>('CommunityIdea', CommunityIdeaSchema);
+  mongoose.model<ICommunityIdea>('CommunityIdea', communityIdeaSchema);

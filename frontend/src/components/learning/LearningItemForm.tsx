@@ -113,12 +113,16 @@ export default function LearningItemForm({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-3">
           <Input
+            id="title"
+            name="title"
             placeholder="Title *"
             value={form.title}
             onChange={e => set('title', e.target.value)}
             required
           />
           <Input
+            id="author"
+            name="author"
             placeholder="Author / Instructor (optional)"
             value={form.author}
             onChange={e => set('author', e.target.value)}
@@ -126,7 +130,7 @@ export default function LearningItemForm({
 
           <div className="grid grid-cols-2 gap-3">
             <Select value={form.type} onValueChange={v => set('type', v)}>
-              <SelectTrigger>
+              <SelectTrigger id="type" name="type">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>
@@ -141,7 +145,7 @@ export default function LearningItemForm({
               </SelectContent>
             </Select>
             <Select value={form.status} onValueChange={v => set('status', v)}>
-              <SelectTrigger>
+              <SelectTrigger id="status" name="status">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -155,7 +159,7 @@ export default function LearningItemForm({
 
           <div className="grid grid-cols-2 gap-3">
             <Select value={form.skill_category} onValueChange={v => set('skill_category', v)}>
-              <SelectTrigger>
+              <SelectTrigger id="skill_category" name="skill_category">
                 <SelectValue placeholder="Skill Category" />
               </SelectTrigger>
               <SelectContent>
@@ -173,7 +177,7 @@ export default function LearningItemForm({
               </SelectContent>
             </Select>
             <Select value={form.priority} onValueChange={v => set('priority', v)}>
-              <SelectTrigger>
+              <SelectTrigger id="priority" name="priority">
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
               <SelectContent>
@@ -185,6 +189,8 @@ export default function LearningItemForm({
           </div>
 
           <Input
+            id="url"
+            name="url"
             placeholder="URL / Link (optional)"
             value={form.url}
             onChange={e => set('url', e.target.value)}
@@ -192,8 +198,12 @@ export default function LearningItemForm({
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">Progress (%)</label>
+              <label htmlFor="progress" className="text-xs text-slate-500 mb-1 block">
+                Progress (%)
+              </label>
               <Input
+                id="progress"
+                name="progress"
                 type="number"
                 min="0"
                 max="100"
@@ -203,8 +213,12 @@ export default function LearningItemForm({
               />
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">Hours Spent</label>
+              <label htmlFor="time_invested_hours" className="text-xs text-slate-500 mb-1 block">
+                Hours Spent
+              </label>
               <Input
+                id="time_invested_hours"
+                name="time_invested_hours"
                 type="number"
                 min="0"
                 step="0.5"
@@ -214,8 +228,12 @@ export default function LearningItemForm({
               />
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">Rating (1-5)</label>
+              <label htmlFor="rating" className="text-xs text-slate-500 mb-1 block">
+                Rating (1-5)
+              </label>
               <Input
+                id="rating"
+                name="rating"
                 type="number"
                 min="1"
                 max="5"
@@ -228,16 +246,24 @@ export default function LearningItemForm({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">Start Date</label>
+              <label htmlFor="start_date" className="text-xs text-slate-500 mb-1 block">
+                Start Date
+              </label>
               <Input
+                id="start_date"
+                name="start_date"
                 type="date"
                 value={form.start_date}
                 onChange={e => set('start_date', e.target.value)}
               />
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">Completed Date</label>
+              <label htmlFor="completed_date" className="text-xs text-slate-500 mb-1 block">
+                Completed Date
+              </label>
               <Input
+                id="completed_date"
+                name="completed_date"
                 type="date"
                 value={form.completed_date}
                 onChange={e => set('completed_date', e.target.value)}
@@ -246,6 +272,8 @@ export default function LearningItemForm({
           </div>
 
           <Textarea
+            id="description"
+            name="description"
             placeholder="Description / Notes"
             value={form.description}
             onChange={e => set('description', e.target.value)}
@@ -255,6 +283,8 @@ export default function LearningItemForm({
           />
 
           <Textarea
+            id="key_takeaways"
+            name="key_takeaways"
             placeholder="Key takeaways (what did you learn?)"
             value={form.key_takeaways}
             onChange={e => set('key_takeaways', e.target.value)}

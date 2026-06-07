@@ -96,10 +96,16 @@ export async function plaid(
       const connections = req.user.plaid_connections || [];
       const allAccounts: any[] = [];
 
-      for (const conn of connections) {
-        const response = await plaidClient.accountsBalanceGet({
-          access_token: conn.access_token,
-        });
+      const responses = await Promise.all(
+        connections.map(conn =>
+          plaidClient.accountsBalanceGet({
+            access_token: conn.access_token,
+          })
+        )
+      );
+
+      responses.forEach((response, idx) => {
+        const conn = connections[idx];
         for (const account of response.data.accounts) {
           allAccounts.push({
             account_id: account.account_id,
@@ -114,7 +120,7 @@ export async function plaid(
             currency: account.balances.iso_currency_code || 'USD',
           });
         }
-      }
+      });
 
       return res.json({ accounts: allAccounts });
     }
@@ -130,14 +136,19 @@ export async function plaid(
 
       const allTransactions: any[] = [];
 
-      for (const conn of connections) {
-        const response = await plaidClient.transactionsGet({
-          access_token: conn.access_token,
-          start_date: startDateStr,
-          end_date: endDateStr,
-          options: { count: 500 },
-        });
+      const responses = await Promise.all(
+        connections.map(conn =>
+          plaidClient.transactionsGet({
+            access_token: conn.access_token,
+            start_date: startDateStr,
+            end_date: endDateStr,
+            options: { count: 500 },
+          })
+        )
+      );
 
+      responses.forEach((response, idx) => {
+        const conn = connections[idx];
         const { transactions } = response.data;
 
         for (const tx of transactions) {
@@ -160,7 +171,7 @@ export async function plaid(
             pending: tx.pending,
           });
         }
-      }
+      });
 
       return res.json({ transactions: allTransactions });
     }

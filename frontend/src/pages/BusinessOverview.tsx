@@ -131,7 +131,7 @@ export default function BusinessOverview() {
   return (
     <>
       <Helmet>
-        <title>Business Overview</title>
+        <title>Business Overview | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

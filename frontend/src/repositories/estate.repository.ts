@@ -50,7 +50,7 @@ export const estateRepository = {
 
     await db.estates.put(estate)
 
-    await enqueueMutation('vehicles', 'create', {
+    await enqueueMutation('estates', 'create', {
       ...data,
       optimisticId
     })

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
@@ -23,7 +23,7 @@ export default function AdminUsers() {
 
   const { data: currentUser } = useQuery<User>({
     queryKey: ['currentUser'],
-    queryFn: () => backend.auth.me()
+    queryFn: () => backend.user.me()
   })
 
   const { data: users = [], isLoading } = useQuery<User[]>({
@@ -51,20 +51,25 @@ export default function AdminUsers() {
     )
   }
 
-  const filtered = users.filter(
-    u =>
-      !search ||
-      u.email?.toLowerCase().includes(search.toLowerCase()) ||
-      u.full_name?.toLowerCase().includes(search.toLowerCase())
+  const lowerSearch = useMemo(() => search.toLowerCase(), [search])
+
+  const filtered = useMemo(
+    () =>
+      users.filter(
+        u =>
+          !search ||
+          u.email?.toLowerCase().includes(lowerSearch) ||
+          u.full_name?.toLowerCase().includes(lowerSearch)
+      ),
+    [users, search, lowerSearch]
   )
 
-  // Only show users that have is_deleted or deleted_at set
-  const deletedUsers = filtered.filter(u => u.is_deleted || u.deleted_at)
+  const deletedUsers = useMemo(() => filtered.filter(u => u.is_deleted || u.deleted_at), [filtered])
 
   return (
     <>
       <Helmet>
-        <title>Admin users</title>
+        <title>Admin users | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-4xl mx-auto px-4 py-10">

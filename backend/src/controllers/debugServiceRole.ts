@@ -3,19 +3,23 @@ import { Event, Task, Goal } from '@/models/index.js';
 
 export async function debugServiceRole(req: Request, res: Response) {
   try {
-    const [events, tasks, goals] = await Promise.all([
-      Event.find({}).lean(),
-      Task.find({}).lean(),
-      Goal.find({}).lean(),
-    ]);
+    const [events, tasks, goals, eventCount, taskCount, goalCount] =
+      await Promise.all([
+        Event.find({}).limit(3).lean(),
+        Task.find({}).limit(3).lean(),
+        Goal.find({}).limit(3).lean(),
+        Event.countDocuments(),
+        Task.countDocuments(),
+        Goal.countDocuments(),
+      ]);
 
     res.json({
-      events: events.slice(0, 3),
-      events_count: events.length,
-      tasks: tasks.slice(0, 3),
-      tasks_count: tasks.length,
-      goals: goals.slice(0, 3),
-      goals_count: goals.length,
+      events,
+      events_count: eventCount,
+      tasks,
+      tasks_count: taskCount,
+      goals,
+      goals_count: goalCount,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';

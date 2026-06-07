@@ -1,6 +1,9 @@
 import { useSound } from '@/contexts/SoundContext'
 import { ProgressPhotoRecord } from '@/db'
-import { progressPhotosRepository } from '@/repositories/progressphotos.repository'
+import {
+  CreateProgressPhotoInput,
+  progressPhotosRepository
+} from '@/repositories/progressphotos.repository'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 type BulkUpdatePayload = {
@@ -11,6 +14,17 @@ type BulkUpdatePayload = {
 export function useProgressPhotoMutations() {
   const queryClient = useQueryClient()
   const { playSound } = useSound()
+
+  const createMutation = useMutation<any, any, CreateProgressPhotoInput>({
+    networkMode: 'always',
+    mutationFn: async data => {
+      return progressPhotosRepository.create(data)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['progressphotos'] })
+      queryClient.invalidateQueries({ queryKey: ['usage'] })
+    }
+  })
 
   const deleteMutation = useMutation<any, any, string>({
     networkMode: 'always',
@@ -45,6 +59,7 @@ export function useProgressPhotoMutations() {
   })
 
   return {
+    createMutation,
     deleteMutation,
     bulkDeleteMutation,
     bulkUpdateMutation

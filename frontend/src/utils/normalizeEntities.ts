@@ -1,16 +1,26 @@
 import {
   BodyMeasurementRecord,
   BusinessRecord,
+  ClientRecord,
   EstateRecord,
   EventRecord,
+  ExpenseRecord,
   GoalRecord,
   HobbyRecord,
+  IncomeRecord,
   LearningRecord,
+  MarketingCampaignRecord,
+  MarketingContentRecord,
+  MarketingStrategyRecord,
   MedicalDocumentRecord,
+  OfflineAccountRecord,
   OtherAssetRecord,
+  ProblemRecord,
   ProgressPhotoRecord,
+  ProjectRecord,
   RelationShipRecord,
   TaskRecord,
+  TimeEntryRecord,
   VehicleRecord,
   WorkoutPlanRecord,
   WorkoutRecord
@@ -340,7 +350,8 @@ export function normalizeProgressPhoto(serverPhoto: any): ProgressPhotoRecord {
     deleted_by_process: serverPhoto.deleted_by_process ?? null,
     is_archived: serverPhoto.is_archived ?? false,
     createdAt: serverPhoto.createdAt,
-    updatedAt: serverPhoto.updatedAt
+    updatedAt: serverPhoto.updatedAt,
+    public_id: serverPhoto.public_id ?? null
   }
 }
 
@@ -368,6 +379,7 @@ export function normalizeHobby(serverHobby: any): HobbyRecord {
 export function normalizeBusiness(serverBusiness: any): BusinessRecord {
   return {
     id: serverBusiness._id,
+    serverId: serverBusiness._id,
     created_by: serverBusiness.created_by,
     name: serverBusiness.name,
     description: serverBusiness.description ?? null,
@@ -375,5 +387,226 @@ export function normalizeBusiness(serverBusiness: any): BusinessRecord {
     deleted_at: serverBusiness.deleted_at ?? null,
     createdAt: serverBusiness.createdAt,
     updatedAt: serverBusiness.updatedAt
+  }
+}
+
+export function normalizeIncome(server: any): IncomeRecord {
+  return {
+    id: server._id,
+    serverId: server._id,
+    title: server.title,
+    amount: server.amount,
+    date: server.date ?? null,
+    category: server.category ?? null,
+    business_id: server.business_id ?? null,
+    bank_account_name: server.bank_account_name ?? null,
+    notes: server.notes ?? '',
+    is_recurring: server.is_recurring ?? false,
+    frequency: server.frequency ?? null,
+    start_date: server.start_date ?? null,
+    is_deleted: server.is_deleted ?? false,
+    deleted_at: server.deleted_at ?? null,
+    createdAt: server.createdAt,
+    updatedAt: server.updatedAt
+  }
+}
+
+export function normalizeExpense(server: any): ExpenseRecord {
+  return {
+    id: server._id,
+    serverId: server._id,
+    title: server.title ?? '',
+    amount: Number(server.amount ?? 0),
+    date: server.date ?? null,
+    category: server.category ?? null,
+    business_id: server.business_id ?? null,
+    bank_account_name: server.bank_account_name ?? null,
+    notes: server.notes ?? '',
+    is_recurring: Boolean(server.is_recurring),
+    frequency: server.frequency ?? null,
+    start_date: server.start_date ?? null,
+    is_deleted: Boolean(server.is_deleted),
+    deleted_at: server.deleted_at ?? null,
+    createdAt: server.createdAt,
+    updatedAt: server.updatedAt
+  }
+}
+
+export function normalizeProblem(server: any): ProblemRecord {
+  return {
+    id: server._id,
+    serverId: server._id,
+    title: server.title ?? '',
+    description: server.description ?? '',
+    priority: server.priority ?? 'medium',
+    business_id: server.business_id ?? null,
+    goal_id: server.goal_id ?? null,
+    resolved: Boolean(server.resolved),
+    resolved_at: server.resolved_at ?? null,
+    category: server.category ?? null,
+    status: server.status ?? (server.resolved ? 'resolved' : 'active'),
+    is_deleted: Boolean(server.is_deleted),
+    deleted_at: server.deleted_at ?? null,
+    date_occurred: server.date_occurred ?? null,
+    date_ended: server.date_ended ?? null,
+    important: Boolean(server.important),
+    show_in_timeline: server.show_in_timeline ?? true,
+    createdAt: server.createdAt,
+    updatedAt: server.updatedAt
+  }
+}
+
+export function normalizeTimeEntry(server: any): TimeEntryRecord {
+  return {
+    id: server._id,
+    serverId: server._id,
+    date: server.date ?? '',
+    start_time: server.start_time ?? '',
+    end_time: server.end_time ?? null,
+    duration: server.duration ?? null,
+    description: server.description ?? '',
+    notes: server.notes ?? null,
+    section_id: server.section_id ?? null,
+    client_id: server.client_id ?? null,
+    project_id: server.project_id ?? null,
+    is_running: Boolean(server.is_running),
+    is_deleted: Boolean(server.is_deleted),
+    deleted_at: server.deleted_at ?? null,
+    createdAt: server.createdAt,
+    updatedAt: server.updatedAt
+  }
+}
+
+export function normalizeProject(server: any): ProjectRecord {
+  return {
+    id: server._id,
+    serverId: server._id,
+    name: server.name ?? '',
+    description: server.description ?? null,
+    business_id: server.business_id ?? null,
+    client_id: server.client_id ?? null,
+    status: server.status ?? 'planning',
+    start_date: server.start_date ?? null,
+    deadline: server.deadline ?? null,
+    is_deleted: Boolean(server.is_deleted),
+    deleted_at: server.deleted_at ?? null,
+    deleted_by_process: server.deleted_by_process ?? null,
+    createdAt: server.createdAt,
+    updatedAt: server.updatedAt
+  }
+}
+
+export function normalizeClient(server: any): ClientRecord {
+  return {
+    id: server._id,
+    serverId: server._id,
+    name: server.name ?? '',
+    company: server.company ?? null,
+    email: server.email ?? null,
+    phone: server.phone ?? null,
+    status: server.status ?? 'lead',
+    notes: server.notes ?? null,
+    business_id: server.business_id ?? null,
+    is_deleted: Boolean(server.is_deleted),
+    deleted_at: server.deleted_at ?? null,
+    deleted_by_process: server.deleted_by_process ?? null,
+    createdAt: server.createdAt,
+    updatedAt: server.updatedAt
+  }
+}
+
+export function normalizeMarketingStrategy(server: any): MarketingStrategyRecord {
+  return {
+    id: server._id,
+    serverId: server._id,
+    name: server.name ?? '',
+    main_goal: server.main_goal ?? null,
+    smart_specific: server.smart_specific ?? null,
+    smart_measurable: server.smart_measurable ?? null,
+    smart_achievable: server.smart_achievable ?? null,
+    smart_relevant: server.smart_relevant ?? null,
+    smart_time_bound: server.smart_time_bound ?? null,
+    target_audience: server.target_audience ?? null,
+    usp: server.usp ?? null,
+    core_message: server.core_message ?? null,
+    main_channels: Array.isArray(server.main_channels) ? server.main_channels : [],
+    notes: server.notes ?? null,
+    status: server.status ?? 'draft',
+    business_id: server.business_id ?? null,
+    goal_id: server.goal_id ?? null,
+    is_deleted: Boolean(server.is_deleted),
+    deleted_at: server.deleted_at ?? null,
+    deleted_by_process: server.deleted_by_process ?? null,
+    createdAt: server.createdAt,
+    updatedAt: server.updatedAt
+  }
+}
+
+export function normalizeMarketingCampaign(server: any): MarketingCampaignRecord {
+  return {
+    id: server._id,
+    serverId: server._id,
+    name: server.name ?? '',
+    strategy_id: server.strategy_id ?? null,
+    campaign_type: server.campaign_type ?? '',
+    goal: server.goal ?? null,
+    channel: server.channel ?? null,
+    start_date: server.start_date ?? null,
+    end_date: server.end_date ?? null,
+    budget: server.budget ?? null,
+    status: server.status ?? 'planned',
+    kpis: Array.isArray(server.kpis)
+      ? server.kpis.map((kpi: any) => ({
+          name: kpi.name ?? '',
+          target: kpi.target ?? '',
+          actual: kpi.actual ?? ''
+        }))
+      : [],
+    notes: server.notes ?? null,
+    business_id: server.business_id ?? null,
+    is_deleted: Boolean(server.is_deleted),
+    deleted_at: server.deleted_at ?? null,
+    deleted_by_process: server.deleted_by_process ?? null,
+    createdAt: server.createdAt,
+    updatedAt: server.updatedAt
+  }
+}
+
+export function normalizeMarketingContent(server: any): MarketingContentRecord {
+  return {
+    id: server._id,
+    serverId: server._id,
+    title: server.title ?? '',
+    campaign_id: server.campaign_id ?? null,
+    type: server.type ?? '',
+    platform: server.platform ?? '',
+    status: server.status ?? 'draft',
+    publish_date: server.publish_date ?? null,
+    cta: server.cta ?? null,
+    asset_url: server.asset_url ?? null,
+    description: server.description ?? null,
+    notes: server.notes ?? null,
+    business_id: server.business_id ?? null,
+    is_deleted: Boolean(server.is_deleted),
+    deleted_at: server.deleted_at ?? null,
+    deleted_by_process: server.deleted_by_process ?? null,
+    createdAt: server.createdAt,
+    updatedAt: server.updatedAt
+  }
+}
+
+export function normalizeOfflineAccount(server: any): OfflineAccountRecord {
+  return {
+    id: server._id,
+    serverId: server._id,
+    created_by: server.created_by ?? '',
+    name: server.name ?? '',
+    balance: server.balance ?? 0,
+    currency: server.currency ?? 'EUR',
+    notes: server.notes ?? null,
+    is_deleted: Boolean(server.is_deleted),
+    deleted_at: server.deleted_at ?? null,
+    createdAt: server.createdAt,
+    updatedAt: server.updatedAt
   }
 }

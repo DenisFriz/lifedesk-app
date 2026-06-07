@@ -89,8 +89,10 @@ export default function EstateAssetForm({ open, onClose, onSubmit, asset, isLoad
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Name / Title *</Label>
+            <Label htmlFor="title">Name / Title *</Label>
             <Input
+              id="title"
+              name="title"
               value={f.title}
               onChange={e => set('title', e.target.value)}
               placeholder="e.g. City Center Apartment"
@@ -99,9 +101,9 @@ export default function EstateAssetForm({ open, onClose, onSubmit, asset, isLoad
           </div>
 
           <div className="space-y-2">
-            <Label>Property Type</Label>
+            <Label htmlFor="property_type">Property Type</Label>
             <Select value={f.property_type} onValueChange={v => set('property_type', v)}>
-              <SelectTrigger>
+              <SelectTrigger id="property_type" name="property_type">
                 <SelectValue placeholder="Select type..." />
               </SelectTrigger>
               <SelectContent>
@@ -115,8 +117,10 @@ export default function EstateAssetForm({ open, onClose, onSubmit, asset, isLoad
           </div>
 
           <div className="space-y-2">
-            <Label>Address</Label>
+            <Label htmlFor="address">Address</Label>
             <Input
+              id="address"
+              name="address"
               value={f.address}
               onChange={e => set('address', e.target.value)}
               placeholder="Full address"
@@ -125,18 +129,24 @@ export default function EstateAssetForm({ open, onClose, onSubmit, asset, isLoad
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Area (m²)</Label>
+              <Label htmlFor="area_sqm">Area (m²)</Label>
               <Input
+                id="area_sqm"
+                name="area_sqm"
                 type="number"
+                min={0}
                 value={f.area_sqm}
                 onChange={e => set('area_sqm', e.target.value)}
                 placeholder="85"
               />
             </div>
             <div className="space-y-2">
-              <Label>Rooms</Label>
+              <Label htmlFor="rooms">Rooms</Label>
               <Input
+                id="rooms"
+                name="rooms"
                 type="number"
+                min={0}
                 value={f.rooms}
                 onChange={e => set('rooms', e.target.value)}
                 placeholder="3"
@@ -146,18 +156,24 @@ export default function EstateAssetForm({ open, onClose, onSubmit, asset, isLoad
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Floor</Label>
+              <Label htmlFor="floor">Floor</Label>
               <Input
+                id="floor"
+                name="floor"
                 type="number"
+                min={0}
                 value={f.floor}
                 onChange={e => set('floor', e.target.value)}
                 placeholder="2"
               />
             </div>
             <div className="space-y-2">
-              <Label>Year Built</Label>
+              <Label htmlFor="year_built">Year Built</Label>
               <Input
+                id="year_built"
+                name="year_built"
                 type="number"
+                min={0}
                 value={f.year_built}
                 onChange={e => set('year_built', e.target.value)}
                 placeholder="1990"
@@ -167,20 +183,26 @@ export default function EstateAssetForm({ open, onClose, onSubmit, asset, isLoad
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Purchase Price</Label>
+              <Label htmlFor="purchase_price">Purchase Price</Label>
               <Input
+                id="purchase_price"
+                name="purchase_price"
                 type="number"
                 step="0.01"
+                min={0}
                 value={f.purchase_price}
                 onChange={e => set('purchase_price', e.target.value)}
                 placeholder="0.00"
               />
             </div>
             <div className="space-y-2">
-              <Label>Current Value</Label>
+              <Label htmlFor="current_value">Current Value</Label>
               <Input
+                id="current_value"
+                name="current_value"
                 type="number"
                 step="0.01"
+                min={0}
                 value={f.current_value}
                 onChange={e => set('current_value', e.target.value)}
                 placeholder="0.00"
@@ -189,8 +211,10 @@ export default function EstateAssetForm({ open, onClose, onSubmit, asset, isLoad
           </div>
 
           <div className="space-y-2">
-            <Label>Purchase Date</Label>
+            <Label htmlFor="purchase_date">Purchase Date</Label>
             <Input
+              id="purchase_date"
+              name="purchase_date"
               type="date"
               value={f.purchase_date}
               onChange={e => set('purchase_date', e.target.value)}
@@ -199,20 +223,26 @@ export default function EstateAssetForm({ open, onClose, onSubmit, asset, isLoad
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Outstanding Mortgage</Label>
+              <Label htmlFor="mortgage_amount">Outstanding Mortgage</Label>
               <Input
+                id="mortgage_amount"
+                name="mortgage_amount"
                 type="number"
                 step="0.01"
+                min={0}
                 value={f.mortgage_amount}
                 onChange={e => set('mortgage_amount', e.target.value)}
                 placeholder="0.00"
               />
             </div>
             <div className="space-y-2">
-              <Label>Monthly Rent Income</Label>
+              <Label htmlFor="monthly_rent">Monthly Rent Income</Label>
               <Input
+                id="monthly_rent"
+                name="monthly_rent"
                 type="number"
                 step="0.01"
+                min={0}
                 value={f.monthly_rent}
                 onChange={e => set('monthly_rent', e.target.value)}
                 placeholder="0.00"
@@ -222,20 +252,26 @@ export default function EstateAssetForm({ open, onClose, onSubmit, asset, isLoad
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Monthly Costs</Label>
+              <Label htmlFor="monthly_costs">Monthly Costs</Label>
               <Input
+                id="monthly_costs"
+                name="monthly_costs"
                 type="number"
                 step="0.01"
+                min={0}
                 value={f.monthly_costs}
                 onChange={e => set('monthly_costs', e.target.value)}
                 placeholder="0.00"
               />
             </div>
             <div className="space-y-2">
-              <Label>Monthly Mortgage Payment</Label>
+              <Label htmlFor="monthly_mortgage_payment">Monthly Mortgage Payment</Label>
               <Input
+                id="monthly_mortgage_payment"
+                name="monthly_mortgage_payment"
                 type="number"
                 step="0.01"
+                min={0}
                 value={f.monthly_mortgage_payment}
                 onChange={e => set('monthly_mortgage_payment', e.target.value)}
                 placeholder="0.00"
@@ -244,8 +280,10 @@ export default function EstateAssetForm({ open, onClose, onSubmit, asset, isLoad
           </div>
 
           <div className="space-y-2">
-            <Label>Notes</Label>
+            <Label htmlFor="description">Notes</Label>
             <Textarea
+              id="description"
+              name="description"
               value={f.description}
               onChange={e => set('description', e.target.value)}
               placeholder="Any additional notes..."

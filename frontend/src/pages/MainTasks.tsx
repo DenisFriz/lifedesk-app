@@ -94,7 +94,7 @@ export default function MainTasks() {
   return (
     <>
       <Helmet>
-        <title>Main Tasks</title>
+        <title>Main Tasks | LifeDesk</title>
       </Helmet>
       <div className="all-tasks-page min-h-screen page-bg">
         <div className="all-tasks-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

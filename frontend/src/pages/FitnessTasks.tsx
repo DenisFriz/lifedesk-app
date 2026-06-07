@@ -24,7 +24,7 @@ export default function FitnessTasks() {
   return (
     <>
       <Helmet>
-        <title>Fitness Tasks</title>
+        <title>Fitness Tasks | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">

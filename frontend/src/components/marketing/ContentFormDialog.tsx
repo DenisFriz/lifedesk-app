@@ -11,7 +11,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { CONTENT_TYPES, PLATFORMS, CONTENT_STATUSES } from './marketingConstants'
-import { Campaign } from '@/types/entities'
+import { MarketingCampaignRecord } from '@/db'
 
 interface ContentFormData {
   title: string
@@ -30,7 +30,7 @@ interface ContentFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   content: any | null
-  campaigns: Campaign[]
+  campaigns: MarketingCampaignRecord[]
   onSave: (form: ContentFormData) => void
 }
 

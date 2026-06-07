@@ -1,11 +1,11 @@
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose, { Schema, Model, Types } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { ITangibleAsset } from '@/types/index.js';
 
 const tangibleAssetSchema = new Schema<ITangibleAsset>(
   {
     id: { type: String, default: () => uuidv4(), unique: true, index: true },
-    created_by: { type: String, index: true, required: true },
+    created_by: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     title: { type: String, required: true },
     category: String,
     current_value: Number,

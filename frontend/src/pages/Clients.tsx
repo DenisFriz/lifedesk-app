@@ -44,7 +44,7 @@ export default function Clients() {
   return (
     <>
       <Helmet>
-        <title>Clients</title>
+        <title>Clients | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">

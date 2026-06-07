@@ -30,23 +30,36 @@ export type UsageKey =
   | 'calendarEntries'
   | 'events'
   | 'vehicle'
+  | 'vehicle_photos'
+  | 'vehicle_repairs'
   | 'estate'
   | 'otherAsset'
   | 'offlineBankAccount'
+  | 'offlineAccountSnapshot'
   | 'healthTrackingEnties'
   | 'medicalDocuments'
   | 'workouts'
   | 'workoutPlans'
-  | 'measurements'
+  | 'bodyMeasurements'
   | 'hobbies'
   | 'learning'
   | 'relationships'
   | 'business'
-  | 'bodyMeasurements'
   | 'progressPhotos'
   | 'projectsAndClients'
   | 'marketingStrategy'
+  | 'marketingCampaign'
+  | 'marketingContent'
   | 'campaign'
+  | 'income'
+  | 'expense'
+  | 'problem'
+  | 'timeEntries'
+  | 'projects'
+  | 'clients'
+  | 'communityIdeas'
+  | 'community_comment'
+  | 'ai_assistant'
   | 'content'
 
 type UsageMap = Record<UsageKey, number>
@@ -71,15 +84,12 @@ type ReauthResponse = {
 
 export const backend = {
   auth: {
-    me: () => apiFetch<User>('GET', '/auth/me'),
-    usage: () => apiFetch<UserUsageResponse>('GET', '/auth/usage'),
-    updateMe: (data: Record<string, unknown>) => apiFetch('PUT', '/auth/me', data),
     logout: async () => {
       clearToken()
       try {
         await apiFetch('POST', '/auth/logout')
       } finally {
-        window.location.href = '/Login'
+        window.location.href = '/login'
       }
     },
     redirectToLogin: (returnUrl?: string) => {
@@ -88,21 +98,27 @@ export const backend = {
     isAuthenticated: async () => {
       if (!getToken()) return false
       try {
-        await apiFetch('GET', '/auth/me')
+        await apiFetch('GET', '/user/me')
         return true
       } catch {
         return false
       }
-    },
+    }
+  },
+  user: {
+    me: () => apiFetch<User>('GET', '/user/me'),
+    updateMe: (data: Record<string, unknown>) => apiFetch('PUT', '/user/me', data),
+    deleteAvatar: () => apiFetch('DELETE', '/user/profile-image'),
+    usage: () => apiFetch<UserUsageResponse>('GET', '/user/usage'),
+    deleteRequest: () => apiFetch<DeleteRequestResponse>('GET', '/user/delete/request'),
     reauthPassword: (password: string) =>
-      apiFetch<ReauthResponse>('POST', '/auth/reauth/password', { password }),
+      apiFetch<ReauthResponse>('POST', '/user/reauth/password', { password }),
     googleReauth: (credential: string) =>
-      apiFetch<ReauthResponse>('POST', '/auth/google/reauth', {
+      apiFetch<ReauthResponse>('POST', '/user/google/reauth', {
         credential
       }),
-    deleteRequest: () => apiFetch<DeleteRequestResponse>('GET', '/auth/delete/request'),
     changeSubscription: (subscription: 'free' | 'plus' | 'pro') =>
-      apiFetch<DeleteRequestResponse>('POST', '/auth/change-subscription', {
+      apiFetch<DeleteRequestResponse>('POST', '/user/change-subscription', {
         subscription
       })
   },

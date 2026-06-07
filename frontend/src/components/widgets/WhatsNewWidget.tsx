@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { backend } from '@/api/backend'
-import type { CommunityIdea } from '@/types/entities'
 
 const categoryConfig = {
   new_feature: { emoji: '✨', label: 'New Feature' },
@@ -18,7 +17,7 @@ export default function WhatsNewWidget() {
       const allIdeas = (await backend.entities.CommunityIdea.filter(
         { status: 'implemented' },
         '-updated_date'
-      )) as CommunityIdea[]
+      )) as any[]
       return allIdeas.slice(0, 5)
     }
   })
@@ -52,7 +51,7 @@ export default function WhatsNewWidget() {
       </div>
       <div className="flex justify-center">
         <Link
-          to="/CommunityHub"
+          to="/community-hub"
           className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
         >
           View all ideas →

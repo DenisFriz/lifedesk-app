@@ -19,7 +19,7 @@ export default function AssetsOther() {
 
   const { canCreate, data } = useUserLimit()
 
-  const atLimit = canCreate('otherAsset')
+  const atLimit = !canCreate('otherAsset')
   const totalValue = otherAssets?.reduce(
     (s, a) => s + (a.current_value || a.purchase_price || 0),
     0
@@ -71,7 +71,7 @@ export default function AssetsOther() {
   return (
     <>
       <Helmet>
-        <title>Assets Other</title>
+        <title>Assets Other | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -83,7 +83,7 @@ export default function AssetsOther() {
               <p className="text-slate-600 mt-1">Jewelry, art, electronics and more</p>
             </div>
             {atLimit ? (
-              <Link to="/Upgrade">
+              <Link to="/upgrade">
                 <Button
                   variant="outline"
                   className="border-amber-300 text-amber-700 hover:bg-amber-50"
@@ -106,7 +106,7 @@ export default function AssetsOther() {
             <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalValue)}</p>
             <p className="text-xs text-slate-400 mt-1">
               {otherAssets?.length} asset{otherAssets?.length !== 1 ? 's' : ''}
-              {` · ${data?.usage?.otherAsset || 0}/${data?.limits?.otherAsset} used`}
+              {` - ${data?.usage?.otherAsset || 0}/${data?.limits?.otherAsset} used`}
             </p>
           </div>
 
@@ -120,7 +120,7 @@ export default function AssetsOther() {
               <h3 className="text-lg font-semibold text-slate-900 mb-2">No other assets yet</h3>
               <p className="text-slate-600 mb-4">Track jewelry, art, electronics and more</p>
               {atLimit ? (
-                <Link to="/Upgrade">
+                <Link to="/upgrade">
                   <Button
                     variant="outline"
                     className="border-amber-300 text-amber-700 hover:bg-amber-50"

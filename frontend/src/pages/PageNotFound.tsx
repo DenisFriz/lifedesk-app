@@ -3,6 +3,7 @@ import { backend } from '@/api/backend'
 import { useQuery } from '@tanstack/react-query'
 import type { User } from '@/types'
 import { Helmet } from 'react-helmet-async'
+import { SEO } from '@/lib/seo'
 
 interface AuthData {
   user: User | null
@@ -17,7 +18,7 @@ export default function PageNotFound() {
     queryKey: ['user'],
     queryFn: async (): Promise<AuthData> => {
       try {
-        const user = await backend.auth.me()
+        const user = await backend.user.me()
         return { user: user || null, isAuthenticated: true }
       } catch {
         return { user: null, isAuthenticated: false }
@@ -28,7 +29,8 @@ export default function PageNotFound() {
   return (
     <>
       <Helmet>
-        <title>Page Not Found</title>
+        <title>{SEO.notFound.title}</title>
+        <meta name="description" content={SEO.notFound.description} />
       </Helmet>
       <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
         <div className="max-w-md w-full">

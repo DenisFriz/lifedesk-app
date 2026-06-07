@@ -11,6 +11,7 @@ import { useVehicleMutations } from '@/hooks/vehicles/useVehicleMutations'
 import { CreateVehicleInput } from '@/repositories/vehicle.repository'
 import { useVehiclesQuery } from '@/hooks/vehicles/useVehiclesQuery'
 import { VehicleRecord } from '@/db'
+import { moveCloudinaryImages } from '@/api/cloudinaryService'
 
 export default function AssetsCars() {
   const [form, setForm] = useState({ open: false, asset: null })
@@ -20,7 +21,7 @@ export default function AssetsCars() {
   const { canCreate, data } = useUserLimit()
 
   const totalValue = vehicles?.reduce((s, a) => s + (a.current_value || a.purchase_price || 0), 0)
-  const atLimit = canCreate('vehicle')
+  const atLimit = !canCreate('vehicle')
 
   const { updateMutation, createMutation, deleteMutation } = useVehicleMutations()
 
@@ -60,7 +61,49 @@ export default function AssetsCars() {
     }
   }
 
-  const handleSubmit = (data: CreateVehicleInput) => {
+  const handleSubmit = async (data: CreateVehicleInput) => {
+    // Collect all temp images: vehicle images + repair images
+    const tempPublicIds = [
+      ...(data.images || []),
+      ...(data.repairs || []).flatMap(r => r.images || [])
+    ]
+      .filter(img => img?.public_id?.startsWith('temp/'))
+      .map(img => img.public_id)
+
+    // Move temp images to uploads if any exist
+    if (tempPublicIds.length > 0) {
+      try {
+        const moved = await moveCloudinaryImages(tempPublicIds)
+        const idMap = Object.fromEntries(moved.map(m => [m.old_public_id, m]))
+
+        // Remap vehicle images
+        data.images = (data.images || []).map(img =>
+          idMap[img.public_id]
+            ? {
+                ...img,
+                url: idMap[img.public_id].new_url,
+                public_id: idMap[img.public_id].new_public_id
+              }
+            : img
+        )
+        // Remap repair images
+        data.repairs = (data.repairs || []).map(r => ({
+          ...r,
+          images: (r.images || []).map(img =>
+            idMap[img.public_id]
+              ? {
+                  ...img,
+                  url: idMap[img.public_id].new_url,
+                  public_id: idMap[img.public_id].new_public_id
+                }
+              : img
+          )
+        }))
+      } catch (err) {
+        console.error('Failed to move images:', err)
+      }
+    }
+
     if (form.asset) handleUpdateVehicle({ id: form.asset.id, data })
     else handleCreateVehicle(data)
   }
@@ -68,7 +111,7 @@ export default function AssetsCars() {
   return (
     <>
       <Helmet>
-        <title>Assets Cars</title>
+        <title>Assets Cars | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -80,7 +123,7 @@ export default function AssetsCars() {
               <p className="text-slate-600 mt-1">Track your vehicles</p>
             </div>
             {atLimit ? (
-              <Link to="/Upgrade">
+              <Link to="/upgrade">
                 <Button
                   variant="outline"
                   className="border-amber-300 text-amber-700 hover:bg-amber-50"
@@ -119,7 +162,7 @@ export default function AssetsCars() {
               <h3 className="text-lg font-semibold text-slate-900 mb-2">No vehicles added yet</h3>
               <p className="text-slate-600 mb-4">Start tracking your vehicles</p>
               {atLimit ? (
-                <Link to="/Upgrade">
+                <Link to="/upgrade">
                   <Button
                     variant="outline"
                     className="border-amber-300 text-amber-700 hover:bg-amber-50"

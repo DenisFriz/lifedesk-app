@@ -448,7 +448,7 @@ export default function BankConnectionManager({
                   <span className="font-semibold">Plus / Pro feature.</span> Connecting real bank
                   accounts is available on Plus and Pro plans.{' '}
                   <Link
-                    to="/Upgrade"
+                    to="/upgrade"
                     onClick={onClose}
                     className="underline font-semibold hover:text-amber-900"
                   >
@@ -468,7 +468,7 @@ export default function BankConnectionManager({
                     plan allows {realBankAccountsLimit} connected bank account
                     {realBankAccountsLimit !== 1 ? 's' : ''}.{' '}
                     <Link
-                      to="/Upgrade"
+                      to="/upgrade"
                       onClick={onClose}
                       className="underline font-semibold hover:text-amber-900"
                     >

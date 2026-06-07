@@ -27,7 +27,9 @@ export async function downgradeToPlan(
 
     const sub = await Subscription.findOne({
       user_email: req.user.email,
-    }).lean();
+    })
+      .lean()
+      .select('stripe_subscription_id');
     if (!sub) {
       return res.status(404).json({ error: 'No subscription found' });
     }

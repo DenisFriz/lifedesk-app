@@ -134,7 +134,7 @@ export default function Learning() {
   return (
     <>
       <Helmet>
-        <title>Learning</title>
+        <title>Learning | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -162,7 +162,7 @@ export default function Learning() {
               </p>
             </div>
             {atLimit ? (
-              <Link to="/Upgrade" className="w-full lg:w-auto">
+              <Link to="/upgrade" className="w-full lg:w-auto">
                 <Button className="w-full bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
                   Limit reached ({learningItems?.length}/{learningLimit})
@@ -189,6 +189,7 @@ export default function Learning() {
             <div className="relative flex-1 min-w-[180px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
+                name="search"
                 placeholder="Search..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}

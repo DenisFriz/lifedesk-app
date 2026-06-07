@@ -88,8 +88,8 @@ const AppLayout = () => {
 function App() {
   return (
     <HelmetProvider>
-      <AuthProvider>
-        <QueryClientProvider client={queryClientInstance}>
+      <QueryClientProvider client={queryClientInstance}>
+        <AuthProvider>
           <BrowserRouter
             future={{
               v7_startTransition: true
@@ -127,8 +127,8 @@ function App() {
           <Toaster />
           <OfflineSyncManager />
           <AuthSyncBridge />
-        </QueryClientProvider>
-      </AuthProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     </HelmetProvider>
   )
 }

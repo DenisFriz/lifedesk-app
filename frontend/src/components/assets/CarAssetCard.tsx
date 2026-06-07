@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Pencil, Trash2, ChevronLeft, ChevronRight, Shield, Wrench, X, ZoomIn } from 'lucide-react'
 import { formatCurrency } from '@/components/utils/formatters'
 import { differenceInDays, parseISO, isValid } from 'date-fns'
+import { VehicleRecord } from '@/db'
 
 function DaysChip({ date, label, icon: Icon }) {
   if (!date) return null
@@ -28,7 +29,18 @@ function DaysChip({ date, label, icon: Icon }) {
   )
 }
 
-function Lightbox({ images, startIndex, onClose }) {
+type LightboxImage = {
+  url: string
+  public_id: string
+}
+
+type LightboxProps = {
+  images: LightboxImage[]
+  startIndex: number
+  onClose: () => void
+}
+
+function Lightbox({ images, startIndex, onClose }: LightboxProps) {
   const [current, setCurrent] = useState(startIndex)
 
   useEffect(() => {
@@ -77,7 +89,7 @@ function Lightbox({ images, startIndex, onClose }) {
       )}
 
       <img
-        src={images[current]}
+        src={images[current]?.url}
         alt=""
         className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
         onClick={e => e.stopPropagation()}
@@ -101,12 +113,19 @@ function Lightbox({ images, startIndex, onClose }) {
   )
 }
 
-export default function CarAssetCard({ asset, onEdit, onDelete }) {
+type CarAssetCardProps = {
+  asset: VehicleRecord
+  onEdit: (asset: VehicleRecord) => void
+  onDelete: (id: string) => void
+}
+
+export default function CarAssetCard({ asset, onEdit, onDelete }: CarAssetCardProps) {
   const [imgIndex, setImgIndex] = useState(0)
   const [lightbox, setLightbox] = useState(null) // { images, startIndex }
   const images = asset.images || []
   const displayValue = asset.current_value || asset.purchase_price || 0
 
+  console.log(images)
   return (
     <>
       <div className="bg-white rounded-xl border border-slate-200 hover:shadow-lg transition-shadow overflow-hidden">
@@ -114,7 +133,7 @@ export default function CarAssetCard({ asset, onEdit, onDelete }) {
         {images.length > 0 && (
           <div className="relative h-44 bg-slate-100 group">
             <img
-              src={images[imgIndex]}
+              src={images[imgIndex]?.url}
               alt=""
               className="w-full h-full object-cover cursor-zoom-in"
               onClick={() => setLightbox({ images, startIndex: imgIndex })}
@@ -208,10 +227,7 @@ export default function CarAssetCard({ asset, onEdit, onDelete }) {
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-xs font-semibold text-slate-600">🛠️ Recent Repairs</p>
                 <p className="text-xs font-semibold text-rose-600">
-                  Total:{' '}
-                  {formatCurrency(
-                    asset.repairs.reduce((sum, r) => sum + (r.cost ? parseFloat(r.cost) : 0), 0)
-                  )}
+                  Total: {formatCurrency(asset.repairs.reduce((sum, r) => sum + (r.cost ?? 0), 0))}
                 </p>
               </div>
               <div className="space-y-2">
@@ -239,7 +255,7 @@ export default function CarAssetCard({ asset, onEdit, onDelete }) {
                           {r.images.map((img, imgIdx) => (
                             <img
                               key={imgIdx}
-                              src={img}
+                              src={img?.url}
                               alt=""
                               className="w-12 h-12 object-cover rounded border border-slate-200 cursor-zoom-in hover:opacity-80 transition-opacity"
                               onClick={() => setLightbox({ images: r.images, startIndex: imgIdx })}
@@ -266,10 +282,10 @@ export default function CarAssetCard({ asset, onEdit, onDelete }) {
             <p className="text-xl font-bold text-slate-900">{formatCurrency(displayValue)}</p>
           </div>
 
-          {asset.description && (
+          {asset.notes && (
             <div className="mt-3 pt-3 border-t border-slate-100">
               <p className="text-xs text-slate-500 mb-1">Notes</p>
-              <p className="text-sm text-slate-700">{asset.description}</p>
+              <p className="text-sm text-slate-700">{asset.notes}</p>
             </div>
           )}
         </div>

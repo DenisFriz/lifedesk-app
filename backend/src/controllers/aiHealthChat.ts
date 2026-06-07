@@ -51,7 +51,7 @@ export async function aiHealthChat(req: Request, res: Response) {
       });
     }
 
-    const userId = user.id;
+    const userId = user._id;
 
     const [
       medicalDocuments,
@@ -69,23 +69,48 @@ export async function aiHealthChat(req: Request, res: Response) {
       tasks,
       events,
     ] = await Promise.all([
-      MedicalDocument.find({ created_by: userId }).lean(),
-      Problem.find({ created_by: userId }).lean(),
-      Workout.find({ created_by: userId }).lean(),
+      MedicalDocument.find({ created_by: userId })
+        .limit(5)
+        .lean()
+        .select('title summary description'),
+      Problem.find({ created_by: userId })
+        .limit(10)
+        .lean()
+        .select('title description'),
+      Workout.find({ created_by: userId })
+        .limit(3)
+        .lean()
+        .select('title duration_minutes'),
       BodyMeasurement.find({ created_by: userId })
-        .sort({ created_at: -1 })
+        .sort({ createdAt: -1 })
         .limit(1)
-        .lean(),
-      RecurringIncome.find({ created_by: userId }).lean(),
-      RecurringExpense.find({ created_by: userId }).lean(),
-      Income.find({ created_by: userId }).lean(),
-      Expense.find({ created_by: userId }).lean(),
-      TangibleAsset.find({ created_by: userId }).lean(),
-      Business.find({ created_by: userId }).lean(),
-      Project.find({ created_by: userId }).lean(),
-      Goal.find({ created_by: userId }).lean(),
-      Task.find({ created_by: userId }).lean(),
-      Event.find({ created_by: userId }).lean(),
+        .lean()
+        .select('weight body_fat'),
+      RecurringIncome.find({ created_by: userId })
+        .limit(20)
+        .lean()
+        .select('active amount frequency'),
+      RecurringExpense.find({ created_by: userId })
+        .limit(20)
+        .lean()
+        .select('active amount frequency'),
+      Income.find({ created_by: userId }).limit(50).lean().select('amount'),
+      Expense.find({ created_by: userId }).limit(50).lean().select('amount'),
+      TangibleAsset.find({ created_by: userId })
+        .limit(20)
+        .lean()
+        .select('title current_value'),
+      Business.find({ created_by: userId }).limit(10).lean().select('name'),
+      Project.find({ created_by: userId })
+        .limit(5)
+        .lean()
+        .select('name status'),
+      Goal.find({ created_by: userId }).limit(5).lean().select('title'),
+      Task.find({ created_by: userId }).limit(10).lean().select('title'),
+      Event.find({ created_by: userId })
+        .limit(5)
+        .lean()
+        .select('title start_date'),
     ]);
 
     let context = "User's Complete Personal & Professional Data:\n\n";

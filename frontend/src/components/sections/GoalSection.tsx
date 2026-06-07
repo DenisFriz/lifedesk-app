@@ -64,7 +64,7 @@ export default function GoalSection({ category, onCreateTask }: GoalSectionProps
     if (editingGoal) {
       handleUpdateGoal({ id: editingGoal.id, data: { ...data, category } })
     } else {
-      handleCreateGoal({ ...data, category })
+      handleCreateGoal({ ...data, status: 'active', category })
     }
   }
 

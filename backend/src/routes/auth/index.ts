@@ -6,8 +6,6 @@ import { AppError } from '@errors/AppError.js';
 import { User } from '@models/index.js';
 import { comparePassword, hashPassword } from '@lib/bcrypt.js';
 import { sanitizeUser } from '@utils/sanitizeUser.js';
-import { requireAuth } from '@middleware/auth.js';
-import { AuthenticatedRequest } from '@/@types/auth.js';
 
 import { Resend } from 'resend';
 
@@ -22,9 +20,6 @@ import {
 } from '@/utils/token.utils.js';
 import { RefreshToken } from '@/models/RefreshToken.js';
 import crypto from 'crypto';
-import { UserUsage } from '@/models/UserUsage.js';
-import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits.js';
-import { Types } from 'mongoose';
 import { issueAuthSession } from '@/utils/issueAuthSession.js';
 import { validate } from '@/utils/validate.js';
 import {
@@ -35,7 +30,6 @@ import {
   resetPasswordSchema,
 } from '@/schemas/auth.schema.js';
 import z from 'zod';
-import jwt from 'jsonwebtoken';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -43,14 +37,18 @@ const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 type GoogleLoginDTO = z.infer<typeof googleLoginSchema>;
 
+let resetPasswordTemplate: string | null = null;
+
 function getResetPasswordTemplate(resetLink: string, name: string) {
-  const filePath = path.join(
-    process.cwd(),
-    'src/templates/reset-password.html',
-  );
+  if (!resetPasswordTemplate) {
+    const filePath = path.join(
+      process.cwd(),
+      'src/templates/reset-password.html',
+    );
+    resetPasswordTemplate = fs.readFileSync(filePath, 'utf-8');
+  }
 
-  let html = fs.readFileSync(filePath, 'utf-8');
-
+  let html = resetPasswordTemplate;
   html = html.replaceAll('{{RESET_LINK}}', resetLink);
   html = html.replaceAll('{{NAME}}', name);
 
@@ -58,6 +56,7 @@ function getResetPasswordTemplate(resetLink: string, name: string) {
 }
 
 async function ensureUserUsage(userId: string) {
+  const { UserUsage } = await import('@/models/UserUsage.js');
   await UserUsage.updateOne(
     { user_id: userId },
     {
@@ -181,28 +180,6 @@ router.post(
   }),
 );
 
-router.get(
-  '/delete/request',
-  requireAuth,
-  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const user = req.user;
-
-    if (!user) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const dbUser = await User.findById(user._id).lean();
-
-    if (!dbUser) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    res.json({
-      requiresReauth: true,
-      provider: dbUser.auth_provider,
-    });
-  }),
-);
 
 // GOOGLE LOGIN
 router.post(
@@ -267,133 +244,7 @@ router.post(
   }),
 );
 
-router.post(
-  '/reauth/password',
-  requireAuth,
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = req.user;
 
-    if (!user) {
-      throw new AppError('Unauthorized', 401);
-    }
-
-    const { password } = req.body;
-
-    if (!password || typeof password !== 'string') {
-      throw new AppError('Password is required', 400);
-    }
-
-    const dbUser = await User.findById(user._id);
-
-    if (!dbUser) {
-      throw new AppError('User not found', 404);
-    }
-
-    if (!dbUser.passwordHash) {
-      throw new AppError(
-        'Password authentication is not available for this account',
-        400,
-      );
-    }
-
-    if (!user.passwordHash) {
-      throw new AppError(
-        'Password login is not available for this account',
-        400,
-      );
-    }
-
-    const valid = await comparePassword(password, user.passwordHash);
-
-    if (!valid) {
-      throw new AppError('Invalid password', 401);
-    }
-
-    const reauthToken = jwt.sign(
-      {
-        type: 'reauth',
-        scope: 'delete_account',
-        userId: dbUser._id.toString(),
-      },
-      process.env.JWT_SECRET!,
-      {
-        expiresIn: '5m',
-      },
-    );
-
-    return res.json({
-      success: true,
-      reauthToken,
-    });
-  }),
-);
-
-router.post(
-  '/google/reauth',
-  validate(googleLoginSchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    const { credential } = req.body;
-
-    interface GoogleUserInfo {
-      sub: string;
-      email: string;
-      email_verified?: boolean;
-      name?: string;
-      picture?: string;
-    }
-
-    const response = await fetch(
-      `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${credential}`,
-    );
-
-    if (!response.ok) {
-      throw new AppError('Invalid Google access token', 401);
-    }
-
-    const payload = (await response.json()) as GoogleUserInfo;
-
-    if (!payload) {
-      throw new AppError('Invalid Google token', 401);
-    }
-
-    const { sub, email } = payload;
-
-    if (!email) {
-      throw new AppError('Google account has no email', 400);
-    }
-
-    const user = await User.findOne({
-      $or: [{ google_id: sub }, { email }],
-    });
-
-    if (!user) {
-      throw new AppError('User not found', 404);
-    }
-
-    if (user.auth_provider !== 'google') {
-      throw new AppError('Account is not Google-linked', 400);
-    }
-
-    if (user.email !== email) {
-      throw new AppError('Google account mismatch', 401);
-    }
-
-    const reauthToken = jwt.sign(
-      {
-        userId: user._id,
-        type: 'reauth',
-        scope: 'delete_account',
-      },
-      process.env.JWT_SECRET!,
-      { expiresIn: '5m' },
-    );
-
-    return res.json({
-      success: true,
-      reauthToken,
-    });
-  }),
-);
 
 // REFRESH TOKEN
 router.post(
@@ -473,114 +324,6 @@ router.post(
   }),
 );
 
-type UsageKey =
-  | 'goals'
-  | 'tasks'
-  | 'calendarEntries'
-  | 'events'
-  | 'assets'
-  | 'bankAccounts'
-  | 'workouts'
-  | 'projects';
-
-// USAGE
-router.get(
-  '/usage',
-  requireAuth,
-  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId: Types.ObjectId = req.user._id;
-
-    const userUsed = await UserUsage.findOne({ user_id: userId });
-
-    const userPlan = req.user.subscription_tier;
-
-    if (!userUsed) {
-      throw new AppError('Unable to load usage information', 404);
-    }
-
-    const currentPlanLimits = SUBSCRIPTION_LIMITS[userPlan ?? 'free'];
-
-    const usage = {
-      goals: userUsed.goals,
-      tasks: userUsed.tasks,
-      calendarEntries: userUsed.calendarEntries,
-      events: userUsed.events,
-      workouts: userUsed.workouts,
-    };
-
-    const remaining = Object.fromEntries(
-      (Object.keys(currentPlanLimits) as (keyof typeof usage)[]).map((key) => {
-        const limit = currentPlanLimits[key];
-        const used = usage[key] ?? 0;
-
-        if (typeof limit !== 'number') {
-          return [key, null];
-        }
-
-        return [key, Math.max(limit - used, 0)];
-      }),
-    );
-
-    res.json({
-      usage: usage,
-      limits: currentPlanLimits,
-      remaining,
-    });
-  }),
-);
-
-// ME
-router.get(
-  '/me',
-  requireAuth,
-  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userResponse = sanitizeUser(req.user);
-
-    res.json(userResponse);
-  }),
-);
-
-// UPDATE ME
-router.put(
-  '/me',
-  requireAuth,
-  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const allowedFields = [
-      'full_name',
-      'avatar',
-      'bio',
-      'terms_accepted_at',
-      'terms_accepted_version',
-    ];
-
-    const updateData: Record<string, any> = {};
-
-    for (const key of allowedFields) {
-      if (req.body[key] !== undefined) {
-        updateData[key] = req.body[key];
-      }
-    }
-
-    const updated = await User.findOneAndUpdate(
-      { id: req.user.id },
-      {
-        $set: {
-          ...updateData,
-          updated_at: new Date().toISOString(),
-        },
-      },
-      { new: true },
-    );
-
-    if (!updated) {
-      throw new AppError('User not found', 404);
-    }
-
-    const userResponse = sanitizeUser(updated);
-
-    res.json(userResponse);
-  }),
-);
 
 // FORGOT PASSWORD
 router.post(
@@ -648,37 +391,5 @@ router.post(
   }),
 );
 
-// CHNAGE USER subscription
-router.post(
-  '/change-subscription',
-  requireAuth,
-  asyncHandler(async (req: Request, res: Response) => {
-    const { subscription }: { subscription: 'free' | 'plus' | 'pro' } =
-      req.body;
-
-    const allowed = ['free', 'plus', 'pro'] as const;
-
-    if (!allowed.includes(subscription)) {
-      return res.status(400).json({ message: 'Invalid subscription tier' });
-    }
-
-    const userId = req.user._id;
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    user.subscription_tier = subscription;
-
-    await user.save();
-
-    res.json({
-      message: 'Subscription updated successfully',
-      subscription: user.subscription_tier,
-    });
-  }),
-);
 
 export default router;

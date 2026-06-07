@@ -1,5 +1,4 @@
 import mongoose, { Schema, Model, HydratedDocument } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
 import { encryptNullable, decryptNullable } from '@/utils/encryption.js';
 import { IUser } from '@/types/index.js';
 
@@ -17,7 +16,6 @@ const PlaidConnectionSchema = new Schema(
 
 const UserSchema = new Schema<IUserDocument>(
   {
-    id: { type: String, default: () => uuidv4(), unique: true, index: true },
     email: { type: String, required: true, unique: true, index: true },
     passwordHash: { type: String },
     full_name: { type: String, default: null },
@@ -46,6 +44,14 @@ const UserSchema = new Schema<IUserDocument>(
       index: true,
     },
     google_avatar_url: {
+      type: String,
+      default: null,
+    },
+    profile_image_url: {
+      type: String,
+      default: null,
+    },
+    profile_image_public_id: {
       type: String,
       default: null,
     },

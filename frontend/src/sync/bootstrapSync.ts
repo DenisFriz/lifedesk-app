@@ -18,7 +18,17 @@ const entityMap = {
   WorkoutPlan: 'workoutplans',
   ProgressPhoto: 'progressphotos',
   Hobby: 'hobbies',
-  Business: 'businesses'
+  Business: 'businesses',
+  Income: 'incomes',
+  Expense: 'expenses',
+  Problem: 'problems',
+  TimeEntry: 'timeentries',
+  Project: 'projects',
+  Client: 'clients',
+  MarketingStrategy: 'marketingstrategies',
+  MarketingCampaign: 'marketingcampaigns',
+  MarketingContent: 'marketingcontents',
+  OfflineAccount: 'offlineaccounts'
 } as const
 
 export async function bootstrapSync(queryClient?: QueryClient): Promise<void> {

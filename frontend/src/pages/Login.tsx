@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/AuthContext'
 import { Helmet } from 'react-helmet-async'
+import { SEO } from '@/lib/seo'
 import GoogleAuth from '@/components/GoogleAuth'
 
 type LoginResponse = {
@@ -33,7 +34,7 @@ export default function Login() {
 
       await login(data.accessToken)
 
-      navigate('/Home', { replace: true })
+      navigate('/home', { replace: true })
     } catch (err) {
       setError(err.message || 'Login failed')
     } finally {
@@ -54,7 +55,7 @@ export default function Login() {
 
       await login(data.accessToken)
 
-      navigate('/Home', { replace: true })
+      navigate('/home', { replace: true })
     } catch (err: any) {
       setError(err.message || 'Google login failed')
     } finally {
@@ -65,7 +66,12 @@ export default function Login() {
   return (
     <>
       <Helmet>
-        <title>Login</title>
+        <title>{SEO.login.title}</title>
+        <meta name="description" content={SEO.login.description} />
+        <meta property="og:title" content={SEO.login.title} />
+        <meta property="og:description" content={SEO.login.description} />
+        <meta property="og:url" content={SEO.login.canonical} />
+        <link rel="canonical" href={SEO.login.canonical} />
       </Helmet>
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
         <div className="w-full max-w-md">
@@ -190,14 +196,14 @@ export default function Login() {
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
                         <button
                           type="button"
-                          onClick={() => navigate('/ForgotPassword')}
+                          onClick={() => navigate('/forgot-password')}
                           className="text-sm text-slate-500 hover:text-slate-700 font-medium transition-colors"
                         >
                           Forgot password?
                         </button>
                         <button
                           type="button"
-                          onClick={() => navigate('/Register')}
+                          onClick={() => navigate('/register')}
                           className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
                         >
                           Need an account?{' '}

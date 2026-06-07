@@ -65,7 +65,9 @@ export async function stripeWebhook(req: Request, res: Response) {
 
       const existing = await Subscription.findOne({
         user_email,
-      }).lean();
+      })
+        .lean()
+        .select('_id');
       if (existing) {
         await Subscription.findOneAndUpdate(
           { user_email },
@@ -82,7 +84,9 @@ export async function stripeWebhook(req: Request, res: Response) {
           },
         );
       } else {
-        const user = await User.findOne({ email: user_email }).lean();
+        const user = await User.findOne({ email: user_email })
+          .lean()
+          .select('id');
         await Subscription.create({
           user_id: user?.id ?? '',
           user_email,
@@ -143,7 +147,9 @@ export async function stripeWebhook(req: Request, res: Response) {
 
       const existing = await Subscription.findOne({
         user_email,
-      }).lean();
+      })
+        .lean()
+        .select('plan_name _id');
       const oldPlan = existing?.plan_name ?? null;
 
       if (existing) {
@@ -152,7 +158,9 @@ export async function stripeWebhook(req: Request, res: Response) {
           { $set: updateData },
         );
       } else {
-        const user = await User.findOne({ email: user_email }).lean();
+        const user = await User.findOne({ email: user_email })
+          .lean()
+          .select('id');
         await Subscription.create({
           user_id: user?.id ?? '',
           user_email,

@@ -3,8 +3,12 @@ import { User, Subscription } from '@/models/index.js';
 
 export async function weeklyRevenueReport(req: Request, res: Response) {
   try {
-    const users = await User.find({}).lean();
-    const subscriptions = await Subscription.find({}).lean();
+    const users = await User.find({})
+      .lean()
+      .select('email role createdAt subscription_tier');
+    const subscriptions = await Subscription.find({})
+      .lean()
+      .select('status plan_name');
 
     const adminEmail = 'info@agentur-braun.de';
     const testUser = 'a.braun@agentur-braun.de';

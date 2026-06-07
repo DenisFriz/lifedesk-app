@@ -69,8 +69,7 @@ export default function Hobbies() {
 
   const { data: hobbies = [] } = useHobbiesQuery()
 
-  const atLimit = canCreate('hobbies')
-  const isOverLimit = (idx: number) => canCreate('hobbies')
+  const atLimit = !canCreate('hobbies')
 
   const { createMutation, updateMutation, deleteMutation } = useHobbyMutations()
 
@@ -134,7 +133,7 @@ export default function Hobbies() {
   return (
     <>
       <Helmet>
-        <title>Hobbies</title>
+        <title>Hobbies | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -164,7 +163,7 @@ export default function Hobbies() {
               </p>
             </div>
             {atLimit ? (
-              <Link to="/Upgrade" className="w-full lg:w-auto">
+              <Link to="/upgrade" className="w-full lg:w-auto">
                 <Button className="w-full bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
                   Limit reached ({data?.usage?.hobbies || 0}/{data?.limits?.hobbies})
@@ -243,13 +242,20 @@ export default function Hobbies() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filtered.map(hobby => {
-                const hobbyIdx = hobbies.indexOf(hobby)
-                const overLimit = isOverLimit(hobbyIdx)
-                return overLimit ? (
+                /* return atLimit ? (
                   <OverLimitItem key={hobby.id}>
                     <HobbyCard hobby={hobby} onEdit={() => {}} onDelete={() => {}} />
                   </OverLimitItem>
                 ) : (
+                  <HobbyCard
+                    key={hobby.id}
+                    hobby={hobby}
+                    onEdit={handleEdit}
+                    onDelete={id => handleDeleteHobby(id)}
+                  />
+                ) */
+
+                return (
                   <HobbyCard
                     key={hobby.id}
                     hobby={hobby}

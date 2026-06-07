@@ -6,24 +6,43 @@ export type SubscriptionLimits = {
   calendarEntries?: number;
   events?: number;
   vehicle?: number;
+  vehicle_photos?: number;
+  vehicle_repairs?: number;
+  problems?: number;
   estate?: number;
   otherAsset?: number;
   offlineBankAccount?: number;
+  offlineAccountSnapshot?: number;
   healthTrackingEnties?: number;
   medicalDocuments?: number;
   workouts?: number;
   workoutPlans?: number;
-  measurements?: number;
+  bodyMeasurements?: number;
   hobbies?: number;
   learning?: number;
   relationships?: number;
   business?: number;
-  bodyMeasurements?: number;
   progressPhotos?: number;
   projectsAndClients?: number;
   marketingStrategy?: number;
+  marketingCampaign?: number;
+  marketingContent?: number;
   campaign?: number;
   content?: number;
+  income?: number;
+  expense?: number;
+  problem?: number;
+  timeEntries?: number;
+  projects?: number;
+  recurringIncomes?: number;
+  recurringExpenses?: number;
+  clients?: number;
+  ai_assistant: boolean;
+  community_read: boolean;
+  community_submit: boolean;
+  community_like: boolean;
+  community_comment: boolean;
+  communityIdeas?: number;
   unlimited?: boolean;
 };
 
@@ -35,24 +54,43 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       calendarEntries: 10,
       events: 10,
       vehicle: 1,
+      vehicle_photos: 5,
+      vehicle_repairs: 1,
+      problems: 3,
       estate: 1,
       otherAsset: 1,
       offlineBankAccount: 1,
+      offlineAccountSnapshot: 5,
       healthTrackingEnties: 10,
       medicalDocuments: 5,
       workouts: 3,
       workoutPlans: 3,
-      measurements: 3,
+      bodyMeasurements: 3,
       hobbies: 3,
       learning: 3,
       relationships: 3,
-      business: 1,
-      bodyMeasurements: 3,
+      business: 3,
       progressPhotos: 5,
       projectsAndClients: 5,
       marketingStrategy: 1,
+      marketingCampaign: 1,
+      marketingContent: 1,
       campaign: 1,
+      income: 3,
+      expense: 3,
+      problem: 3,
+      timeEntries: 5,
+      projects: 5,
+      recurringIncomes: 5,
+      recurringExpenses: 5,
+      clients: 5,
       content: 1,
+      community_read: true,
+      community_submit: false,
+      community_like: false,
+      community_comment: false,
+      communityIdeas: 5,
+      ai_assistant: false,
     },
     plus: {
       goals: 100,
@@ -60,26 +98,52 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       calendarEntries: 400,
       events: 100,
       vehicle: 1,
+      vehicle_photos: 5,
+      vehicle_repairs: 3,
+      problems: 5,
       estate: 1,
       otherAsset: 1,
       offlineBankAccount: 5,
+      offlineAccountSnapshot: 10,
       healthTrackingEnties: 10,
       medicalDocuments: 5,
       workouts: 3,
       workoutPlans: 3,
-      measurements: 3,
+      bodyMeasurements: 5,
       hobbies: 3,
       learning: 3,
       relationships: 3,
-      business: 1,
-      bodyMeasurements: 5,
+      business: 5,
       progressPhotos: 10,
       projectsAndClients: 5,
-      marketingStrategy: 1,
+      marketingStrategy: 5,
+      marketingCampaign: 5,
+      marketingContent: 5,
       campaign: 1,
+      income: 3,
+      expense: 3,
+      problem: 5,
+      timeEntries: 10,
+      projects: 10,
+      recurringIncomes: 10,
+      recurringExpenses: 10,
+      clients: 10,
+      ai_assistant: true,
       content: 1,
+      community_read: true,
+      community_submit: true,
+      community_like: true,
+      community_comment: true,
+      communityIdeas: 10,
     },
     pro: {
+      vehicle_photos: 5,
+      vehicle_repairs: 5,
+      ai_assistant: true,
+      community_read: true,
+      community_submit: true,
+      community_like: true,
+      community_comment: true,
       unlimited: true,
     },
   };

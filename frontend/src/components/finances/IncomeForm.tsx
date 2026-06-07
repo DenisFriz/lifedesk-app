@@ -18,11 +18,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { CalendarIcon } from 'lucide-react'
 import { format } from 'date-fns'
-import { cn } from '@/lib/utils'
 import { PERSONAL_CATEGORIES, BUSINESS_CATEGORIES, INCOME_CATEGORIES } from './categories'
 import { backend } from '@/api/backend'
 import { useQuery } from '@tanstack/react-query'
@@ -45,6 +41,7 @@ interface IncomeFormProps {
   onSubmit: (data: IncomeFormData) => void
   income?: any
   isLoading?: boolean
+  defaultBusinessId?: string | null
 }
 
 export default function IncomeForm({
@@ -52,9 +49,10 @@ export default function IncomeForm({
   onClose,
   onSubmit,
   income,
-  isLoading
+  isLoading,
+  defaultBusinessId
 }: IncomeFormProps) {
-  const [isRecurring, setIsRecurring] = useState<boolean>(false)
+  const [isRecurring, setIsRecurring] = useState(false)
   const [formData, setFormData] = useState<IncomeFormData>({
     title: '',
     amount: '',
@@ -100,14 +98,14 @@ export default function IncomeForm({
         amount: '',
         date: format(new Date(), 'yyyy-MM-dd'),
         category: '',
-        business_id: '',
+        business_id: defaultBusinessId || '',
         bank_account_name: '',
         notes: '',
         frequency: 'monthly',
         start_date: format(new Date(), 'yyyy-MM-dd')
       })
     }
-  }, [income, open])
+  }, [income, open, defaultBusinessId])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -135,6 +133,7 @@ export default function IncomeForm({
             <Label htmlFor="title">Title</Label>
             <Input
               id="title"
+              name="title"
               value={formData.title}
               onChange={e => setFormData({ ...formData, title: e.target.value })}
               placeholder="e.g., Salary, Freelance project"
@@ -146,6 +145,7 @@ export default function IncomeForm({
           <div className="flex items-center space-x-2 py-2">
             <Checkbox
               id="recurring"
+              name="recurring"
               checked={isRecurring}
               onCheckedChange={prev => setIsRecurring(!!prev)}
             />
@@ -162,6 +162,7 @@ export default function IncomeForm({
               <Label htmlFor="amount">Amount</Label>
               <Input
                 id="amount"
+                name="amount"
                 type="number"
                 step="0.01"
                 value={formData.amount}
@@ -172,12 +173,12 @@ export default function IncomeForm({
             </div>
             {isRecurring ? (
               <div className="space-y-2">
-                <Label>Frequency</Label>
+                <Label htmlFor="frequency">Frequency</Label>
                 <Select
                   value={formData.frequency}
                   onValueChange={value => setFormData({ ...formData, frequency: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="frequency">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -191,8 +192,10 @@ export default function IncomeForm({
               </div>
             ) : (
               <div className="space-y-2">
-                <Label>Date</Label>
+                <Label htmlFor="date">Date</Label>
                 <Input
+                  id="date"
+                  name="date"
                   type="date"
                   value={formData.date}
                   onChange={e => setFormData({ ...formData, date: e.target.value })}
@@ -203,8 +206,10 @@ export default function IncomeForm({
 
           {isRecurring && (
             <div className="space-y-2">
-              <Label>Start Date</Label>
+              <Label htmlFor="start_date">Start Date</Label>
               <Input
+                id="start_date"
+                name="start_date"
                 type="date"
                 value={formData.start_date}
                 onChange={e => setFormData({ ...formData, start_date: e.target.value })}
@@ -220,7 +225,7 @@ export default function IncomeForm({
                 setFormData({ ...formData, business_id: value, category: '' })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger id="business">
                 <SelectValue placeholder="Personal income" />
               </SelectTrigger>
               <SelectContent>
@@ -240,7 +245,7 @@ export default function IncomeForm({
               value={formData.category}
               onValueChange={value => setFormData({ ...formData, category: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger id="category">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
@@ -270,14 +275,14 @@ export default function IncomeForm({
           </div>
           {!isRecurring && offlineAccounts.length > 0 && (
             <div className="space-y-2">
-              <Label>Bank Account (optional)</Label>
+              <Label htmlFor="bank_account_name">Bank Account (optional)</Label>
               <Select
                 value={formData.bank_account_name || '__none__'}
                 onValueChange={value =>
                   setFormData({ ...formData, bank_account_name: value === '__none__' ? '' : value })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger id="bank_account_name">
                   <SelectValue placeholder="Select account" />
                 </SelectTrigger>
                 <SelectContent>
@@ -296,6 +301,7 @@ export default function IncomeForm({
             <Label htmlFor="notes">Notes (optional)</Label>
             <Textarea
               id="notes"
+              name="notes"
               value={formData.notes}
               onChange={e => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Additional details..."

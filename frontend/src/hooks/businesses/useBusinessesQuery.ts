@@ -16,6 +16,10 @@ export const useBusinessesQuery = ({ enabled }: UseBusinessesQueryProps = {}) =>
         .sort((a, b) => {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         })
+        .map(business => ({
+          ...business,
+          id: business.id || (business as any)._id
+        }))
     },
 
     staleTime: Infinity,

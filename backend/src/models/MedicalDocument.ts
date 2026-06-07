@@ -15,8 +15,9 @@ export interface IMedicalDocument {
     | 'medical_history'
     | 'health_image'
     | 'other';
-  file_url: string;
-  is_archived: boolean;
+  file_url?: string;
+  public_id?: string;
+  is_archived?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,8 +69,11 @@ const medicalDocumentSchema = new Schema<IMedicalDocument>(
 
     file_url: {
       type: String,
-      required: true,
       trim: true,
+    },
+
+    public_id: {
+      type: String,
     },
 
     is_archived: {

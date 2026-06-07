@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { backend } from '@/api/backend'
+import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload'
+import { deleteCloudinaryImage, moveCloudinaryImages } from '@/api/cloudinaryService'
 import { Button } from '@/components/ui/button'
 import {
   Plus,
@@ -30,6 +30,8 @@ import { Helmet } from 'react-helmet-async'
 import { useProgressPhotosQuery } from '@/hooks/progressphotos/useProgressPhotosQuery'
 import { useUserLimit } from '@/contexts/UserLimitContext'
 import { useProgressPhotoMutations } from '@/hooks/progressphotos/useProgressPhotoMutations'
+import { CreateProgressPhotoInput } from '@/repositories/progressphotos.repository'
+import { useAuth } from '@/lib/AuthContext'
 
 const bodyAreaLabels = {
   front: 'Front',
@@ -60,8 +62,15 @@ export default function ProgressPhotos() {
   const { deleteMutation, bulkDeleteMutation, bulkUpdateMutation } = useProgressPhotoMutations()
 
   const handleDeleteProgressPhoto = async (id: string) => {
+    const photo = photos.find(p => p.id === id)
     try {
       await deleteMutation.mutateAsync(id)
+      console.log(photo)
+      if (photo?.public_id) {
+        try {
+          await deleteCloudinaryImage(photo.public_id)
+        } catch {}
+      }
     } catch (e) {
       console.error(e)
     } finally {
@@ -82,8 +91,12 @@ export default function ProgressPhotos() {
   }
 
   const handleDeleteProgressPhotos = async (ids: string[]) => {
+    const photosToDelete = photos.filter(p => ids.includes(p.id))
     try {
       await bulkDeleteMutation.mutateAsync(ids)
+      await Promise.allSettled(
+        photosToDelete.filter(p => p.public_id).map(p => deleteCloudinaryImage(p.public_id!))
+      )
     } catch (e) {
       console.error(e)
     } finally {
@@ -160,7 +173,7 @@ export default function ProgressPhotos() {
   return (
     <>
       <Helmet>
-        <title>Progress Photos</title>
+        <title>Progress Photos | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -175,7 +188,7 @@ export default function ProgressPhotos() {
               </p>
             </div>
             {atLimit ? (
-              <Link to="/Upgrade">
+              <Link to="/upgrade">
                 <Button className="bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
                   Limit reached ({data?.usage?.progressPhotos || 0}/{data?.limits?.progressPhotos})
@@ -479,21 +492,62 @@ export default function ProgressPhotos() {
   )
 }
 
+type BodyArea =
+  | 'front'
+  | 'back'
+  | 'side'
+  | 'full_body'
+  | 'arms'
+  | 'chest'
+  | 'legs'
+  | 'core'
+  | 'other'
+
+type FormData = {
+  date: string
+  description: string
+  body_area: BodyArea
+}
+
 function ProgressPhotoUploadDialog({ open, onOpenChange }) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     date: new Date().toISOString().split('T')[0],
     description: '',
     body_area: 'full_body'
   })
   const [selectedFile, setSelectedFile] = useState(null)
-  const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef(null)
-  const queryClient = useQueryClient()
+  const uploadedPublicIdRef = useRef<string | null>(null)
 
-  const createMutation = useMutation({
-    mutationFn: async (data: Record<string, any>) => backend.entities.ProgressPhoto.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['progressPhotos'] })
+  const { user } = useAuth()
+
+  const { upload, isLoading: uploading } = useCloudinaryUpload()
+
+  const { createMutation } = useProgressPhotoMutations()
+
+  const handleClose = async () => {
+    if (uploadedPublicIdRef.current) {
+      try {
+        await deleteCloudinaryImage(uploadedPublicIdRef.current)
+      } catch {}
+      uploadedPublicIdRef.current = null
+    }
+    onOpenChange(false)
+    setFormData({
+      date: new Date().toISOString().split('T')[0],
+      description: '',
+      body_area: 'full_body'
+    })
+    setSelectedFile(null)
+  }
+
+  const handleCreateProgressPhoto = async (data: CreateProgressPhotoInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      uploadedPublicIdRef.current = null
       onOpenChange(false)
       setFormData({
         date: new Date().toISOString().split('T')[0],
@@ -503,39 +557,70 @@ function ProgressPhotoUploadDialog({ open, onOpenChange }) {
       setSelectedFile(null)
       toast.success('Photo uploaded successfully')
     }
-  })
+  }
 
   const handleFileSelect = async e => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    setUploading(true)
+    const maxFileSize = 10 * 1024 * 1024
+    if (file.size > maxFileSize) {
+      toast.error('File size exceeds 10MB limit')
+      return
+    }
+
+    if (uploadedPublicIdRef.current) {
+      try {
+        await deleteCloudinaryImage(uploadedPublicIdRef.current)
+      } catch {}
+      uploadedPublicIdRef.current = null
+    }
+
     try {
-      const result = await backend.integrations.Core.UploadFile({ file })
-      const file_url = (result as any).file_url
-      setSelectedFile({ file, url: file_url })
+      const res = await upload(file, 'temp')
+      uploadedPublicIdRef.current = res.public_id
+      setSelectedFile({ file, url: res.secure_url })
     } catch (error) {
       toast.error('Failed to upload file')
       console.error('File upload error:', error)
     }
-    setUploading(false)
   }
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault()
     if (!selectedFile) {
       toast.error('Please select a photo')
       return
     }
 
-    createMutation.mutate({
+    let imageUrl = selectedFile.url
+    let publicId = uploadedPublicIdRef.current ?? undefined
+
+    // Move from temp/ to uploads/ before persisting
+    if (uploadedPublicIdRef.current?.startsWith('temp/')) {
+      try {
+        const moved = await moveCloudinaryImages([uploadedPublicIdRef.current])
+        if (moved.length > 0) {
+          imageUrl = moved[0].new_url
+          publicId = moved[0].new_public_id
+          uploadedPublicIdRef.current = null
+        }
+      } catch (err) {
+        console.error('Failed to move image to uploads:', err)
+      }
+    }
+
+    handleCreateProgressPhoto({
       ...formData,
-      image_url: selectedFile.url
+      image_url: imageUrl,
+      public_id: publicId,
+      created_by: user.id,
+      is_archived: false
     })
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Upload Progress Photo</DialogTitle>
@@ -574,42 +659,61 @@ function ProgressPhotoUploadDialog({ open, onOpenChange }) {
             </div>
           </div>
 
-          <Input
-            type="date"
-            value={formData.date}
-            onChange={e => setFormData({ ...formData, date: e.target.value })}
-            required
-          />
+          <div>
+            <label htmlFor="date" className="block text-sm font-medium text-slate-900 mb-2">
+              Date
+            </label>
+            <Input
+              id="date"
+              name="date"
+              type="date"
+              value={formData.date}
+              onChange={e => setFormData({ ...formData, date: e.target.value })}
+              required
+            />
+          </div>
 
-          <Select
-            value={formData.body_area}
-            onValueChange={value => setFormData({ ...formData, body_area: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Body area" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="front">Front</SelectItem>
-              <SelectItem value="back">Back</SelectItem>
-              <SelectItem value="side">Side</SelectItem>
-              <SelectItem value="full_body">Full Body</SelectItem>
-              <SelectItem value="arms">Arms</SelectItem>
-              <SelectItem value="chest">Chest</SelectItem>
-              <SelectItem value="legs">Legs</SelectItem>
-              <SelectItem value="core">Core</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
+          <div>
+            <label htmlFor="body_area" className="block text-sm font-medium text-slate-900 mb-2">
+              Body Area
+            </label>
+            <Select
+              value={formData.body_area}
+              onValueChange={value => setFormData({ ...formData, body_area: value as BodyArea })}
+            >
+              <SelectTrigger id="body_area" name="body_area">
+                <SelectValue placeholder="Body area" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="front">Front</SelectItem>
+                <SelectItem value="back">Back</SelectItem>
+                <SelectItem value="side">Side</SelectItem>
+                <SelectItem value="full_body">Full Body</SelectItem>
+                <SelectItem value="arms">Arms</SelectItem>
+                <SelectItem value="chest">Chest</SelectItem>
+                <SelectItem value="legs">Legs</SelectItem>
+                <SelectItem value="core">Core</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Textarea
-            placeholder="Notes (optional)"
-            value={formData.description}
-            onChange={e => setFormData({ ...formData, description: e.target.value })}
-            maxLength={500}
-          />
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-slate-900 mb-2">
+              Notes (optional)
+            </label>
+            <Textarea
+              id="description"
+              name="description"
+              placeholder="Notes (optional)"
+              value={formData.description}
+              onChange={e => setFormData({ ...formData, description: e.target.value })}
+              maxLength={500}
+            />
+          </div>
 
           <div className="flex gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>
             <Button type="submit" disabled={uploading || createMutation.isPending}>

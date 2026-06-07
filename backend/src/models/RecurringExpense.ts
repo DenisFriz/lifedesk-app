@@ -1,44 +1,66 @@
-import mongoose, { Schema, Model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
-import { IRecurringExpense } from '@/types/index.js';
-import { encrypt, decrypt } from '@utils/encryption.js';
+import mongoose, { Schema, Model, Types } from 'mongoose';
+
+export interface IRecurringExpense {
+  _id: Types.ObjectId;
+  created_by: Types.ObjectId;
+  title: string;
+  amount: number;
+  frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
+  start_date: Date;
+  category: string | null;
+  business_id: Types.ObjectId | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const recurringExpenseSchema = new Schema<IRecurringExpense>(
   {
-    id: { type: String, default: () => uuidv4(), unique: true, index: true },
-    created_by: { type: String, index: true, required: true },
-    title: { type: String, required: true },
+    created_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200,
+    },
+
     amount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    frequency: {
+      type: String,
+      required: true,
+      enum: ['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly'],
+      default: 'monthly',
+    },
+
+    start_date: {
+      type: Date,
+      required: true,
+    },
+
+    category: {
       type: String,
       default: null,
-      set: (v: number | null) => (v != null ? encrypt(String(v)) : null),
-      get: (v: string | null) => (v != null ? parseFloat(decrypt(v)) : null),
     },
-    category: String,
-    description: String,
-    frequency: String,
-    start_date: String,
-    end_date: String,
-    active: { type: Boolean, default: true },
-    notes: String,
-    is_deleted: { type: Boolean, default: false },
-    deleted_at: String,
-    deleted_by_process: String,
-    created_at: { type: String, default: () => new Date().toISOString() },
-    updated_at: { type: String, default: () => new Date().toISOString() },
+
+    business_id: {
+      type: Schema.Types.ObjectId,
+      ref: 'Business',
+      default: null,
+    },
   },
   {
-    timestamps: false,
+    timestamps: true,
     versionKey: false,
-    toObject: { getters: true },
-    toJSON: { getters: true },
-  },
-);
-
-recurringExpenseSchema.pre<IRecurringExpense>(
-  'save',
-  function (this: IRecurringExpense) {
-    this.updated_at = new Date().toISOString();
   },
 );
 

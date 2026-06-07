@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, Dispatch, SetStateAction } from 'react'
 import { backend } from '@/api/backend'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { X, Send, Loader, Sparkles, Image as ImageIcon, X as XIcon, Zap } from 'lucide-react'
@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import { Link } from 'react-router-dom'
-import { useSubscription } from '@/hooks/useSubscription'
+import { useUserLimit } from '@/contexts/UserLimitContext'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -55,19 +55,15 @@ export default function AIAssistantPanel({
   setMessages,
   collapsed
 }: AIAssistantPanelProps) {
-  const [input, setInput] = useState<string>('')
+  const [input, setInput] = useState('')
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => backend.auth.me()
-  })
-
   const sidebarWidth = collapsed ? 64 : 256
-  const { can } = useSubscription()
-  const aiEnabled = can('ai_assistant')
+  const { data: userLimits } = useUserLimit()
+
+  const aiEnabled = userLimits?.usage?.ai_assistant || false
 
   const chatMutation = useMutation<ChatResponse, ApiError, ChatMutationInput>({
     mutationFn: ({ question, file_urls }) =>
@@ -181,7 +177,7 @@ export default function AIAssistantPanel({
               </p>
             </div>
             <Link
-              to="/Upgrade"
+              to="/upgrade"
               onClick={() => setIsOpen(false)}
               className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800 hover:bg-amber-100 transition-colors"
             >

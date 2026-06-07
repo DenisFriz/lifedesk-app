@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { backend } from '@/api/backend'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -16,7 +16,11 @@ import { CAMPAIGN_TYPES, CAMPAIGN_STATUSES } from './marketingConstants'
 import CampaignFormDialog from './CampaignFormDialog'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
-import { Campaign, Strategy } from '@/types/entities'
+import { Strategy } from '@/types/entities'
+import { useMarketingCampaignsQuery } from '@/hooks/marketingcampaign/useMarketingCampaignsQuery'
+import { useMarketingCampaignMutations } from '@/hooks/marketingcampaign/useMarketingCampaignMutations'
+import { CreateMarketingCampaignInput } from '@/repositories/marketing-campaign.repository'
+import { MarketingCampaignRecord } from '@/db'
 
 const statusInfo = Object.fromEntries(CAMPAIGN_STATUSES.map(s => [s.value, s]))
 const typeInfo = Object.fromEntries(CAMPAIGN_TYPES.map(t => [t.value, t]))
@@ -25,40 +29,15 @@ interface CampaignListProps {
   businessId: string
 }
 
-type CampaignForm = {
-  name: string
-  campaign_type: string
-  status?: string
-  goal?: string
-  channel?: string
-  start_date?: string
-  end_date?: string
-  budget?: number
-  strategy_id?: string | null
-  kpis?: any[]
-}
-
-type UpdateCampaignInput = {
-  id: string
-  data: Record<string, unknown>
-}
-
 export default function CampaignList({ businessId }: CampaignListProps) {
   const [dialogOpen, setDialogOpen] = useState<boolean>(false)
-  const [editing, setEditing] = useState<Campaign | null>(null)
+  const [editing, setEditing] = useState<any | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
-  const queryClient = useQueryClient()
   const { limit } = useSubscription()
   const campaignLimit = limit('business_marketing_limit')
 
-  const { data: campaigns = [] } = useQuery({
-    queryKey: ['marketing_campaigns', businessId],
-    queryFn: () =>
-      businessId
-        ? backend.entities.MarketingCampaign.filter({ business_id: businessId, is_deleted: false })
-        : backend.entities.MarketingCampaign.filter({ is_deleted: false }, '-created_date')
-  })
+  const { data: campaigns = [] } = useMarketingCampaignsQuery({ businessId })
 
   const { data: strategies = [] } = useQuery<Strategy[]>({
     queryKey: ['marketing_strategies', businessId],
@@ -74,44 +53,52 @@ export default function CampaignList({ businessId }: CampaignListProps) {
     }
   })
 
-  const createMutation = useMutation({
-    mutationFn: (data: CampaignForm) =>
-      backend.entities.MarketingCampaign.create({
-        ...data,
-        business_id: businessId
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['marketing_campaigns', businessId] })
+  const { createMutation, updateMutation, deleteMutation } = useMarketingCampaignMutations()
+
+  const handleCreateMarketingCampaign = async (data: CreateMarketingCampaignInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setDialogOpen(false)
     }
-  })
+  }
 
-  const updateMutation = useMutation<unknown, Error, UpdateCampaignInput>({
-    mutationFn: ({ id, data }) => backend.entities.MarketingCampaign.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['marketing_campaigns', businessId]
-      })
+  const handleUpdateMarketingCampaign = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<MarketingCampaignRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setDialogOpen(false)
       setEditing(null)
     }
-  })
-
-  const deleteMutation = useMutation<void, Error, string>({
-    mutationFn: (id: string) => backend.entities.MarketingCampaign.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['marketing_campaigns', businessId]
-      })
-    }
-  })
-
-  const handleSave = (form: any): void => {
-    if (editing) updateMutation.mutate({ id: editing.id, data: form })
-    else createMutation.mutate(form)
   }
 
-  const filtered = campaigns.filter((c: Campaign) => {
+  const handleDeleteMarketingCampaign = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setDialogOpen(false)
+      setEditing(null)
+    }
+  }
+
+  const handleSave = (form: any): void => {
+    if (editing) handleUpdateMarketingCampaign({ id: editing.id, data: form })
+    else handleCreateMarketingCampaign(form)
+  }
+
+  const filtered = campaigns.filter((c: any) => {
     const statusMatch = statusFilter === 'all' || c.status === statusFilter
     const typeMatch = typeFilter === 'all' || c.campaign_type === typeFilter
     return statusMatch && typeMatch
@@ -277,7 +264,7 @@ export default function CampaignList({ businessId }: CampaignListProps) {
                               size="icon"
                               className="h-7 w-7 text-rose-600 hover:bg-rose-50"
                               onClick={() => {
-                                if (confirm('Delete campaign?')) deleteMutation.mutate(c.id)
+                                if (confirm('Delete campaign?')) handleDeleteMarketingCampaign(c.id)
                               }}
                             >
                               <Trash2 className="w-3.5 h-3.5" />

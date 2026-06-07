@@ -94,7 +94,7 @@ export default function MainGoals() {
   return (
     <>
       <Helmet>
-        <title>Main Goals</title>
+        <title>Main Goals | LifeDesk</title>
       </Helmet>
       <div className="all-goals-page min-h-screen page-bg">
         <div className="all-goals-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

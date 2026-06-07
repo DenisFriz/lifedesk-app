@@ -1,44 +1,90 @@
-import mongoose, { Schema, Model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
-import { IExpense } from '@/types/index.js';
-import { encrypt, decrypt } from '@utils/encryption.js';
+import mongoose, { Schema, Model, Types } from 'mongoose';
+
+export interface IExpense {
+  _id: Types.ObjectId;
+  created_by: Types.ObjectId;
+  title: string;
+  amount: number;
+  date?: string | null;
+  category?: string | null;
+  business_id?: Types.ObjectId | null;
+  bank_account_name?: string | null;
+  notes: string;
+  is_recurring: boolean;
+  frequency?: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly' | null;
+  start_date?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const expenseSchema = new Schema<IExpense>(
   {
-    id: { type: String, default: () => uuidv4(), unique: true, index: true },
-    created_by: { type: String, index: true, required: true },
+    created_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
     amount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    date: {
       type: String,
       default: null,
-      set: (v: number | null) => (v != null ? encrypt(String(v)) : null),
-      get: (v: string | null) => (v != null ? parseFloat(decrypt(v)) : null),
     },
-    category: String,
-    description: {
+
+    category: {
       type: String,
       default: null,
-      set: (v: string | null) => (v != null ? encrypt(v) : null),
-      get: (v: string | null) => (v != null ? decrypt(v) : null),
     },
-    date: String,
-    notes: String,
-    is_deleted: { type: Boolean, default: false },
-    deleted_at: String,
-    deleted_by_process: String,
-    created_at: { type: String, default: () => new Date().toISOString() },
-    updated_at: { type: String, default: () => new Date().toISOString() },
+
+    business_id: {
+      type: Schema.Types.ObjectId,
+      ref: 'Business',
+      default: null,
+    },
+
+    bank_account_name: {
+      type: String,
+      default: null,
+    },
+
+    notes: {
+      type: String,
+      default: '',
+    },
+
+    is_recurring: {
+      type: Boolean,
+      default: false,
+    },
+
+    frequency: {
+      type: String,
+      enum: ['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly'],
+      default: null,
+    },
+
+    start_date: {
+      type: String,
+      default: null,
+    },
   },
   {
-    timestamps: false,
+    timestamps: true,
     versionKey: false,
-    toObject: { getters: true },
-    toJSON: { getters: true },
   },
 );
-
-expenseSchema.pre<IExpense>('save', function (this: IExpense) {
-  this.updated_at = new Date().toISOString();
-});
 
 export const Expense: Model<IExpense> = mongoose.model<IExpense>(
   'Expense',

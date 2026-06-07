@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo, useCallback } from 'react'
 import { format, addMonths, startOfMonth, isSameMonth } from 'date-fns'
 import {
   BarChart,
@@ -12,6 +12,14 @@ import {
 } from 'recharts'
 import { TrendingUp, TrendingDown, Calendar } from 'lucide-react'
 
+const FREQUENCY_MULTIPLIERS = {
+  weekly: 4.33,
+  biweekly: 2.17,
+  monthly: 1,
+  quarterly: 0.33,
+  yearly: 0.083
+}
+
 export default function CashFlowForecast({
   recurringIncome,
   recurringExpenses
@@ -19,28 +27,20 @@ export default function CashFlowForecast({
   recurringIncome: any[]
   recurringExpenses: any[]
 }) {
-  const frequencyMultipliers = {
-    weekly: 4.33,
-    biweekly: 2.17,
-    monthly: 1,
-    quarterly: 0.33,
-    yearly: 0.083
-  }
-
-  const generateForecast = () => {
+  const generateForecast = useCallback(() => {
     const months = Array.from({ length: 12 }, (_, i) => addMonths(startOfMonth(new Date()), i))
 
     return months.map(month => {
       const monthlyIncome = recurringIncome
         .filter(r => r.active)
         .reduce((sum, item) => {
-          return sum + item.amount * (frequencyMultipliers[item.frequency] || 1)
+          return sum + item.amount * (FREQUENCY_MULTIPLIERS[item.frequency] || 1)
         }, 0)
 
       const monthlyExpenses = recurringExpenses
         .filter(r => r.active)
         .reduce((sum, item) => {
-          return sum + item.amount * (frequencyMultipliers[item.frequency] || 1)
+          return sum + item.amount * (FREQUENCY_MULTIPLIERS[item.frequency] || 1)
         }, 0)
 
       return {
@@ -50,12 +50,19 @@ export default function CashFlowForecast({
         net: Math.round(monthlyIncome - monthlyExpenses)
       }
     })
-  }
+  }, [recurringIncome, recurringExpenses])
 
-  const forecast = generateForecast()
-  const totalProjectedIncome = forecast.reduce((sum, m) => sum + m.income, 0)
-  const totalProjectedExpenses = forecast.reduce((sum, m) => sum + m.expenses, 0)
-  const totalNet = totalProjectedIncome - totalProjectedExpenses
+  const forecast = useMemo(() => generateForecast(), [generateForecast])
+
+  const { totalProjectedIncome, totalProjectedExpenses, totalNet } = useMemo(() => {
+    const totalIncome = forecast.reduce((sum, m) => sum + m.income, 0)
+    const totalExpenses = forecast.reduce((sum, m) => sum + m.expenses, 0)
+    return {
+      totalProjectedIncome: totalIncome,
+      totalProjectedExpenses: totalExpenses,
+      totalNet: totalIncome - totalExpenses
+    }
+  }, [forecast])
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-6">
@@ -111,7 +118,7 @@ export default function CashFlowForecast({
               border: '1px solid #e2e8f0',
               borderRadius: '8px'
             }}
-            formatter={value => `$${value.toLocaleString()}`}
+            formatter={(value: any) => `$${value.toLocaleString()}`}
           />
           <Legend />
           <Bar dataKey="income" fill="#10b981" name="Income" radius={[4, 4, 0, 0]} />

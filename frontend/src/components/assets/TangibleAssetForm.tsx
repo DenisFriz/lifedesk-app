@@ -68,6 +68,7 @@ export default function TangibleAssetForm({ open, onClose, onSubmit, asset, isLo
             <Label htmlFor="title">Name</Label>
             <Input
               id="title"
+              name="title"
               value={formData.title}
               onChange={e => setFormData({ ...formData, title: e.target.value })}
               placeholder="e.g., BMW X5, Rolex Watch"
@@ -79,6 +80,7 @@ export default function TangibleAssetForm({ open, onClose, onSubmit, asset, isLo
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
+              name="description"
               value={formData.description}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
               placeholder="Details about the asset..."
@@ -87,12 +89,12 @@ export default function TangibleAssetForm({ open, onClose, onSubmit, asset, isLo
             />
           </div>
           <div className="space-y-2">
-            <Label>Category</Label>
+            <Label htmlFor="category">Category</Label>
             <Select
               value={formData.category}
               onValueChange={value => setFormData({ ...formData, category: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger id="category" name="category">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -108,6 +110,7 @@ export default function TangibleAssetForm({ open, onClose, onSubmit, asset, isLo
               <Label htmlFor="purchase_price">Purchase Price</Label>
               <Input
                 id="purchase_price"
+                name="purchase_price"
                 type="number"
                 step="0.01"
                 value={formData.purchase_price}
@@ -119,6 +122,7 @@ export default function TangibleAssetForm({ open, onClose, onSubmit, asset, isLo
               <Label htmlFor="current_value">Current Value</Label>
               <Input
                 id="current_value"
+                name="current_value"
                 type="number"
                 step="0.01"
                 value={formData.current_value}
@@ -128,8 +132,10 @@ export default function TangibleAssetForm({ open, onClose, onSubmit, asset, isLo
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Purchase Date</Label>
+            <Label htmlFor="purchase_date">Purchase Date</Label>
             <Input
+              id="purchase_date"
+              name="purchase_date"
               type="date"
               value={formData.purchase_date}
               onChange={e => setFormData({ ...formData, purchase_date: e.target.value })}
@@ -139,6 +145,7 @@ export default function TangibleAssetForm({ open, onClose, onSubmit, asset, isLo
             <Label htmlFor="location">Location</Label>
             <Input
               id="location"
+              name="location"
               value={formData.location}
               onChange={e => setFormData({ ...formData, location: e.target.value })}
               placeholder="Where is this asset located?"

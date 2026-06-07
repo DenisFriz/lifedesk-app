@@ -97,6 +97,8 @@ export default function ContactForm({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-3">
           <Input
+            id="name"
+            name="name"
             placeholder="Name *"
             value={form.name}
             onChange={e => set('name', e.target.value)}
@@ -105,7 +107,7 @@ export default function ContactForm({
 
           <div className="grid grid-cols-2 gap-3">
             <Select value={form.relationship} onValueChange={v => set('relationship', v)}>
-              <SelectTrigger>
+              <SelectTrigger id="relationship" name="relationship">
                 <SelectValue placeholder="Relationship" />
               </SelectTrigger>
               <SelectContent>
@@ -120,7 +122,7 @@ export default function ContactForm({
               </SelectContent>
             </Select>
             <Select value={form.avatar_color} onValueChange={v => set('avatar_color', v)}>
-              <SelectTrigger>
+              <SelectTrigger id="avatar_color" name="avatar_color">
                 <SelectValue placeholder="Color" />
               </SelectTrigger>
               <SelectContent>
@@ -145,16 +147,24 @@ export default function ContactForm({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">Birthday</label>
+              <label htmlFor="birthday" className="text-xs text-slate-500 mb-1 block">
+                Birthday
+              </label>
               <Input
+                id="birthday"
+                name="birthday"
                 type="date"
                 value={form.birthday}
                 onChange={e => set('birthday', e.target.value)}
               />
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">Last Contact</label>
+              <label htmlFor="last_contact_date" className="text-xs text-slate-500 mb-1 block">
+                Last Contact
+              </label>
               <Input
+                id="last_contact_date"
+                name="last_contact_date"
                 type="date"
                 value={form.last_contact_date}
                 onChange={e => set('last_contact_date', e.target.value)}
@@ -163,7 +173,7 @@ export default function ContactForm({
           </div>
 
           <Select value={form.check_in_frequency} onValueChange={v => set('check_in_frequency', v)}>
-            <SelectTrigger>
+            <SelectTrigger id="check_in_frequency" name="check_in_frequency">
               <SelectValue placeholder="Check-in Frequency" />
             </SelectTrigger>
             <SelectContent>
@@ -177,27 +187,37 @@ export default function ContactForm({
           </Select>
 
           <Input
+            id="phone"
+            name="phone"
             placeholder="Phone"
             value={form.phone}
             onChange={e => set('phone', e.target.value)}
           />
           <Input
+            id="email"
+            name="email"
             placeholder="Email"
             value={form.email}
             onChange={e => set('email', e.target.value)}
           />
           <Input
+            id="location"
+            name="location"
             placeholder="Location (city/country)"
             value={form.location}
             onChange={e => set('location', e.target.value)}
           />
           <Input
+            id="interests"
+            name="interests"
             placeholder="Interests / topics to talk about"
             value={form.interests}
             onChange={e => set('interests', e.target.value)}
           />
 
           <Textarea
+            id="notes"
+            name="notes"
             placeholder="Personal notes..."
             value={form.notes}
             onChange={e => set('notes', e.target.value)}

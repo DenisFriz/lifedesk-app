@@ -308,7 +308,7 @@ export default function Analytics() {
   return (
     <>
       <Helmet>
-        <title>Analytics</title>
+        <title>Analytics | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">

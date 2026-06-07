@@ -1,32 +1,92 @@
-import mongoose, { Schema, Model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
-import { IProject } from '@/types/index.js';
+import mongoose, { Schema, Model, Types } from 'mongoose';
+
+export interface IProject {
+  _id?: Types.ObjectId;
+  created_by: Types.ObjectId;
+  name: string;
+  description: string | null;
+  business_id: Types.ObjectId | null;
+  client_id: Types.ObjectId | null;
+  status: 'planning' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
+  start_date: string | null;
+  deadline: string | null;
+  is_deleted: boolean;
+  deleted_at: Date | null;
+  deleted_by_process: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 const projectSchema = new Schema<IProject>(
   {
-    id: { type: String, default: () => uuidv4(), unique: true, index: true },
-    created_by: { type: String, index: true, required: true },
-    name: { type: String, required: true },
-    description: { type: String, default: null },
-    business_id: { type: String, default: null },
-    status: { type: String, default: 'pending' },
-    priority: { type: String, default: 'medium' },
-    start_date: { type: String, default: null },
-    deadline: { type: String, default: null },
-    client_id: { type: String, default: null },
-    revenue_target: { type: Number, default: null },
-    is_deleted: { type: Boolean, default: false },
-    deleted_at: { type: String, default: null },
-    deleted_by_process: { type: String, default: null },
-    created_at: { type: String, default: () => new Date().toISOString() },
-    updated_at: { type: String, default: () => new Date().toISOString() },
-  },
-  { timestamps: false, versionKey: false },
-);
+    created_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
 
-projectSchema.pre<IProject>('save', function (this: IProject) {
-  this.updated_at = new Date().toISOString();
-});
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200,
+    },
+
+    description: {
+      type: String,
+      default: null,
+      maxlength: 5000,
+    },
+
+    business_id: {
+      type: Schema.Types.ObjectId,
+      ref: 'Business',
+      default: null,
+    },
+
+    client_id: {
+      type: Schema.Types.ObjectId,
+      ref: 'Client',
+      default: null,
+    },
+
+    status: {
+      type: String,
+      enum: ['planning', 'in_progress', 'on_hold', 'completed', 'cancelled'],
+      default: 'planning',
+    },
+
+    start_date: {
+      type: String,
+      default: null,
+    },
+
+    deadline: {
+      type: String,
+      default: null,
+    },
+
+    is_deleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    deleted_at: {
+      type: Date,
+      default: null,
+    },
+
+    deleted_by_process: {
+      type: String,
+      default: null,
+    },
+  },
+  {
+    timestamps: true,
+    versionKey: false,
+  },
+);
 
 export const Project: Model<IProject> = mongoose.model<IProject>(
   'Project',

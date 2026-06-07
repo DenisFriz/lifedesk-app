@@ -19,7 +19,11 @@ export async function debugSubscriptionByEmail(
       return res.status(400).json({ error: 'email required' });
     }
 
-    const subs = await Subscription.find({ user_email: email }).lean();
+    const subs = await Subscription.find({ user_email: email })
+      .lean()
+      .select(
+        'stripe_subscription_id plan_name status cancel_at_period_end',
+      );
     const results: any[] = [];
 
     for (const sub of subs) {

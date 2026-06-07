@@ -230,7 +230,7 @@ export default function Overview() {
   return (
     <>
       <Helmet>
-        <title>Overview</title>
+        <title>Overview | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

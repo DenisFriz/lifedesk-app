@@ -22,14 +22,14 @@ export async function requireAuth(
   try {
     const payload = verifyAccessToken(token);
 
-    const user = await User.findById(payload.userId);
+    const user = await User.findById(payload.userId).lean();
 
     if (!user || user.is_deleted) {
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
 
-    req.user = user.toObject() as IUser;
+    req.user = user as IUser;
 
     next();
   } catch {

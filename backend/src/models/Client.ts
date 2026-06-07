@@ -1,38 +1,97 @@
-import mongoose, { Schema, Model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
-import { IClient } from '@/types/index.js';
+import mongoose, { Schema, Model, Types } from 'mongoose';
 
-export const entityName = 'Client';
+export interface IClient {
+  _id: Types.ObjectId;
+  created_by: Types.ObjectId;
+  name: string;
+  company?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  status: 'lead' | 'active' | 'inactive' | 'past';
+  notes?: string | null;
+  business_id?: Types.ObjectId | null;
+  is_deleted: boolean;
+  deleted_at?: string | null;
+  deleted_by_process?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const clientSchema = new Schema<IClient>(
   {
-    id: { type: String, default: () => uuidv4(), unique: true, index: true },
+    created_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
 
-    email: { type: String, default: null, index: true },
-    phone: { type: String, default: null, index: true },
-    company: { type: String, default: null },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200,
+    },
 
-    status: { type: String, default: 'lead', index: true },
+    company: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 200,
+    },
 
-    lifetime_value: { type: Number, default: null },
+    email: {
+      type: String,
+      default: null,
+      trim: true,
+      lowercase: true,
+    },
 
-    notes: { type: String, default: null },
+    phone: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 50,
+    },
 
-    business_id: { type: String, default: null, index: true },
+    status: {
+      type: String,
+      enum: ['lead', 'active', 'inactive', 'past'],
+      default: 'lead',
+    },
 
-    is_deleted: { type: Boolean, default: false, index: true },
-    deleted_at: { type: String, default: null },
-    deleted_by_process: { type: String, default: null },
+    notes: {
+      type: String,
+      default: null,
+      maxlength: 5000,
+    },
 
-    created_at: { type: String, default: () => new Date().toISOString() },
-    updated_at: { type: String, default: () => new Date().toISOString() },
+    business_id: {
+      type: Schema.Types.ObjectId,
+      ref: 'Business',
+      default: null,
+    },
+
+    is_deleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    deleted_at: {
+      type: String,
+      default: null,
+    },
+
+    deleted_by_process: {
+      type: String,
+      default: null,
+    },
   },
-  { timestamps: false, versionKey: false },
+  {
+    timestamps: true,
+    versionKey: false,
+  },
 );
-
-clientSchema.pre<IClient>('save', function () {
-  this.updated_at = new Date().toISOString();
-});
 
 export const Client: Model<IClient> = mongoose.model<IClient>(
   'Client',

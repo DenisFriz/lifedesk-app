@@ -31,27 +31,25 @@ const categoryKeywords = {
   'Software & Tools': ['software', 'saas', 'subscription', 'tool', 'app']
 }
 
-export async function categorizeTransaction(description, transactionType = 'both') {
+export async function categorizeTransaction(description, transactionType = 'both', rules = null) {
   if (!description) return { category: 'Uncategorized', business_id: null }
 
   const desc = description.toLowerCase()
 
+  // Use provided rules or fetch them
+  const rulesArray = rules || (await backend.entities.TransactionRule.list().catch(() => []))
+
   // First, check user-defined rules
-  try {
-    const rules = await backend.entities.TransactionRule.list()
-    for (const rule of rules) {
-      if (rule.transaction_type === transactionType || rule.transaction_type === 'both') {
-        const keyword = rule.keyword.toLowerCase()
-        if (desc.includes(keyword)) {
-          return {
-            category: rule.category,
-            business_id: rule.business_id || null
-          }
+  for (const rule of rulesArray) {
+    if (rule.transaction_type === transactionType || rule.transaction_type === 'both') {
+      const keyword = rule.keyword.toLowerCase()
+      if (desc.includes(keyword)) {
+        return {
+          category: rule.category,
+          business_id: rule.business_id || null
         }
       }
     }
-  } catch (error) {
-    console.error('Error fetching transaction rules:', error)
   }
 
   // Fall back to default keyword matching
@@ -68,21 +66,22 @@ export async function saveTransactionRule(
   description,
   category,
   businessId,
-  transactionType = 'both'
+  transactionType = 'both',
+  existingRules = null
 ) {
   if (!description) return
 
   // Extract a keyword from the description (first significant word)
   const keyword = description.toLowerCase().split(' ')[0]
 
-  // Check if rule already exists
-  const existingRules = await backend.entities.TransactionRule.list()
-  const exists = existingRules.some(
+  // Use provided rules or fetch them
+  const rules = existingRules || (await backend.entities.TransactionRule.list().catch(() => []))
+  const exists = rules.some(
     rule => rule.keyword.toLowerCase() === keyword && rule.transaction_type === transactionType
   )
 
   if (!exists) {
-    await backend.entities.TransactionRule.create({
+    return backend.entities.TransactionRule.create({
       keyword,
       category,
       business_id: businessId || null,

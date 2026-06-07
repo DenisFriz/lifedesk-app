@@ -1,8 +1,8 @@
 import { Lightbulb, ThumbsUp, CheckCircle, Clock } from 'lucide-react'
-import { Idea } from '@/types/entities'
+import { CommunityIdeaRecord } from '@/db'
 
 interface CommunityStatsProps {
-  ideas: Idea[]
+  ideas: CommunityIdeaRecord[]
 }
 
 export default function CommunityStats({ ideas }: CommunityStatsProps) {

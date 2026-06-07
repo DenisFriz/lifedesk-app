@@ -1,5 +1,35 @@
-import mongoose, { Schema, Model } from 'mongoose';
-import { IGoal } from '@/types/index.js';
+import mongoose, { Schema, Model, Types } from 'mongoose';
+
+export interface IGoal {
+  _id?: Types.ObjectId;
+  created_by: Types.ObjectId;
+  title: string;
+  description: string | null;
+  category: string | null;
+  business_id: string | null;
+  problem_id: string | null;
+  important: boolean;
+  target_date: string | null;
+  target_time: string | null;
+  reminders: any[];
+  status: string;
+  is_recurring: boolean;
+  recurrence_frequency: string | null;
+  recurrence_interval: number;
+  recurrence_days_of_week: string[];
+  recurrence_monthly_type: string;
+  recurrence_end_type: string;
+  recurrence_end_date: string | null;
+  recurrence_end_count: number | null;
+  excluded_dates: string[];
+  parent_recurring_goal_id: string | null;
+  order: number | null;
+  is_deleted: boolean;
+  deleted_at: string | null;
+  deleted_by_process: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 const goalSchema = new Schema<IGoal>(
   {

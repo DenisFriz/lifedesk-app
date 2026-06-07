@@ -16,32 +16,34 @@ export async function testDeleteAccountScenarios(
     const results: Record<string, any> = {};
 
     if (!scenario || scenario === 1) {
-      const freeUsers = await User.find({ subscription_tier: 'free' }).lean();
+      const freeUserCount = await User.countDocuments({
+        subscription_tier: 'free',
+      });
       results.scenario_1_free_user_deletion = {
-        free_users_exist: freeUsers.length > 0,
-        count: freeUsers.length,
+        free_users_exist: freeUserCount > 0,
+        count: freeUserCount,
         safe: true,
       };
     }
 
     if (!scenario || scenario === 2) {
-      const activeSubs = await Subscription.find({
+      const activeSubCount = await Subscription.countDocuments({
         status: 'active',
-      }).lean();
+      });
       results.scenario_2_active_subscription = {
-        active_subscriptions_exist: activeSubs.length > 0,
-        count: activeSubs.length,
+        active_subscriptions_exist: activeSubCount > 0,
+        count: activeSubCount,
         safe: true,
       };
     }
 
     if (!scenario || scenario === 3) {
-      const cancelledSubs = await Subscription.find({
+      const cancelledSubCount = await Subscription.countDocuments({
         status: 'canceled',
-      }).lean();
+      });
       results.scenario_3_cancelled_subscription = {
-        cancelled_subscriptions_exist: cancelledSubs.length > 0,
-        count: cancelledSubs.length,
+        cancelled_subscriptions_exist: cancelledSubCount > 0,
+        count: cancelledSubCount,
         safe: true,
       };
     }
@@ -54,10 +56,10 @@ export async function testDeleteAccountScenarios(
     }
 
     if (!scenario || scenario === 5) {
-      const admins = await User.find({ role: 'admin' }).lean();
+      const adminCount = await User.countDocuments({ role: 'admin' });
       results.scenario_5_sole_admin_protection = {
-        total_admins: admins.length,
-        sole_admin_protected: admins.length === 1,
+        total_admins: adminCount,
+        sole_admin_protected: adminCount === 1,
         safe: true,
       };
     }

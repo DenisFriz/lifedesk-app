@@ -34,6 +34,8 @@ import {
 import { formatCurrency } from '@/components/utils/formatters'
 import { RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useOfflineAccountSnapshotsQuery } from '@/hooks/offlineaccountsnapshot/useOfflineAccountSnapshots'
+import { useOfflineAccountsQuery } from '@/hooks/offlineaccounts/useOfflineAccountsQuery'
 
 type ChartRow = {
   date: string
@@ -62,7 +64,6 @@ function buildChartData({
   rangeEnd: Date
 }) {
   const rangeStartStr = format(rangeStart, 'yyyy-MM-dd')
-  const rangeEndStr = format(rangeEnd, 'yyyy-MM-dd')
 
   // Separate bank vs offline account IDs
   const bankAccountIds = [...new Set(bankSnapshots.map(s => s.account_id))]
@@ -231,19 +232,6 @@ type BankBalanceSnapshot = {
   date: string
 }
 
-type OfflineAccountSnapshot = {
-  id: string
-  account_id: string
-  balance: number
-  date: string
-}
-
-type OfflineAccount = {
-  id: string
-  name: string
-  created_date: string
-}
-
 export default function BankBalanceChart({
   income = [],
   expenses = []
@@ -261,23 +249,11 @@ export default function BankBalanceChart({
       backend.entities.BankBalanceSnapshot.list('-date', 500) as Promise<BankBalanceSnapshot[]>
   })
 
-  const { data: offlineSnapshotsRaw = [], isLoading: isOfflineSnapshotsLoading } = useQuery<
-    OfflineAccountSnapshot[]
-  >({
-    queryKey: ['offlineAccountSnapshots'],
-    queryFn: () =>
-      backend.entities.OfflineAccountSnapshot.list('-date', 1000) as Promise<
-        OfflineAccountSnapshot[]
-      >
-  })
+  const { data: offlineSnapshotsRaw = [], isLoading: isOfflineSnapshotsLoading } =
+    useOfflineAccountSnapshotsQuery()
 
-  const { data: offlineAccounts = [], isLoading: isOfflineAccountsLoading } = useQuery<
-    OfflineAccount[]
-  >({
-    queryKey: ['offlineAccounts'],
-    queryFn: () =>
-      backend.entities.OfflineAccount.list('-created_date') as Promise<OfflineAccount[]>
-  })
+  const { data: offlineAccounts = [], isLoading: isOfflineAccountsLoading } =
+    useOfflineAccountsQuery()
 
   const snapshotMutation = useMutation({
     mutationFn: () => backend.functions.invoke('plaid', { action: 'snapshot_balances' }),

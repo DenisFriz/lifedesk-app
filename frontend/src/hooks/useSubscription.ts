@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useCallback, useMemo } from 'react'
 import { backend } from '@/api/backend'
 import type { User } from '@/types'
 
@@ -27,7 +28,7 @@ interface SubscriptionReturn {
 export function useSubscription(): SubscriptionReturn {
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => backend.auth.me() as Promise<User | undefined>
+    queryFn: () => backend.user.me() as Promise<User | undefined>
   })
 
   const { data: subscriptions, isLoading: subLoading } = useQuery({
@@ -45,32 +46,40 @@ export function useSubscription(): SubscriptionReturn {
         return null
       }
     },
-    enabled: !!user?.email
+    enabled: !!user?.email,
+    staleTime: 10 * 60 * 1000 // 10 minutes
   })
 
   const { data: plans, isLoading: planLoading } = useQuery({
     queryKey: ['userPlans'],
-    queryFn: () => backend.entities.UserPlan.list() as Promise<UserPlan[]>
+    queryFn: () => backend.entities.UserPlan.list() as Promise<UserPlan[]>,
+    staleTime: 30 * 60 * 1000 // 30 minutes
   })
 
   const subscription = subscriptions
   const planName = user?.subscription_tier ?? 'free'
-  const planData = plans?.find(p => p.plan_name === planName)
+  const planData = useMemo(() => plans?.find(p => p.plan_name === planName), [plans, planName])
   const features = planData?.features ?? {}
 
-  const can = (featureKey: string): boolean => {
-    if (!planData) return false
-    const val = features[featureKey]
-    if (typeof val === 'boolean') return val
-    return false
-  }
+  const can = useCallback(
+    (featureKey: string): boolean => {
+      if (!planData) return false
+      const val = features[featureKey]
+      if (typeof val === 'boolean') return val
+      return false
+    },
+    [planData, features]
+  )
 
-  const limit = (limitKey: string): number => {
-    if (!planData) return 0
-    const val = features[limitKey]
-    if (val === null || val === undefined) return undefined
-    return val as number
-  }
+  const limit = useCallback(
+    (limitKey: string): number => {
+      if (!planData) return 0
+      const val = features[limitKey]
+      if (val === null || val === undefined) return undefined
+      return val as number
+    },
+    [planData, features]
+  )
 
   return {
     isLoading: subLoading || planLoading,

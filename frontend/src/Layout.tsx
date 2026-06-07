@@ -8,7 +8,7 @@ import {
   ReactNode,
   MouseEvent
 } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { DropResult } from '@hello-pangea/dnd'
 import { Maximize, Minimize } from 'lucide-react'
@@ -20,10 +20,22 @@ import TimeTrackerPanel from '@/components/time/TimeTrackerPanel'
 import AIAssistantPanel from '@/components/ai/AIAssistantPanel'
 import EventNotifications from '@/components/calendar/EventNotifications'
 import { TimeTrackerProvider } from '@/components/time/TimeTrackerContext'
-import type { LayoutContextValue, NavItem as NavItemType, User } from '@/types'
+import type { LayoutContextValue, NavItem as NavItemType } from '@/types'
 import LayoutContent from './layouts/default-layout'
 import { useAuth } from './lib/AuthContext'
 import { useBusinessesQuery } from './hooks/businesses/useBusinessesQuery'
+import { BusinessRecord } from './db'
+
+const BUSINESS_SUBMENU_PAGES = [
+  'BusinessOverview',
+  'BusinessGoals',
+  'BusinessTasks',
+  'BusinessTransactions',
+  'BusinessBudget',
+  'Projects',
+  'Clients',
+  'Marketing'
+]
 
 export const LayoutContext = createContext<LayoutContextValue | null>(null)
 
@@ -43,7 +55,9 @@ function findSectionsToExpand(
   for (const item of items) {
     if (item.page) {
       const pathMatches = pathname === createPageUrl(item.page)
-      const businessMatches = !item.businessId || String(item.businessId) === String(businessId)
+      const businessMatches = businessId
+        ? String(item.businessId) === String(businessId)
+        : !item.businessId
       if (pathMatches && businessMatches) {
         return []
       }
@@ -70,6 +84,8 @@ type ChatMessage = {
 
 export default function Layout({ children, currentPageName }: LayoutProps) {
   const location = useLocation()
+  const navigate = useNavigate()
+  const prevBusinessesRef = useRef<any[]>([])
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebarCollapsed')
     return saved ? JSON.parse(saved) : false
@@ -205,6 +221,80 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
   const { data: businesses = [] } = useBusinessesQuery()
 
   const { user } = useAuth()
+
+  console.log(businesses, 'businesses in Layout')
+  useEffect(() => {
+    const prevBusinesses = prevBusinessesRef.current
+    prevBusinessesRef.current = businesses as any[]
+
+    if (prevBusinesses.length === 0) return
+
+    // URL migration: if current ?businessId is stale, swap it to the new server id
+    const urlParams = new URLSearchParams(location.search)
+    const currentBusinessId = urlParams.get('businessId')
+    if (currentBusinessId) {
+      const businessExists = businesses.some(b => String(b.id) === String(currentBusinessId))
+      if (!businessExists) {
+        const oldBusiness = prevBusinesses.find(b => String(b.id) === String(currentBusinessId))
+        if (oldBusiness) {
+          const newBusiness = businesses.find(b => b.name === oldBusiness.name)
+          if (newBusiness) {
+            urlParams.set('businessId', newBusiness.id)
+            navigate(`${location.pathname}?${urlParams.toString()}`, { replace: true })
+          }
+        }
+      }
+    }
+
+    // expandedSections migration: for every business whose id changed, rename its key
+    setExpandedSections(prev => {
+      let updated = { ...prev }
+      let changed = false
+      for (const prevBusiness of prevBusinesses) {
+        const newBusiness = businesses.find(b => b.name === prevBusiness.name)
+
+        if (!newBusiness || String(prevBusiness.id) === String(newBusiness.id)) continue
+        const oldKey = `business-${prevBusiness.id}`
+        const newKey = `business-${newBusiness.id}`
+        console.log('Migrating expandedSections key', oldKey, 'to', newKey)
+        if (updated[oldKey]) {
+          updated[newKey] = true
+          delete updated[oldKey]
+          changed = true
+        }
+      }
+      if (!changed) return prev
+
+      localStorage.setItem('expandedSections', JSON.stringify(updated))
+      return updated
+    })
+  }, [businesses, location.search, location.pathname, navigate])
+
+  // On a business submenu route with no businessId, inject the currently-open business's id
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search)
+    if (urlParams.get('businessId')) return
+
+    const onBusinessPage = BUSINESS_SUBMENU_PAGES.some(
+      page => location.pathname === createPageUrl(page)
+    )
+    if (!onBusinessPage) return
+
+    // Extract businessId from the expanded section key (e.g., 'business-<id>')
+    const activeEntry = Object.entries(expandedSections).find(
+      ([key, val]) => val === true && key.startsWith('business-') && key !== 'business'
+    )
+    if (!activeEntry) return
+
+    const businessId = activeEntry[0].slice('business-'.length)
+    if (!businessId || businessId === 'undefined') return
+
+    urlParams.set('businessId', businessId)
+    navigate(`${location.pathname}?${urlParams.toString()}`, { replace: true })
+  }, [location.pathname, location.search, expandedSections, navigate])
+
+  const getBusinessId = (business: BusinessRecord): string =>
+    business.id || business.serverId || (business as any)._id || ''
 
   const getDefaultNavigation = useCallback(
     (): NavItemType[] => [
@@ -515,68 +605,68 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
         section: 'business',
         expandable: true,
         children: [
-          ...(businesses as any[]).map(business => ({
+          ...businesses.map(business => ({
             name: business.name,
             iconName: 'Briefcase',
-            section: `business-${business.id}`,
+            section: `business-${getBusinessId(business)}`,
             expandable: true,
-            businessId: business.id,
+            businessId: getBusinessId(business),
             children: [
               {
                 name: 'Overview',
                 page: 'BusinessOverview',
                 iconName: 'Home',
-                businessId: business.id,
-                section: `business-${business.id}`
+                businessId: getBusinessId(business),
+                section: `business-${getBusinessId(business)}`
               },
               {
                 name: 'Goals',
                 page: 'BusinessGoals',
                 iconName: 'Target',
-                businessId: business.id,
-                section: `business-${business.id}`
+                businessId: getBusinessId(business),
+                section: `business-${getBusinessId(business)}`
               },
               {
                 name: 'Tasks',
                 page: 'BusinessTasks',
                 iconName: 'ListTodo',
-                businessId: business.id,
-                section: `business-${business.id}`
+                businessId: getBusinessId(business),
+                section: `business-${getBusinessId(business)}`
               },
               {
                 name: 'Transactions',
-                page: 'Transactions',
+                page: 'BusinessTransactions',
                 iconName: 'DollarSign',
-                businessId: business.id,
-                section: `business-${business.id}`
+                businessId: getBusinessId(business),
+                section: `business-${getBusinessId(business)}`
               },
               {
                 name: 'Budget',
-                page: 'Budget',
+                page: 'BusinessBudget',
                 iconName: 'TrendingUp',
-                businessId: business.id,
-                section: `business-${business.id}`
+                businessId: getBusinessId(business),
+                section: `business-${getBusinessId(business)}`
               },
               {
                 name: 'Projects',
                 page: 'Projects',
                 iconName: 'Briefcase',
-                businessId: business.id,
-                section: `business-${business.id}`
+                businessId: getBusinessId(business),
+                section: `business-${getBusinessId(business)}`
               },
               {
                 name: 'Clients',
                 page: 'Clients',
                 iconName: 'Handshake',
-                businessId: business.id,
-                section: `business-${business.id}`
+                businessId: getBusinessId(business),
+                section: `business-${getBusinessId(business)}`
               },
               {
                 name: 'Marketing',
                 page: 'Marketing',
                 iconName: 'Megaphone',
-                businessId: business.id,
-                section: `business-${business.id}`
+                businessId: getBusinessId(business),
+                section: `business-${getBusinessId(business)}`
               }
             ]
           })),
@@ -608,13 +698,6 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
   )
 
   useEffect(() => {
-    const savedScroll = localStorage.getItem('sidebarScrollPosition')
-    if (savedScroll && navRef.current) {
-      ;(navRef.current as any).scrollTop(parseInt(savedScroll, 10))
-    }
-  }, [currentPageName, location.search])
-
-  useEffect(() => {
     const urlParams = new URLSearchParams(location.search)
     const currentBusinessId = urlParams.get('businessId')
     const navigation = getDefaultNavigation()
@@ -623,18 +706,12 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
     if (!sectionsToExpand) return
 
     setExpandedSections(prev => {
-      const newExpanded: Record<string, boolean> = {}
+      const allAlreadySet = sectionsToExpand.every(s => prev[s])
+      if (allAlreadySet) return prev
+      const newExpanded = { ...prev }
       sectionsToExpand.forEach(section => {
         newExpanded[section] = true
       })
-
-      const prevActive = Object.entries(prev)
-        .filter(([, v]) => v)
-        .map(([k]) => k)
-        .sort()
-      const nextActive = [...sectionsToExpand].sort()
-      if (JSON.stringify(prevActive) === JSON.stringify(nextActive)) return prev
-
       localStorage.setItem('expandedSections', JSON.stringify(newExpanded))
       return newExpanded
     })
@@ -650,9 +727,7 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
       event.stopPropagation()
     }
 
-    if (!navRef.current) return
-
-    const scrollPos = (navRef.current as any).getScrollTop()
+    if (!section || /undefined|null/.test(section)) return
 
     setExpandedSections(prev => {
       const newExpanded = {
@@ -661,12 +736,6 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
       }
       localStorage.setItem('expandedSections', JSON.stringify(newExpanded))
       return newExpanded
-    })
-
-    requestAnimationFrame(() => {
-      if (navRef.current) {
-        ;(navRef.current as any).scrollTop(scrollPos)
-      }
     })
   }, [])
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
+import { SEO } from '@/lib/seo'
 import { apiFetch } from '@/api/apiClient'
 
 const InputClass = `flex w-full rounded-md border px-3 py-2 text-base ring-offset-background 
@@ -57,7 +58,9 @@ export default function ResetPassword() {
   return (
     <>
       <Helmet>
-        <title>Reset password</title>
+        <title>{SEO.resetPassword.title}</title>
+        <meta name="description" content={SEO.resetPassword.description} />
+        <link rel="canonical" href="https://lifedesk.app/ResetPassword" />
       </Helmet>
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="rounded-lg text-card-foreground relative max-w-md w-full overflow-hidden border-0 shadow-lg bg-white">

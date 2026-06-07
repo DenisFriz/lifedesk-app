@@ -1,27 +1,19 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
 import type { Request, Response } from 'express';
 
 import authRouter from '@routes/auth/index.js';
+import userRouter from '@routes/user/index.js';
 import emailRouter from '@routes/email/index.js';
 import entitiesRouter from '@routes/entities.js';
 import functionsRouter from '@routes/functions.js';
+import cloudinaryRouter from '@routes/cloudinary.js';
 import { AppError } from '@errors/AppError.js';
 import { requireAuth } from '@middleware/auth.js';
 import cookieParser from 'cookie-parser';
 
 const app = express();
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadDir = path.join(__dirname, './uploads');
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
 
 app.use(
   cors({
@@ -35,11 +27,11 @@ app.use('/functions/stripeWebhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(cookieParser());
 
-app.use('/uploads', express.static(uploadDir));
-
 app.use('/auth', authRouter);
+app.use('/user', userRouter);
 app.use('/email', emailRouter);
 app.use('/entities', requireAuth, entitiesRouter);
+app.use('/cloudinary', requireAuth, cloudinaryRouter);
 app.use('/functions', functionsRouter);
 
 app.use((err: unknown, req: Request, res: Response) => {

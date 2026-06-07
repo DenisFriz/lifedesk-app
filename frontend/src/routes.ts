@@ -92,115 +92,117 @@ interface AppRoute {
 }
 
 export const appRoutes: AppRoute[] = [
-  { path: '/Accounts', name: 'Accounts', element: Accounts },
-  { path: '/AdminUsers', name: 'AdminUsers', element: AdminUsers },
-  { path: '/Analytics', name: 'Analytics', element: Analytics },
-  { path: '/Assets', name: 'Assets', element: Assets },
-  { path: '/AssetsCars', name: 'AssetsCars', element: AssetsCars },
-  { path: '/AssetsEstates', name: 'AssetsEstates', element: AssetsEstates },
-  { path: '/AssetsGoals', name: 'AssetsGoals', element: AssetsGoals },
-  { path: '/AssetsOther', name: 'AssetsOther', element: AssetsOther },
-  { path: '/AssetsTasks', name: 'AssetsTasks', element: AssetsTasks },
+  { path: '/accounts', name: 'Accounts', element: Accounts },
+  { path: '/admin-users', name: 'AdminUsers', element: AdminUsers },
+  { path: '/analytics', name: 'Analytics', element: Analytics },
+  { path: '/assets', name: 'Assets', element: Assets },
+  { path: '/assets-cars', name: 'AssetsCars', element: AssetsCars },
+  { path: '/assets-estates', name: 'AssetsEstates', element: AssetsEstates },
+  { path: '/assets-goals', name: 'AssetsGoals', element: AssetsGoals },
+  { path: '/assets-other', name: 'AssetsOther', element: AssetsOther },
+  { path: '/assets-tasks', name: 'AssetsTasks', element: AssetsTasks },
 
-  { path: '/BodyGoals', name: 'BodyGoals', element: BodyGoals },
+  { path: '/body-goals', name: 'BodyGoals', element: BodyGoals },
   {
-    path: '/BodyMeasurements',
+    path: '/body-measurements',
     name: 'BodyMeasurements',
     element: BodyMeasurements
   },
-  { path: '/BodyProblems', name: 'BodyProblems', element: BodyProblems },
-  { path: '/BodyTasks', name: 'BodyTasks', element: BodyTasks },
+  { path: '/body-problems', name: 'BodyProblems', element: BodyProblems },
+  { path: '/body-tasks', name: 'BodyTasks', element: BodyTasks },
 
-  { path: '/Budget', name: 'Budget', element: Budget },
-  { path: '/BusinessGoals', name: 'BusinessGoals', element: BusinessGoals },
+  { path: '/budget', name: 'Budget', element: Budget },
+  { path: '/business-budget', name: 'BusinessBudget', element: Budget },
+  { path: '/business-goals', name: 'BusinessGoals', element: BusinessGoals },
   {
-    path: '/BusinessOverview',
+    path: '/business-overview',
     name: 'BusinessOverview',
     element: BusinessOverview
   },
-  { path: '/BusinessTasks', name: 'BusinessTasks', element: BusinessTasks },
+  { path: '/business-tasks', name: 'BusinessTasks', element: BusinessTasks },
 
-  { path: '/Calendar', name: 'Calendar', element: Calendar },
-  { path: '/Clients', name: 'Clients', element: Clients },
-  { path: '/CommunityHub', name: 'CommunityHub', element: CommunityHub },
+  { path: '/calendar', name: 'Calendar', element: Calendar },
+  { path: '/clients', name: 'Clients', element: Clients },
+  { path: '/community-hub', name: 'CommunityHub', element: CommunityHub },
 
-  { path: '/Finances', name: 'Finances', element: Finances },
-  { path: '/FinancesGoals', name: 'FinancesGoals', element: FinancesGoals },
+  { path: '/finances', name: 'Finances', element: Finances },
+  { path: '/finances-goals', name: 'FinancesGoals', element: FinancesGoals },
   {
-    path: '/FinancesProblems',
+    path: '/finances-problems',
     name: 'FinancesProblems',
     element: FinancesProblems
   },
-  { path: '/FinancesTasks', name: 'FinancesTasks', element: FinancesTasks },
+  { path: '/finances-tasks', name: 'FinancesTasks', element: FinancesTasks },
 
-  { path: '/Fitness', name: 'Fitness', element: Fitness },
-  { path: '/FitnessGoals', name: 'FitnessGoals', element: FitnessGoals },
-  { path: '/FitnessTasks', name: 'FitnessTasks', element: FitnessTasks },
+  { path: '/fitness', name: 'Fitness', element: Fitness },
+  { path: '/fitness-goals', name: 'FitnessGoals', element: FitnessGoals },
+  { path: '/fitness-tasks', name: 'FitnessTasks', element: FitnessTasks },
 
-  { path: '/HealthBody', name: 'HealthBody', element: HealthBody },
+  { path: '/health-body', name: 'HealthBody', element: HealthBody },
   {
-    path: '/HealthDocuments',
+    path: '/health-documents',
     name: 'HealthDocuments',
     element: HealthDocuments
   },
-  { path: '/HealthMind', name: 'HealthMind', element: HealthMind },
+  { path: '/health-mind', name: 'HealthMind', element: HealthMind },
 
-  { path: '/Home', name: 'Home', element: Home },
+  { path: '/home', name: 'Home', element: Home },
 
-  { path: '/Hobbies', name: 'Hobbies', element: Hobbies },
-  { path: '/HobbiesGoals', name: 'HobbiesGoals', element: HobbiesGoals },
-  { path: '/HobbiesTasks', name: 'HobbiesTasks', element: HobbiesTasks },
+  { path: '/hobbies', name: 'Hobbies', element: Hobbies },
+  { path: '/hobbies-goals', name: 'HobbiesGoals', element: HobbiesGoals },
+  { path: '/hobbies-tasks', name: 'HobbiesTasks', element: HobbiesTasks },
 
-  { path: '/Learning', name: 'Learning', element: Learning },
-  { path: '/LearningGoals', name: 'LearningGoals', element: LearningGoals },
-  { path: '/LearningTasks', name: 'LearningTasks', element: LearningTasks },
+  { path: '/learning', name: 'Learning', element: Learning },
+  { path: '/learning-goals', name: 'LearningGoals', element: LearningGoals },
+  { path: '/learning-tasks', name: 'LearningTasks', element: LearningTasks },
 
-  { path: '/MainEvents', name: 'MainEvents', element: MainEvents },
-  { path: '/MainGoals', name: 'MainGoals', element: MainGoals },
-  { path: '/MainTasks', name: 'MainTasks', element: MainTasks },
+  { path: '/main-events', name: 'MainEvents', element: MainEvents },
+  { path: '/main-goals', name: 'MainGoals', element: MainGoals },
+  { path: '/main-tasks', name: 'MainTasks', element: MainTasks },
 
   {
-    path: '/ManageBusinesses',
+    path: '/manage-businesses',
     name: 'ManageBusinesses',
     element: ManageBusinesses
   },
-  { path: '/Marketing', name: 'Marketing', element: Marketing },
+  { path: '/marketing', name: 'Marketing', element: Marketing },
 
-  { path: '/Overview', name: 'Overview', element: Overview },
+  { path: '/overview', name: 'Overview', element: Overview },
 
-  { path: '/Profile', name: 'Profile', element: Profile },
-  { path: '/ProgressPhotos', name: 'ProgressPhotos', element: ProgressPhotos },
-  { path: '/Projects', name: 'Projects', element: Projects },
+  { path: '/profile', name: 'Profile', element: Profile },
+  { path: '/progress-photos', name: 'ProgressPhotos', element: ProgressPhotos },
+  { path: '/projects', name: 'Projects', element: Projects },
 
-  { path: '/Relationships', name: 'Relationships', element: Relationships },
+  { path: '/relationships', name: 'Relationships', element: Relationships },
   {
-    path: '/RelationshipsGoals',
+    path: '/relationships-goals',
     name: 'RelationshipsGoals',
     element: RelationshipsGoals
   },
   {
-    path: '/RelationshipsTasks',
+    path: '/relationships-tasks',
     name: 'RelationshipsTasks',
     element: RelationshipsTasks
   },
 
-  { path: '/Revenue', name: 'Revenue', element: Revenue },
+  { path: '/revenue', name: 'Revenue', element: Revenue },
 
-  { path: '/Tasks', name: 'Tasks', element: Tasks },
-  { path: '/TangibleAssets', name: 'TangibleAssets', element: TangibleAssets },
-  { path: '/TimeReports', name: 'TimeReports', element: TimeReports },
-  { path: '/Transactions', name: 'Transactions', element: Transactions },
+  { path: '/tasks', name: 'Tasks', element: Tasks },
+  { path: '/tangible-assets', name: 'TangibleAssets', element: TangibleAssets },
+  { path: '/time-reports', name: 'TimeReports', element: TimeReports },
+  { path: '/transactions', name: 'Transactions', element: Transactions },
+  { path: '/business-transactions', name: 'BusinessTransactions', element: Transactions },
 
-  { path: '/Upgrade', name: 'Upgrade', element: Upgrade },
+  { path: '/upgrade', name: 'Upgrade', element: Upgrade },
 
-  { path: '/WorkoutPlans', name: 'WorkoutPlans', element: WorkoutPlans },
-  { path: '/Workouts', name: 'Workouts', element: Workouts }
+  { path: '/workout-plans', name: 'WorkoutPlans', element: WorkoutPlans },
+  { path: '/workouts', name: 'Workouts', element: Workouts }
 ]
 
 export const authRoutes: AppRoute[] = [
-  { path: '/Login', name: 'Login', element: Login },
-  { path: '/Register', name: 'Register', element: Register },
-  { path: '/ForgotPassword', name: 'ForgotPassword', element: ForgotPassword },
-  { path: '/ResetPassword', name: 'ResetPassword', element: ResetPassword },
-  { path: '/PageNotFound', name: 'PageNotFound', element: PageNotFound }
+  { path: '/login', name: 'Login', element: Login },
+  { path: '/register', name: 'Register', element: Register },
+  { path: '/forgot-password', name: 'ForgotPassword', element: ForgotPassword },
+  { path: '/reset-password', name: 'ResetPassword', element: ResetPassword },
+  { path: '/page-not-found', name: 'PageNotFound', element: PageNotFound }
 ]

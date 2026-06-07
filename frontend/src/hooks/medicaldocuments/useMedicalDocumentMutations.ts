@@ -1,7 +1,7 @@
 import { useSound } from '@/contexts/SoundContext'
 import { MedicalDocumentRecord } from '@/db'
 import {
-  CreateMedicalDocuemntInput,
+  CreateMedicalDocumentInput,
   medicalDocumentRepository
 } from '@/repositories/medicaldocument.repository'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -18,7 +18,7 @@ export function useMedicalDocumentMutations() {
     }
   })
 
-  const createMutation = useMutation<any, any, CreateMedicalDocuemntInput>({
+  const createMutation = useMutation<any, any, CreateMedicalDocumentInput>({
     networkMode: 'always',
     mutationFn: async data => {
       return medicalDocumentRepository.create(data)

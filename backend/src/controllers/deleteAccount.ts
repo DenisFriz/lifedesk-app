@@ -4,6 +4,7 @@ import { User, Subscription, modelMap } from '@/models/index.js';
 import { UserUsage } from '@/models/UserUsage.js';
 import { Types } from 'mongoose';
 import jwt from 'jsonwebtoken';
+import { cloudinary } from '@/lib/cloudinary.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -39,6 +40,28 @@ const SOFT_DELETE_ENTITIES = [
   'Idea',
   'ContentIdea',
 ];
+
+const CLOUDINARY_URL_FIELDS: Record<string, string> = {
+  medicaldocument: 'file_url',
+  progressphoto: 'image_url',
+};
+
+function extractCloudinaryInfo(
+  url: string,
+): { publicId: string; resourceType: 'image' | 'video' | 'raw' } | null {
+  try {
+    const match = url.match(/\/(image|video|raw)\/upload\/(?:v\d+\/)?(.+)/);
+    if (!match) return null;
+    const resourceType = match[1] as 'image' | 'video' | 'raw';
+    let publicId = match[2];
+    if (resourceType !== 'raw') {
+      publicId = publicId.replace(/\.[^/.]+$/, ''); // strip extension for image/video
+    }
+    return { publicId, resourceType };
+  } catch {
+    return null;
+  }
+}
 
 type ReauthTokenPayload = {
   type: 'reauth';
@@ -99,7 +122,9 @@ export async function deleteAccount(req: Request, res: Response) {
     }
 
     // Always fetch fresh user
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(decoded.userId)
+      .lean()
+      .select('_id id role');
 
     if (!user) {
       return res.status(404).json({
@@ -113,7 +138,7 @@ export async function deleteAccount(req: Request, res: Response) {
           'Admin accounts cannot be deleted through this flow. Please contact support.',
       });
     }
-    const allAdmins = await User.find({ role: 'admin' }).lean();
+    const allAdmins = await User.find({ role: 'admin' }).lean().select('id');
 
     if (allAdmins.length === 1 && allAdmins[0].id === user.id) {
       return res.status(403).json({
@@ -127,7 +152,9 @@ export async function deleteAccount(req: Request, res: Response) {
 
     const subscriptions = await Subscription.find({
       user_email: user.email,
-    }).lean();
+    })
+      .lean()
+      .select('stripe_subscription_id _id');
 
     for (const subscription of subscriptions) {
       if (subscription.stripe_subscription_id) {
@@ -160,6 +187,39 @@ export async function deleteAccount(req: Request, res: Response) {
             `[deleteAccount] Missing model in modelMap: ${entityName}`,
           );
           continue;
+        }
+
+        // Cleanup Cloudinary assets for entities with URL fields
+        const urlField = CLOUDINARY_URL_FIELDS[entityName.toLowerCase()];
+        if (urlField) {
+          try {
+            const records = await model
+              .find({ created_by: userId })
+              .select(urlField)
+              .lean();
+
+            const grouped: Record<string, string[]> = {};
+            for (const rec of records) {
+              const url = (rec as any)[urlField];
+              if (!url) continue;
+              const info = extractCloudinaryInfo(url);
+              if (!info) continue;
+              (grouped[info.resourceType] ??= []).push(info.publicId);
+            }
+
+            await Promise.allSettled(
+              Object.entries(grouped).map(([resourceType, ids]) =>
+                cloudinary.api.delete_resources(ids, {
+                  resource_type: resourceType as any,
+                }),
+              ),
+            );
+          } catch (err: any) {
+            console.warn(
+              `[deleteAccount] Cloudinary cleanup failed for ${entityName}:`,
+              err.message,
+            );
+          }
         }
 
         await model.deleteMany({

@@ -1,7 +1,7 @@
 import { db, MedicalDocumentRecord } from '@/db'
 import { generateOptimisticId, enqueueMutation } from '@/db/syncQueue'
 
-export type CreateMedicalDocuemntInput = Omit<
+export type CreateMedicalDocumentInput = Omit<
   MedicalDocumentRecord,
   'id' | 'serverId' | 'createdAt' | 'updatedAt' | 'is_deleted'
 >
@@ -33,7 +33,7 @@ export const medicalDocumentRepository = {
 
     return updatedMedicalDocument
   },
-  create: async (data: CreateMedicalDocuemntInput) => {
+  create: async (data: CreateMedicalDocumentInput) => {
     const optimisticId = generateOptimisticId()
 
     const now = new Date().toISOString()

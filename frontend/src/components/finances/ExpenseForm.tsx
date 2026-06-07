@@ -12,11 +12,8 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { CalendarIcon, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { format } from 'date-fns'
-import { cn } from '@/lib/utils'
 import { categorizeTransaction } from './transactionCategorizer'
 import { PERSONAL_CATEGORIES, BUSINESS_CATEGORIES, EXPENSE_CATEGORIES } from './categories'
 import { backend } from '@/api/backend'
@@ -40,6 +37,7 @@ interface ExpenseFormProps {
   onSubmit: (data: ExpenseFormData) => void
   expense?: any
   isLoading?: boolean
+  defaultBusinessId?: string | null
 }
 
 export default function ExpenseForm({
@@ -47,7 +45,8 @@ export default function ExpenseForm({
   onClose,
   onSubmit,
   expense,
-  isLoading
+  isLoading,
+  defaultBusinessId
 }: ExpenseFormProps) {
   const [isRecurring, setIsRecurring] = useState<boolean>(false)
   const [formData, setFormData] = useState<ExpenseFormData>({
@@ -95,14 +94,14 @@ export default function ExpenseForm({
         amount: '',
         date: format(new Date(), 'yyyy-MM-dd'),
         category: '',
-        business_id: '',
+        business_id: defaultBusinessId || '',
         bank_account_name: '',
         notes: '',
         frequency: 'monthly',
         start_date: format(new Date(), 'yyyy-MM-dd')
       })
     }
-  }, [expense, open])
+  }, [expense, open, defaultBusinessId])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -124,6 +123,7 @@ export default function ExpenseForm({
             <Label htmlFor="title">Title</Label>
             <Input
               id="title"
+              name="title"
               value={formData.title}
               onChange={async e => {
                 const title = e.target.value
@@ -153,6 +153,7 @@ export default function ExpenseForm({
           <div className="flex items-center space-x-2 py-2">
             <Checkbox
               id="recurring"
+              name="recurring"
               checked={isRecurring}
               onCheckedChange={prev => setIsRecurring(!!prev)}
             />
@@ -169,6 +170,7 @@ export default function ExpenseForm({
               <Label htmlFor="amount">Amount</Label>
               <Input
                 id="amount"
+                name="amount"
                 type="number"
                 step="0.01"
                 value={formData.amount}
@@ -179,12 +181,12 @@ export default function ExpenseForm({
             </div>
             {isRecurring ? (
               <div className="space-y-2">
-                <Label>Frequency</Label>
+                <Label htmlFor="frequency">Frequency</Label>
                 <Select
                   value={formData.frequency}
                   onValueChange={value => setFormData({ ...formData, frequency: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="frequency">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -198,8 +200,10 @@ export default function ExpenseForm({
               </div>
             ) : (
               <div className="space-y-2">
-                <Label>Date</Label>
+                <Label htmlFor="date">Date</Label>
                 <Input
+                  id="date"
+                  name="date"
                   type="date"
                   value={formData.date}
                   onChange={e => setFormData({ ...formData, date: e.target.value })}
@@ -210,8 +214,10 @@ export default function ExpenseForm({
 
           {isRecurring && (
             <div className="space-y-2">
-              <Label>Start Date</Label>
+              <Label htmlFor="start_date">Start Date</Label>
               <Input
+                id="start_date"
+                name="start_date"
                 type="date"
                 value={formData.start_date}
                 onChange={e => setFormData({ ...formData, start_date: e.target.value })}
@@ -227,7 +233,7 @@ export default function ExpenseForm({
                 setFormData({ ...formData, business_id: value, category: '' })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger id="business">
                 <SelectValue placeholder="Personal expense" />
               </SelectTrigger>
               <SelectContent>
@@ -250,7 +256,7 @@ export default function ExpenseForm({
               value={formData.category}
               onValueChange={value => setFormData({ ...formData, category: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger id="category">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
@@ -284,14 +290,14 @@ export default function ExpenseForm({
           </div>
           {!isRecurring && offlineAccounts.length > 0 && (
             <div className="space-y-2">
-              <Label>Bank Account (optional)</Label>
+              <Label htmlFor="bank_account_name">Bank Account (optional)</Label>
               <Select
                 value={formData.bank_account_name || '__none__'}
                 onValueChange={value =>
                   setFormData({ ...formData, bank_account_name: value === '__none__' ? '' : value })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger id="bank_account_name">
                   <SelectValue placeholder="Select account" />
                 </SelectTrigger>
                 <SelectContent>
@@ -310,6 +316,7 @@ export default function ExpenseForm({
             <Label htmlFor="notes">Notes (optional)</Label>
             <Textarea
               id="notes"
+              name="notes"
               value={formData.notes}
               onChange={e => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Additional details..."

@@ -1,4 +1,3 @@
-import { backend } from '@/api/backend'
 import { useSound } from '@/contexts/SoundContext'
 import { taskRepository } from '@/repositories/task.repository'
 import { useMutation, useQueryClient } from '@tanstack/react-query'

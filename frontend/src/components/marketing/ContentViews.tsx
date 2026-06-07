@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { backend } from '@/api/backend'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -21,7 +19,6 @@ import {
   ExternalLink,
   Lock
 } from 'lucide-react'
-import { useSubscription } from '@/hooks/useSubscription'
 import { CONTENT_TYPES, PLATFORMS, CONTENT_STATUSES } from './marketingConstants'
 import ContentFormDialog from './ContentFormDialog'
 import { cn } from '@/lib/utils'
@@ -34,8 +31,12 @@ import {
   addMonths,
   subMonths
 } from 'date-fns'
-
-import { Campaign } from '@/types/entities'
+import { useMarketingContentMutations } from '@/hooks/marketingcontents/useMarketingContentMutations'
+import { CreateMarketingContentInput } from '@/repositories/marketing-content.repository'
+import { MarketingCampaignRecord, MarketingContentRecord } from '@/db'
+import { useMarketingContentsQuery } from '@/hooks/marketingcontents/useMarketingContentsQuery'
+import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useMarketingCampaignsQuery } from '@/hooks/marketingcampaign/useMarketingCampaignsQuery'
 
 const statusInfo = Object.fromEntries(CONTENT_STATUSES.map(s => [s.value, s]))
 const typeInfo = Object.fromEntries(CONTENT_TYPES.map(t => [t.value, t]))
@@ -58,7 +59,7 @@ interface ContentItem {
 
 interface ListViewProps {
   items: ContentItem[]
-  campaigns: Campaign[]
+  campaigns: MarketingCampaignRecord[]
   onEdit: (item: ContentItem) => void
   onDelete: (id: string) => void
 }
@@ -167,7 +168,7 @@ function ListView({ items, campaigns, onEdit, onDelete }: ListViewProps) {
 
 interface KanbanViewProps {
   items: ContentItem[]
-  campaigns: Campaign[]
+  campaigns: MarketingCampaignRecord[]
   onEdit: (item: ContentItem) => void
   onDelete: (id: string) => void
 }
@@ -356,59 +357,64 @@ interface ContentViewsProps2 {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ContentViews({ businessId }: ContentViewsProps2) {
   const [view, setView] = useState<string>('list')
-  const [dialogOpen, setDialogOpen] = useState<boolean>(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<ContentItem | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [platformFilter, setPlatformFilter] = useState<string>('all')
   const [campaignFilter, setCampaignFilter] = useState<string>('all')
-  const queryClient = useQueryClient()
-  const { limit } = useSubscription()
-  const contentLimit = limit('business_content_limit')
 
-  const { data: allContent = [] } = useQuery({
-    queryKey: ['content', businessId],
-    queryFn: () =>
-      businessId
-        ? backend.entities.ContentIdea.filter({ business_id: businessId, is_deleted: false })
-        : backend.entities.ContentIdea.filter({ is_deleted: false }, '-created_date')
-  })
+  const { canCreate, data: userLimits } = useUserLimit()
 
-  const { data: campaigns = [] } = useQuery({
-    queryKey: ['marketing_campaigns', businessId],
-    queryFn: () =>
-      businessId
-        ? backend.entities.MarketingCampaign.filter({ business_id: businessId, is_deleted: false })
-        : backend.entities.MarketingCampaign.filter({ is_deleted: false }, '-created_date')
-  })
+  const isOverLimit = !canCreate('marketingContent')
 
-  const createMutation = useMutation({
-    mutationFn: (data: Record<string, any>) =>
-      backend.entities.ContentIdea.create({ ...data, business_id: businessId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['content', businessId] })
+  const { data: allContent = [] } = useMarketingContentsQuery(businessId, !!businessId)
+
+  const { data: campaigns = [] } = useMarketingCampaignsQuery({ businessId })
+
+  const { updateMutation, createMutation, deleteMutation } = useMarketingContentMutations()
+
+  const handleCreateMarketingContent = async (data: CreateMarketingContentInput) => {
+    try {
+      await createMutation.mutateAsync({ ...data, business_id: businessId })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setDialogOpen(false)
     }
-  })
+  }
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
-      backend.entities.ContentIdea.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['content', businessId] })
+  const handleUpdateMarketingContent = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<MarketingContentRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setDialogOpen(false)
       setEditing(null)
     }
-  })
+  }
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.ContentIdea.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['content', businessId] })
-  })
+  const handleDeleteMarketingContent = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setDialogOpen(false)
+      setEditing(null)
+    }
+  }
 
   const handleSave = (form: any): void => {
-    if (editing) updateMutation.mutate({ id: editing.id, data: form })
-    else createMutation.mutate(form)
+    if (editing) handleUpdateMarketingContent({ id: editing.id, data: form })
+    else handleCreateMarketingContent(form)
   }
 
   const handleEdit = (item: ContentItem): void => {
@@ -416,7 +422,7 @@ export default function ContentViews({ businessId }: ContentViewsProps2) {
     setDialogOpen(true)
   }
   const handleDelete = (id: string): void => {
-    if (confirm('Delete this content?')) deleteMutation.mutate(id)
+    if (confirm('Delete this content?')) handleDeleteMarketingContent(id)
   }
 
   const filtered = allContent.filter(c => {
@@ -524,14 +530,15 @@ export default function ContentViews({ businessId }: ContentViewsProps2) {
               <CalendarIcon className="w-3.5 h-3.5" /> Calendar
             </button>
           </div>
-          {allContent.length >= contentLimit ? (
+          {isOverLimit ? (
             <Button
               size="sm"
               variant="outline"
               className="text-slate-500 cursor-not-allowed"
               disabled
             >
-              <Lock className="w-4 h-4 mr-1" /> Limit Reached ({allContent.length}/{contentLimit})
+              <Lock className="w-4 h-4 mr-1" /> Limit Reached (
+              {userLimits?.usage?.marketingContent || 0}/{userLimits?.limits?.marketingContent})
             </Button>
           ) : (
             <Button

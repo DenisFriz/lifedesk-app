@@ -25,7 +25,9 @@ export async function createBillingPortalSession(
 
     const subscription = await Subscription.findOne({
       user_email: req.user.email,
-    }).lean();
+    })
+      .lean()
+      .select('stripe_customer_id');
 
     let customerId = subscription?.stripe_customer_id;
 

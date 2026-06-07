@@ -1,5 +1,8 @@
 export function createPageUrl(pageName?: string) {
   if (!pageName) return '/'
-
-  return '/' + pageName.replace(/ /g, '-')
+  const kebab = pageName
+    .replace(/([a-z])([A-Z])/g, '$1-$2')
+    .replace(/ /g, '-')
+    .toLowerCase()
+  return '/' + kebab
 }

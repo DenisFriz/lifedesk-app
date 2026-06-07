@@ -159,20 +159,6 @@ export interface LearningItem {
   progress_percentage?: number
 }
 
-export interface Idea {
-  id: string
-  title: string
-  description?: string
-  category?: string
-  status?: string
-  votes?: number
-  created_date: string
-  likes_count?: number
-  comments_count?: number
-  anonymous: boolean
-  created_by: string
-}
-
 export interface Invoice {
   id: string
   client_name: string
@@ -218,16 +204,6 @@ export interface BodyMeasurement {
   date: string
   weight: number
   body_fat_percentage?: number
-}
-
-export interface CommunityIdea {
-  id: string
-  title: string
-  description?: string
-  category?: string
-  status?: string
-  updated_date?: string
-  anonymous: boolean
 }
 
 export interface Event {

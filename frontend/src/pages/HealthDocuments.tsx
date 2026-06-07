@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { backend } from '@/api/backend'
+import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload'
+import { deleteCloudinaryImage, moveCloudinaryImages } from '@/api/cloudinaryService'
 import { Button } from '@/components/ui/button'
 import { Plus, Trash2, FileText, Archive, Download, Lock } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -20,17 +20,7 @@ import { Helmet } from 'react-helmet-async'
 import { useUserLimit } from '@/contexts/UserLimitContext'
 import { useMedicalDocumentsQuery } from '@/hooks/medicaldocuments/useMedicalDocumentsQuery'
 import { useMedicalDocumentMutations } from '@/hooks/medicaldocuments/useMedicalDocumentMutations'
-
-type MedicalDocument = {
-  id: string
-  title: string
-  description?: string
-  type: string
-  date?: string
-  created_date: string
-  file_url: string
-  is_archived: boolean
-}
+import { CreateMedicalDocumentInput } from '@/repositories/medicaldocument.repository'
 
 export default function HealthDocuments() {
   const [showUploadDialog, setShowUploadDialog] = useState(false)
@@ -95,7 +85,7 @@ export default function HealthDocuments() {
   return (
     <>
       <Helmet>
-        <title>Health Documents</title>
+        <title>Health Documents | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -110,7 +100,7 @@ export default function HealthDocuments() {
               </p>
             </div>
             {atLimit ? (
-              <Link to="/Upgrade">
+              <Link to="/upgrade">
                 <Button className="bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
                   Limit reached ({data?.usage?.medicalDocuments}/{data?.remaining?.medicalDocuments}
@@ -339,33 +329,63 @@ function DocumentPreviewDialog({ document, onClose }) {
   )
 }
 
-type MedicalDocumentCreateInput = {
+type MedicalDocumentType =
+  | 'prescription'
+  | 'lab_result'
+  | 'doctor_note'
+  | 'insurance'
+  | 'vaccination'
+  | 'medical_history'
+  | 'health_image'
+  | 'other'
+
+type FormData = {
   title: string
-  description?: string
+  description: string
   date: string
-  type: string
-  file_url: string
+  type: MedicalDocumentType
 }
 
 function MedicalDocumentUploadDialog({ open, onOpenChange }) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
     date: new Date().toISOString().split('T')[0],
     type: 'other'
   })
   const [selectedFile, setSelectedFile] = useState(null)
-  const [uploading, setUploading] = useState(false)
   const [validationError, setValidationError] = useState(null)
   const fileInputRef = useRef(null)
-  const queryClient = useQueryClient()
 
-  const createMutation = useMutation<MedicalDocument, Error, MedicalDocumentCreateInput>({
-    mutationFn: (data: MedicalDocumentCreateInput) =>
-      backend.entities.MedicalDocument.create(data) as Promise<MedicalDocument>,
+  const { createMutation } = useMedicalDocumentMutations()
+  const { upload, isLoading: uploading } = useCloudinaryUpload()
+  const uploadedPublicIdRef = useRef<string | null>(null)
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['medicalDocuments'] })
+  const handleClose = async () => {
+    if (uploadedPublicIdRef.current) {
+      try {
+        await deleteCloudinaryImage(uploadedPublicIdRef.current)
+      } catch {}
+      uploadedPublicIdRef.current = null
+    }
+    onOpenChange(false)
+    setFormData({
+      title: '',
+      description: '',
+      date: new Date().toISOString().split('T')[0],
+      type: 'other'
+    })
+    setSelectedFile(null)
+    setValidationError(null)
+  }
+
+  const handleCreateMedicalDocument = async (data: CreateMedicalDocumentInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      uploadedPublicIdRef.current = null
       onOpenChange(false)
       setFormData({
         title: '',
@@ -377,7 +397,7 @@ function MedicalDocumentUploadDialog({ open, onOpenChange }) {
       setValidationError(null)
       toast.success('Document uploaded successfully')
     }
-  })
+  }
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -385,43 +405,63 @@ function MedicalDocumentUploadDialog({ open, onOpenChange }) {
 
     setValidationError(null)
 
-    const maxFileSize = 10 * 1024 * 1024
+    const maxFileSize = 10 * 1024 * 1024 // 10 Mb
     if (file.size > maxFileSize) {
       setValidationError('File size exceeds 10MB limit')
       return
     }
 
-    setUploading(true)
+    // Delete previous upload if the user re-selects
+    if (uploadedPublicIdRef.current) {
+      try {
+        await deleteCloudinaryImage(uploadedPublicIdRef.current)
+      } catch {}
+      uploadedPublicIdRef.current = null
+    }
 
     try {
-      const res = (await backend.integrations.Core.UploadFile({
-        file
-      })) as { file_url: string }
-
-      setSelectedFile({ file, url: res.file_url })
+      const res = await upload(file, 'temp')
+      uploadedPublicIdRef.current = res.public_id
+      setSelectedFile({ file, url: res.secure_url })
     } catch (error) {
       setValidationError('Failed to upload file. Please try again.')
       console.error('File upload error:', error)
-    } finally {
-      setUploading(false)
     }
   }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!selectedFile || !formData.title.trim()) {
       toast.error('Please provide a title and select a file')
       return
     }
 
-    createMutation.mutate({
+    let fileUrl = selectedFile.url
+    let publicId = uploadedPublicIdRef.current ?? undefined
+
+    // Move from temp/ to uploads/ before persisting
+    if (uploadedPublicIdRef.current?.startsWith('temp/')) {
+      try {
+        const moved = await moveCloudinaryImages([uploadedPublicIdRef.current])
+        if (moved.length > 0) {
+          fileUrl = moved[0].new_url
+          publicId = moved[0].new_public_id
+          uploadedPublicIdRef.current = null
+        }
+      } catch (err) {
+        console.error('Failed to move image to uploads:', err)
+      }
+    }
+
+    handleCreateMedicalDocument({
       ...formData,
-      file_url: selectedFile.url
+      file_url: fileUrl,
+      public_id: publicId
     })
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Upload Medical Document</DialogTitle>
@@ -447,7 +487,9 @@ function MedicalDocumentUploadDialog({ open, onOpenChange }) {
 
           <Select
             value={formData.type}
-            onValueChange={value => setFormData({ ...formData, type: value })}
+            onValueChange={value =>
+              setFormData({ ...formData, type: value as MedicalDocumentType })
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="Document type" />
@@ -507,7 +549,7 @@ function MedicalDocumentUploadDialog({ open, onOpenChange }) {
           </div>
 
           <div className="flex gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>
             <Button type="submit" disabled={uploading || createMutation.isPending}>

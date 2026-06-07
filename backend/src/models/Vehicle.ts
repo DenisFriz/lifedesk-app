@@ -2,7 +2,7 @@ import mongoose, { Schema, Model, Types } from 'mongoose';
 
 export interface VehicleImage {
   url: string;
-  thumbnailUrl?: string | null;
+  public_id: string;
   uploadedAt: string;
 }
 
@@ -57,12 +57,25 @@ const repairSchema = new Schema(
   { _id: true },
 );
 
+/**
+ * VEHICLE IMAGE SCHEMA
+ */
 const vehicleImageSchema = new Schema(
   {
-    url: { type: String, required: true },
-    thumbnailUrl: { type: String, default: null },
+    url: {
+      type: String,
+      required: true,
+    },
 
-    uploadedAt: { type: String, default: () => new Date().toISOString() },
+    public_id: {
+      type: String,
+      required: true,
+    },
+
+    uploadedAt: {
+      type: String,
+      default: () => new Date().toISOString(),
+    },
   },
   { _id: false },
 );
@@ -76,6 +89,21 @@ const vehicleSchema = new Schema<IVehicle>(
       index: true,
     },
     title: { type: String, required: true },
+
+    /**
+     * IMAGES (MAX 5)
+     */
+    images: {
+      type: [vehicleImageSchema],
+      validate: {
+        validator: function (arr: VehicleImage[]) {
+          return Array.isArray(arr) && arr.length <= 5;
+        },
+        message: 'Maximum 5 images allowed',
+      },
+      default: [],
+    },
+
     make: { type: String, default: null },
     model: { type: String, default: null },
     year: { type: Number, default: null },
@@ -103,9 +131,6 @@ const vehicleSchema = new Schema<IVehicle>(
     inspection_expiry: { type: String, default: null },
 
     notes: { type: String, default: '' },
-
-    // IMAGES (IMPORTANT PART)
-    images: [vehicleImageSchema],
 
     // REPAIRS
     repairs: [repairSchema],

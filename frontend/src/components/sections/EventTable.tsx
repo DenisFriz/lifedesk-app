@@ -113,13 +113,25 @@ export default function EventTable({ category, businessId, filterType }: EventTa
     return business ? business.name : 'Business'
   }
 
-  const handleUpdateEvent = async ({ id, data }: { id: string; data: Record<string, any> }) => {
+  const handleUpdateEvent = async ({
+    id,
+    data,
+    editFieldKey
+  }: {
+    id: string
+    data: Record<string, any>
+    editFieldKey?: string
+  }) => {
     try {
       await updateMutation.mutateAsync({ id, data })
     } catch (e) {
       console.error(e)
     } finally {
-      table.setEditingField(null)
+      if (editFieldKey !== undefined) {
+        table.setEditingField(prev => (prev === editFieldKey ? null : prev))
+      } else {
+        table.setEditingField(null)
+      }
     }
   }
 
@@ -140,6 +152,7 @@ export default function EventTable({ category, businessId, filterType }: EventTa
   }
 
   const handleDuplicateEvent = async (data: Record<string, any>) => {
+    if (!canCreate('events')) return
     try {
       await duplicateMutation.mutateAsync(data)
     } catch (e) {
@@ -253,7 +266,11 @@ export default function EventTable({ category, businessId, filterType }: EventTa
       clearTimeout(table.blurTimeoutRef.current)
       table.blurTimeoutRef.current = null
     }
-    handleUpdateEvent({ id: eventId, data: { [field]: table.editValue, ...additionalData } })
+    handleUpdateEvent({
+      id: eventId,
+      data: { [field]: table.editValue, ...additionalData },
+      editFieldKey: `${eventId}-${field}`
+    })
   }
 
   const handleBlur = (eventId, field, additionalData = {}) => {

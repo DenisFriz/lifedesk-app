@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { ThumbsUp, MessageCircle, Trash2, Lock } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Link } from 'react-router-dom'
-import { Idea } from '@/types/entities'
+import { CommunityIdeaRecord } from '@/db'
 
 const CATEGORY_STYLES = {
   new_feature: { label: '✨ New Feature', cls: 'bg-indigo-100 text-indigo-700' },
@@ -23,10 +23,10 @@ const STATUS_STYLES = {
 }
 
 interface IdeaCardProps {
-  idea: Idea
+  idea: CommunityIdeaRecord
   hasVoted: boolean
-  onVote: (idea: Idea) => void
-  onSelect: (idea: Idea) => void
+  onVote: (idea: CommunityIdeaRecord) => void
+  onSelect: (idea: CommunityIdeaRecord) => void
   onDelete: (ideaId: string) => void
   isAdmin: boolean
   rank: number
@@ -72,7 +72,7 @@ export default function IdeaCard({
               <span className="text-xs font-bold">{idea.likes_count || 0}</span>
             </Button>
           ) : (
-            <Link to="/Upgrade" onClick={e => e.stopPropagation()}>
+            <Link to="/upgrade" onClick={e => e.stopPropagation()}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -129,13 +129,11 @@ export default function IdeaCard({
             <span className="text-xs text-slate-400">
               by {idea.anonymous ? 'Anonymous' : idea.created_by?.split('@')[0]}
             </span>
-            {idea.created_date && (
+            {idea.createdAt && (
               <span className="text-xs text-slate-400">
                 ·{' '}
                 {formatDistanceToNow(
-                  new Date(
-                    idea.created_date.endsWith('Z') ? idea.created_date : idea.created_date + 'Z'
-                  ),
+                  new Date(idea.createdAt.endsWith('Z') ? idea.createdAt : idea.createdAt + 'Z'),
                   { addSuffix: true }
                 )}
               </span>

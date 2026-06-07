@@ -9,7 +9,9 @@ export async function cleanupSubscriptions(req: Request, res: Response) {
   try {
     const allSubs = await Subscription.find({
       stripe_subscription_id: { $in: knownSubIds },
-    }).lean();
+    })
+      .lean()
+      .select('_id stripe_subscription_id created_at');
 
     const byStripeId: Record<string, any[]> = {};
 

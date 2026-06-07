@@ -22,7 +22,7 @@ export default function FitnessGoals() {
   return (
     <>
       <Helmet>
-        <title>Fitness - Goals</title>
+        <title>Fitness - Goals | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">

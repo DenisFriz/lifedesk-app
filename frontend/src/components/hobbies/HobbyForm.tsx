@@ -116,8 +116,10 @@ export default function HobbyForm({ open, onClose, onSubmit, hobby, isLoading = 
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label>Name *</Label>
+            <Label htmlFor="name">Name *</Label>
             <Input
+              id="name"
+              name="name"
               placeholder="e.g. Guitar, Hiking, Photography..."
               value={form.name}
               onChange={e => set('name', e.target.value)}
@@ -127,9 +129,9 @@ export default function HobbyForm({ open, onClose, onSubmit, hobby, isLoading = 
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Category *</Label>
+              <Label htmlFor="category">Category *</Label>
               <Select value={form.category} onValueChange={v => set('category', v)} required>
-                <SelectTrigger>
+                <SelectTrigger id="category" name="category">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -142,9 +144,9 @@ export default function HobbyForm({ open, onClose, onSubmit, hobby, isLoading = 
               </Select>
             </div>
             <div>
-              <Label>Status</Label>
+              <Label htmlFor="status">Status</Label>
               <Select value={form.status} onValueChange={v => set('status', v)}>
-                <SelectTrigger>
+                <SelectTrigger id="status" name="status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -158,8 +160,10 @@ export default function HobbyForm({ open, onClose, onSubmit, hobby, isLoading = 
           </div>
 
           <div>
-            <Label>Description</Label>
+            <Label htmlFor="description">Description</Label>
             <Textarea
+              id="description"
+              name="description"
               placeholder="What do you love about this hobby? Any notes..."
               value={form.description}
               onChange={e => set('description', e.target.value)}
@@ -169,9 +173,9 @@ export default function HobbyForm({ open, onClose, onSubmit, hobby, isLoading = 
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Skill Level</Label>
+              <Label htmlFor="skill_level">Skill Level</Label>
               <Select value={form.skill_level} onValueChange={v => set('skill_level', v)}>
-                <SelectTrigger>
+                <SelectTrigger id="skill_level" name="skill_level">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -183,9 +187,9 @@ export default function HobbyForm({ open, onClose, onSubmit, hobby, isLoading = 
               </Select>
             </div>
             <div>
-              <Label>Frequency</Label>
+              <Label htmlFor="frequency">Frequency</Label>
               <Select value={form.frequency} onValueChange={v => set('frequency', v)}>
-                <SelectTrigger>
+                <SelectTrigger id="frequency" name="frequency">
                   <SelectValue placeholder="How often?" />
                 </SelectTrigger>
                 <SelectContent>
@@ -201,16 +205,20 @@ export default function HobbyForm({ open, onClose, onSubmit, hobby, isLoading = 
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Started Date</Label>
+              <Label htmlFor="started_date">Started Date</Label>
               <Input
+                id="started_date"
+                name="started_date"
                 type="date"
                 value={form.started_date}
                 onChange={e => set('started_date', e.target.value)}
               />
             </div>
             <div>
-              <Label>Avg Session (min)</Label>
+              <Label htmlFor="avg_session_minutes">Avg Session (min)</Label>
               <Input
+                id="avg_session_minutes"
+                name="avg_session_minutes"
                 type="number"
                 placeholder="e.g. 60"
                 value={form.avg_session_minutes}
@@ -220,8 +228,10 @@ export default function HobbyForm({ open, onClose, onSubmit, hobby, isLoading = 
           </div>
 
           <div>
-            <Label>Equipment / Tools</Label>
+            <Label htmlFor="equipment">Equipment / Tools</Label>
             <Input
+              id="equipment"
+              name="equipment"
               placeholder="e.g. Acoustic guitar, hiking boots..."
               value={form.equipment}
               onChange={e => set('equipment', e.target.value)}

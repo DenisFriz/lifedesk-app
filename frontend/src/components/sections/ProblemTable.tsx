@@ -1,12 +1,11 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef } from 'react'
 import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Plus, Star, Archive, Trash2, ArrowUpDown, ListChecks, Lock } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useSubscription } from '@/hooks/useSubscription'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
@@ -18,6 +17,11 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
+import { useProblemsQuery } from '@/hooks/problems/useProblemsQuery'
+import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useProblemMutations } from '@/hooks/problems/useProblemMutations'
+import { ProblemRecord } from '@/db'
+import { CreateProblemInput } from '@/repositories/problem.repository'
 
 const problemTypes = [
   { value: 'health_problem', label: 'Health Problems' },
@@ -34,44 +38,54 @@ interface ProblemTableProps {
 }
 
 export default function ProblemTable({ category }: ProblemTableProps) {
-  const { limit: getLimit } = useSubscription()
-  const trackingLimit = getLimit('health_tracking_entries_limit')
   const [editingField, setEditingField] = useState<string | null>(null)
   const [editValue, setEditValue] = useState<string>('')
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [currentType, setCurrentType] = useState<string>('health_problem')
   const [currentTab, setCurrentTab] = useState<'active' | 'archived'>('active')
-  const [page, setPage] = useState<number>(1)
-  const [perPage, setPerPage] = useState<number>(20)
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(20)
   const [selectedProblems, setSelectedProblems] = useState<string[]>([])
   const [bulkMode, setBulkMode] = useState<boolean>(false)
   const queryClient = useQueryClient()
-  const blurTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { data: allProblems = [] } = useQuery<any[]>({
-    queryKey: ['problems', category],
-    queryFn: () => backend.entities.Problem.filter({ category, is_deleted: false })
-  })
+  const { canCreate, data: userLimits } = useUserLimit()
+
+  const isOverLimit = !canCreate('healthTrackingEnties')
+
+  const { data: allProblems = [] } = useProblemsQuery({ category })
 
   const problems = allProblems.filter(
     (p: any) => p.problem_type === currentType && p.status === currentTab
   )
 
-  const updateMutation = useMutation<any, any, { id: string; data: any }>({
-    mutationFn: ({ id, data }) => backend.entities.Problem.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['problems', category] })
+  const { updateMutation, createMutation } = useProblemMutations()
+
+  const handleUpdateProblem = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<ProblemRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setEditingField(null)
     }
-  })
+  }
 
-  const createMutation = useMutation<any, any, any>({
-    mutationFn: data => backend.entities.Problem.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['problems', category] })
+  const handleCreateProblem = async (data: CreateProblemInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
 
   const deleteMutation = useMutation<void, any, string>({
     mutationFn: id => backend.entities.Problem.delete(id),
@@ -147,7 +161,7 @@ export default function ProblemTable({ category }: ProblemTableProps) {
       clearTimeout(blurTimeoutRef.current)
       blurTimeoutRef.current = null
     }
-    updateMutation.mutate({ id: problemId, data: { [field]: editValue } })
+    handleUpdateProblem({ id: problemId, data: { [field]: editValue } })
   }
 
   const handleBlur = (problemId: string, field: string): void => {
@@ -171,23 +185,28 @@ export default function ProblemTable({ category }: ProblemTableProps) {
   }
 
   const toggleImportant = (problem: any): void => {
-    updateMutation.mutate({ id: problem.id, data: { important: !problem.important } })
+    handleUpdateProblem({ id: problem.id, data: { important: !problem.important } })
   }
 
   const archiveProblem = (problem: any): void => {
-    updateMutation.mutate({ id: problem.id, data: { status: 'archived' } })
+    handleUpdateProblem({ id: problem.id, data: { status: 'archived' } })
   }
 
   const unarchiveProblem = (problem: any): void => {
-    updateMutation.mutate({ id: problem.id, data: { status: 'active' } })
+    handleUpdateProblem({ id: problem.id, data: { status: 'active' } })
   }
 
   const handleAddNew = (): void => {
-    createMutation.mutate({
+    handleCreateProblem({
       title: 'New Entry',
+      description: '',
       category,
       problem_type: currentType,
-      status: 'active'
+      status: 'active',
+      priority: 'medium',
+      resolved: false,
+      important: false,
+      show_in_timeline: true
     })
   }
 
@@ -219,11 +238,11 @@ export default function ProblemTable({ category }: ProblemTableProps) {
           <h2 className="text-lg font-semibold text-slate-900">Health Tracking</h2>
           <span className="text-sm text-slate-500">
             {allProblems.length}
-            {trackingLimit !== Infinity ? `/${trackingLimit}` : ''} used
+            {isOverLimit ? `/${userLimits?.limits?.healthTrackingEnties}` : ''} used
           </span>
         </div>
-        {allProblems.length >= trackingLimit ? (
-          <Link to="/Upgrade">
+        {isOverLimit ? (
+          <Link to="/upgrade">
             <Button
               size="sm"
               variant="outline"
@@ -284,8 +303,8 @@ export default function ProblemTable({ category }: ProblemTableProps) {
         <div className="p-12 text-center">
           <p className="text-slate-500 mb-4">No {currentTab} entries</p>
           {currentTab === 'active' &&
-            (allProblems.length >= trackingLimit ? (
-              <Link to="/Upgrade">
+            (isOverLimit ? (
+              <Link to="/upgrade">
                 <Button
                   variant="outline"
                   className="border-amber-300 text-amber-700 hover:bg-amber-50"
@@ -407,9 +426,9 @@ export default function ProblemTable({ category }: ProblemTableProps) {
                     <Checkbox
                       checked={problem.show_in_timeline}
                       onCheckedChange={checked =>
-                        updateMutation.mutate({
+                        handleUpdateProblem({
                           id: problem.id,
-                          data: { show_in_timeline: checked }
+                          data: { show_in_timeline: Boolean(checked) }
                         })
                       }
                     />

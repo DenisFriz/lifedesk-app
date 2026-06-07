@@ -1,49 +1,26 @@
 import { Router, type Request, type Response } from 'express';
-
 import { asyncHandler } from '@utils/asyncHandler.js';
 import { AppError } from '@errors/AppError.js';
 import { User } from '@models/index.js';
-import { comparePassword, hashPassword } from '@lib/bcrypt.js';
-import { sanitizeUser } from '@utils/sanitizeUser.js';
 import { requireAuth } from '@middleware/auth.js';
-import { AuthenticatedRequest } from '@/@types/auth.js';
-
 import { Resend } from 'resend';
 
 import fs from 'fs';
 import path from 'path';
-
-import { OAuth2Client } from 'google-auth-library';
-import {
-  createAccessToken,
-  createRefreshToken,
-  verifyRefreshToken,
-} from '@/utils/token.utils.js';
-import { RefreshToken } from '@/models/RefreshToken.js';
 import crypto from 'crypto';
-import { UserUsage } from '@/models/UserUsage.js';
-import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits.js';
-import { Types } from 'mongoose';
-import { issueAuthSession } from '@/utils/issueAuthSession.js';
-import { validate } from '@/utils/validate.js';
-import {
-  forgotPasswordSchema,
-  googleLoginSchema,
-  loginUserSchema,
-  registerUserSchema,
-  resetPasswordSchema,
-} from '@/schemas/auth.schema.js';
-import z from 'zod';
-import jwt from 'jsonwebtoken';
+
+let verificationEmailTemplate: string | null = null;
 
 function getVerificationEmailTemplate(code: string, name: string) {
-  const filePath = path.join(
-    process.cwd(),
-    'src/templates/email-verification.html',
-  );
+  if (!verificationEmailTemplate) {
+    const filePath = path.join(
+      process.cwd(),
+      'src/templates/email-verification.html',
+    );
+    verificationEmailTemplate = fs.readFileSync(filePath, 'utf-8');
+  }
 
-  let html = fs.readFileSync(filePath, 'utf-8');
-
+  let html = verificationEmailTemplate;
   html = html.replaceAll('{{CODE}}', code);
   html = html.replaceAll('{{NAME}}', name);
 

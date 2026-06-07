@@ -24,7 +24,7 @@ export default function ImportTransactions({
 }) {
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => backend.auth.me()
+    queryFn: () => backend.user.me()
   })
   const isFree = !currentUser?.subscription_tier || currentUser.subscription_tier === 'free'
   const [file, setFile] = useState<File | null>(null)
@@ -71,8 +71,13 @@ export default function ImportTransactions({
       const text = await file.text()
       const rows = parseCSV(text)
 
-      let incomeCount = 0
-      let expenseCount = 0
+      // Fetch rules once before processing all rows
+      const rules = await backend.entities.TransactionRule.list().catch(() => [])
+
+      // Prepare all transactions for batch creation
+      const expensesToCreate: any[] = []
+      const incomesToCreate: any[] = []
+      const rulesToCreate: Promise<any>[] = []
 
       for (const row of rows) {
         const amount = Math.abs(parseFloat(row.amount || 0))
@@ -81,38 +86,58 @@ export default function ImportTransactions({
         const isExpense = parseFloat(row.amount || 0) < 0 || row.type?.toLowerCase() === 'expense'
 
         const transactionType = isExpense ? 'expense' : 'income'
-        const { category, business_id } = await categorizeTransaction(description, transactionType)
+        const { category, business_id } = await categorizeTransaction(
+          description,
+          transactionType,
+          rules
+        )
 
-        // Use selected business_id if provided, otherwise use the one from categorization
         const finalBusinessId = selectedBusinessId || business_id
+        const transaction = {
+          title: description,
+          amount,
+          date,
+          category,
+          business_id: finalBusinessId,
+          notes: 'Imported from CSV'
+        }
 
         if (isExpense) {
-          await backend.entities.Expense.create({
-            title: description,
-            amount,
-            date,
-            category,
-            business_id: finalBusinessId,
-            notes: 'Imported from CSV'
-          })
-          expenseCount++
+          expensesToCreate.push(transaction)
         } else {
-          await backend.entities.Income.create({
-            title: description,
-            amount,
-            date,
-            category,
-            business_id: finalBusinessId,
-            notes: 'Imported from CSV'
-          })
-          incomeCount++
+          incomesToCreate.push(transaction)
         }
 
-        // Save rule for future use if enabled
+        // Queue rule creation if enabled
         if (saveRules) {
-          await saveTransactionRule(description, category, finalBusinessId, transactionType)
+          const rulePromise = saveTransactionRule(
+            description,
+            category,
+            finalBusinessId,
+            transactionType,
+            rules
+          )
+          if (rulePromise) rulesToCreate.push(rulePromise)
         }
       }
+
+      // Create all transactions in parallel
+      const [expenseResults, incomeResults] = await Promise.all([
+        expensesToCreate.length > 0
+          ? Promise.all(expensesToCreate.map(e => backend.entities.Expense.create(e)))
+          : Promise.resolve([]),
+        incomesToCreate.length > 0
+          ? Promise.all(incomesToCreate.map(i => backend.entities.Income.create(i)))
+          : Promise.resolve([])
+      ])
+
+      // Create all rules in parallel
+      if (rulesToCreate.length > 0) {
+        await Promise.all(rulesToCreate)
+      }
+
+      const incomeCount = incomeResults.length
+      const expenseCount = expenseResults.length
 
       setResult({ success: true, incomeCount, expenseCount })
       queryClient.invalidateQueries({ queryKey: ['income'] })
@@ -147,7 +172,7 @@ export default function ImportTransactions({
                 <span className="font-semibold">Plus / Pro feature.</span> CSV import is available
                 on Plus and Pro plans.{' '}
                 <Link
-                  to="/Upgrade"
+                  to="/upgrade"
                   onClick={onClose}
                   className="underline font-semibold hover:text-amber-900"
                 >

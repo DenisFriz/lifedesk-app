@@ -18,9 +18,13 @@ import { toast } from 'sonner'
 import { useTimeTracker } from './TimeTrackerContext'
 import { useLayout } from '../../Layout'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useSubscription } from '@/hooks/useSubscription'
 import { Link } from 'react-router-dom'
 import { TimeEntry } from '@/types/entities'
+import { useTimeEntriesQuery } from '@/hooks/timeentries/useTimeEntriesQuery'
+import { useTimeEntryMutations } from '@/hooks/timeentries/useTimeEntryMutations'
+import { CreateTimeEntryInput } from '@/repositories/timeentry.repository'
+import { TimeEntryRecord } from '@/db'
+import { useUserLimit } from '@/contexts/UserLimitContext'
 
 interface TimeTrackerPanelProps {
   collapsed: boolean
@@ -51,23 +55,23 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
     handleResume
   } = useTimeTracker()
 
-  const [description, setDescription] = useState<string>('')
-  const [notes, setNotes] = useState<string>('')
-  const [selectedSection, setSelectedSection] = useState<string>('')
-  const [selectedClient, setSelectedClient] = useState<string>('')
-  const [selectedProject, setSelectedProject] = useState<string>('')
+  const [description, setDescription] = useState('')
+  const [notes, setNotes] = useState('')
+  const [selectedSection, setSelectedSection] = useState('')
+  const [selectedClient, setSelectedClient] = useState('')
+  const [selectedProject, setSelectedProject] = useState('')
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null)
-  const [editDescription, setEditDescription] = useState<string>('')
-  const [editSection, setEditSection] = useState<string>('')
-  const [editClient, setEditClient] = useState<string>('')
-  const [editProject, setEditProject] = useState<string>('')
-  const [editNotes, setEditNotes] = useState<string>('')
-  const [editDate, setEditDate] = useState<string>('')
-  const [editStartTime, setEditStartTime] = useState<string>('')
-  const [editEndTime, setEditEndTime] = useState<string>('')
-  const [filterSection, setFilterSection] = useState<string>('all')
-  const [filterClient, setFilterClient] = useState<string>('')
-  const [filterProject, setFilterProject] = useState<string>('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editSection, setEditSection] = useState('')
+  const [editClient, setEditClient] = useState('')
+  const [editProject, setEditProject] = useState('')
+  const [editNotes, setEditNotes] = useState('')
+  const [editDate, setEditDate] = useState('')
+  const [editStartTime, setEditStartTime] = useState('')
+  const [editEndTime, setEditEndTime] = useState('')
+  const [filterSection, setFilterSection] = useState('all')
+  const [filterClient, setFilterClient] = useState('')
+  const [filterProject, setFilterProject] = useState('')
   const [panelWidth, setPanelWidth] = useState<number>(() => {
     const saved = localStorage.getItem('timeTrackerPanelWidth')
     return saved ? parseInt(saved) : 320
@@ -78,7 +82,10 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
   const originalFaviconRef = useRef<string | null>(null)
 
   const { isHidden } = useLayout()
-  const { limit } = useSubscription()
+
+  const { canCreate, data: userLimit } = useUserLimit()
+
+  const isOverLimit = !canCreate('timeEntries')
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
@@ -95,10 +102,7 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
     queryFn: () => backend.entities.Business.list('order')
   })
 
-  const { data: timeEntries = [] } = useQuery({
-    queryKey: ['timeEntries'],
-    queryFn: () => backend.entities.TimeEntry.filter({ is_running: false }, '-created_date', 50)
-  })
+  const { data: timeEntries = [] } = useTimeEntriesQuery()
 
   // Refresh clients, projects, and businesses when panel opens
   useEffect(() => {
@@ -111,36 +115,48 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
 
   const runningEntry = contextRunningEntry
 
-  const createEntryMutation = useMutation({
-    mutationFn: (data: Record<string, any>) => backend.entities.TimeEntry.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['runningTimeEntry'] })
-      queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
-    }
-  })
+  const { createMutation, updateMutation, deleteMutation } = useTimeEntryMutations()
 
-  const updateEntryMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
-      backend.entities.TimeEntry.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
+  const handleCreateTimeEntry = async (data: CreateTimeEntryInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (error) {
+      console.error('Error creating time entry:', error)
+    }
+  }
+
+  const handleUpdateTimeEntry = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<TimeEntryRecord>
+  }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (error) {
+      console.error('Error updating time entry:', error)
+    } finally {
       setEditingEntryId(null)
       toast.success('Entry updated')
     }
-  })
+  }
 
-  const deleteEntryMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.TimeEntry.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
+  const handleDeleteTimeEntry = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (error) {
+      console.error('Error deleting time entry:', error)
+    } finally {
+      setEditingEntryId(null)
       toast.success('Entry deleted')
     }
-  })
+  }
 
   const resumeEntryMutation = useMutation({
     mutationFn: (entry: any) => {
       const now = new Date()
-      return backend.entities.TimeEntry.update(entry.id, {
+      return backend.entities.TimeEntry.update(entry.serverId || entry.id, {
         date: format(now, 'yyyy-MM-dd'),
         start_time: format(now, 'HH:mm:ss'),
         end_time: null,
@@ -149,7 +165,7 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
     },
     onSuccess: (_, entry) => {
       queryClient.invalidateQueries({ queryKey: ['runningTimeEntry'] })
-      queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
+      queryClient.invalidateQueries({ queryKey: ['timeentries'] })
       setDescription(entry.description || '')
       setSelectedSection(entry.section_id || '')
       setSelectedClient(entry.client_id || '')
@@ -238,7 +254,7 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
     localStorage.setItem('lastUsedClient', selectedClient)
     localStorage.setItem('lastUsedProject', selectedProject)
 
-    createEntryMutation.mutate({
+    handleCreateTimeEntry({
       date: dateString,
       start_time: timeString,
       description: description,
@@ -397,7 +413,7 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
       duration = Math.round(endMinutes - startMinutes)
     }
 
-    updateEntryMutation.mutate({
+    handleUpdateTimeEntry({
       id: entryId,
       data: {
         description: editDescription,
@@ -415,7 +431,7 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
 
   const handleDeleteEntry = (entryId: string): void => {
     if (confirm('Delete this time entry?')) {
-      deleteEntryMutation.mutate(entryId)
+      handleDeleteTimeEntry(entryId)
     }
   }
 
@@ -650,15 +666,12 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
 
               {!runningEntry &&
                 (() => {
-                  const entriesLimit = limit('time_tracker_entries_limit')
-                  const totalEntries = timeEntries.length
-                  const isAtLimit = entriesLimit !== Infinity && totalEntries >= entriesLimit
-                  return isAtLimit ? (
+                  return isOverLimit ? (
                     <div className="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 flex items-center gap-2">
                       <Zap className="w-3 h-3 text-amber-500 flex-shrink-0" />
-                      <span>Limit of {entriesLimit} entries reached. </span>
+                      <span>Limit of {userLimit?.limits?.timeEntries} entries reached. </span>
                       <Link
-                        to="/Upgrade"
+                        to="/upgrade"
                         onClick={() => setIsOpen(false)}
                         className="underline text-amber-700 whitespace-nowrap"
                       >
@@ -667,11 +680,12 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
                     </div>
                   ) : (
                     <>
-                      {entriesLimit !== Infinity && (
+                      {
                         <p className="text-xs text-slate-400 text-right">
-                          {totalEntries} / {entriesLimit} entries
+                          {userLimit?.usage?.timeEntries || 0} / {userLimit?.limits?.timeEntries}{' '}
+                          entries
                         </p>
-                      )}
+                      }
                       <Button
                         onClick={handleStart}
                         className="w-full bg-green-600 hover:bg-green-700"

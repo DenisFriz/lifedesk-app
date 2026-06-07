@@ -97,7 +97,7 @@ export interface EventRecord {
 
 export interface VehicleImageRecord {
   url: string
-  thumbnailUrl?: string | null
+  public_id: string
   uploadedAt: string
 }
 
@@ -105,13 +105,14 @@ export interface VehicleRepairRecord {
   date?: string | null // ❗ string (ISO), не Date
   cost?: number | null
   description: string
-  images: string[]
+  images: VehicleImageRecord[]
 }
 
 export interface VehicleRecord {
   id: string // local primary key (offline-safe)
   serverId?: string | null
   title: string
+  images: VehicleImageRecord[]
   make?: string | null
   model?: string | null
   year?: number | null
@@ -127,7 +128,6 @@ export interface VehicleRecord {
   insurance_expiry?: string | null
   inspection_expiry?: string | null
   notes: string
-  images: VehicleImageRecord[]
   repairs: VehicleRepairRecord[]
   is_deleted: boolean
   createdAt: string
@@ -266,11 +266,12 @@ export interface MedicalDocumentRecord {
     | 'medical_history'
     | 'health_image'
     | 'other'
-  file_url: string
+  file_url?: string
+  public_id?: string
   file_name?: string | null
   file_size?: number | null
   file_type?: string | null
-  is_archived: boolean
+  is_archived?: boolean
   is_deleted: boolean
   deleted_at?: string | null
   deleted_by_process?: string | null
@@ -362,6 +363,7 @@ export interface ProgressPhotoRecord {
   serverId?: string | null
   created_by: string
   image_url: string
+  public_id?: string | null
   date: string
   description?: string | null
   body_area: 'front' | 'back' | 'side' | 'full_body' | 'arms' | 'chest' | 'legs' | 'core' | 'other'
@@ -421,6 +423,270 @@ export interface BusinessRecord {
   description?: string | null
   is_deleted: boolean
   deleted_at?: string | null
+  categories?: any
+  createdAt: string
+  updatedAt: string
+}
+
+export interface IncomeRecord {
+  id: string
+  serverId?: string | null
+  title: string
+  amount: number
+  date?: string | null
+  category?: string | null
+  business_id?: string | null
+  bank_account_name?: string | null
+  notes: string
+  is_recurring: boolean
+  frequency?: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly' | null
+  start_date?: string | null
+  is_deleted: boolean
+  deleted_at?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ExpenseRecord {
+  id: string
+  serverId?: string | null
+  title: string
+  amount: number
+  date?: string | null
+  category?: string | null
+  business_id?: string | null
+  bank_account_name?: string | null
+  notes: string
+  is_recurring: boolean
+  frequency?: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly' | null
+  start_date?: string | null
+  is_deleted: boolean
+  deleted_at?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ProblemRecord {
+  id: string
+  serverId?: string | null
+  title: string
+  description: string
+  priority: 'low' | 'medium' | 'high'
+  business_id?: string | null
+  problem_type?: string | null
+  goal_id?: string | null
+  resolved: boolean
+  resolved_at?: string | null
+  category?: string | null
+  status: 'active' | 'resolved' | 'archived'
+  important: boolean
+  show_in_timeline: boolean
+  is_deleted: boolean
+  deleted_at?: string | null
+  date_occurred?: string | null
+  date_ended?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TimeEntryRecord {
+  id: string
+  serverId?: string | null
+  date: string
+  start_time: string
+  end_time?: string | null
+  duration?: number | null
+  description: string
+  notes?: string | null
+  section_id?: string | null
+  client_id?: string | null
+  project_id?: string | null
+  is_running: boolean
+  is_deleted: boolean
+  deleted_at?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ProjectRecord {
+  id: string
+  serverId?: string | null
+  name: string
+  description?: string | null
+  business_id?: string | null
+  client_id?: string | null
+  status: 'planning' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled'
+  start_date?: string | null
+  deadline?: string | null
+  is_deleted: boolean
+  deleted_at?: string | null
+  deleted_by_process?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ClientRecord {
+  id: string
+  serverId?: string | null
+  name: string
+  company?: string | null
+  email?: string | null
+  phone?: string | null
+  status: 'lead' | 'active' | 'inactive' | 'past'
+  notes?: string | null
+  business_id?: string | null
+  is_deleted: boolean
+  deleted_at?: string | null
+  deleted_by_process?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MarketingStrategyRecord {
+  id: string
+  serverId?: string | null
+  name: string
+  main_goal?: string | null
+  smart_specific?: string | null
+  smart_measurable?: string | null
+  smart_achievable?: string | null
+  smart_relevant?: string | null
+  smart_time_bound?: string | null
+  target_audience?: string | null
+  usp?: string | null
+  core_message?: string | null
+  main_channels: string[]
+  notes?: string | null
+  status: 'draft' | 'active' | 'paused' | 'completed'
+  business_id?: string | null
+  goal_id?: string | null
+  is_deleted: boolean
+  deleted_at?: string | null
+  deleted_by_process?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MarketingCampaignRecord {
+  id: string
+  serverId?: string | null
+  name: string
+  strategy_id?: string | null
+  campaign_type: string
+  goal?: string | null
+  channel?: string | null
+  start_date?: string | null
+  end_date?: string | null
+  budget?: number | null
+  status: 'planned' | 'active' | 'paused' | 'completed' | 'cancelled'
+  kpis: {
+    name: string
+    target: string
+    actual: string
+  }[]
+  notes?: string | null
+  business_id?: string | null
+  is_deleted: boolean
+  deleted_at?: string | null
+  deleted_by_process?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MarketingContentRecord {
+  id: string
+  serverId?: string | null
+  title: string
+  campaign_id?: string | null
+  type: string
+  platform: string
+  status: string
+  publish_date?: string | null
+  cta?: string | null
+  asset_url?: string | null
+  description?: string | null
+  notes?: string | null
+  business_id?: string | null
+  is_deleted: boolean
+  deleted_at?: string | null
+  deleted_by_process?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface OfflineAccountRecord {
+  id: string
+  serverId?: string | null
+  created_by: string
+  name: string
+  balance: number
+  currency: string
+  notes?: string | null
+  is_deleted: boolean
+  deleted_at?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface OfflineAccountSnapshotRecord {
+  id: string
+  serverId?: string | null
+  account_id: string
+  currency: string
+  date: string
+  balance: number
+  is_deleted: boolean
+  deleted_at?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface RecurringIncomeRecord {
+  id: string
+  serverId?: string | null
+  created_by: string
+  title: string
+  amount: number
+  frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly'
+  start_date: string
+  category?: string | null
+  business_id?: string | null
+  is_deleted: boolean
+  deleted_at?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface RecurringExpenseRecord {
+  id: string
+  serverId?: string | null
+  created_by: string
+  title: string
+  amount: number
+  frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly'
+  start_date: string
+  category: string | null
+  business_id: string | null
+  is_deleted: boolean
+  deleted_at?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CommunityIdeaRecord {
+  id: string
+  serverId?: string | null
+  created_by: string
+  title: string
+  description: string
+  category: 'new_feature' | 'optimization' | 'ui_ux' | 'bug_fix' | 'other'
+  likes_count: number
+  comments_count: number
+  anonymous: boolean
+  status: 'new' | 'under_review' | 'planned' | 'in_progress' | 'implemented'
+  is_deleted: boolean
+  deleted_at?: string | null
+  deleted_by_process?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -441,12 +707,26 @@ class AppDB extends Dexie {
   progressphotos!: Table<ProgressPhotoRecord, string>
   hobbies!: Table<HobbyRecord, string>
   businesses!: Table<BusinessRecord, string>
+  incomes!: Table<IncomeRecord, string>
+  expenses!: Table<ExpenseRecord, string>
+  problems!: Table<ProblemRecord, string>
+  timeentries!: Table<TimeEntryRecord, string>
+  projects!: Table<ProjectRecord, string>
+  clients!: Table<ClientRecord, string>
+  marketingstrategies!: Table<MarketingStrategyRecord, string>
+  marketingcampaigns!: Table<MarketingCampaignRecord, string>
+  marketingcontents!: Table<MarketingContentRecord, string>
+  offlineaccounts!: Table<OfflineAccountRecord, string>
+  offlineaccountSnapshots!: Table<OfflineAccountSnapshotRecord, string>
+  recurringincomes!: Table<RecurringIncomeRecord, string>
+  recurringexpenses!: Table<RecurringExpenseRecord, string>
+  communityideas!: Table<CommunityIdeaRecord, string>
   syncQueue!: Table<SyncQueueItem, number>
 
   constructor() {
     super('AppDB')
 
-    this.version(11).stores({
+    this.version(25).stores({
       goals: 'id, serverId, status, category, is_deleted',
       tasks: 'id, serverId, status, category, is_deleted',
       events: 'id, serverId, status, category, is_deleted',
@@ -462,6 +742,23 @@ class AppDB extends Dexie {
       progressphotos: 'id, serverId, status, category, is_deleted',
       hobbies: 'id, serverId, status, category, is_deleted',
       businesses: 'id, serverId, status, category, is_deleted',
+      incomes: 'id, serverId, status, category, is_deleted',
+      expenses: 'id, serverId, status, category, is_deleted',
+      problems: 'id, serverId, status, category, is_deleted',
+      timeentries: 'id, serverId, date, is_deleted',
+      projects: 'id, serverId, name, status, is_deleted',
+      clients: 'id, serverId, name, status, is_deleted',
+      marketingstrategies: 'id, serverId, name, status, is_deleted',
+      marketingcampaigns: 'id, serverId, name, status, is_deleted',
+      marketingcontents: 'id, serverId, title, status, category, is_deleted',
+      offlineaccounts:
+        'id, serverId, created_by, name, balance, currency, notes, is_deleted, deleted_at, createdAt, updatedAt',
+      offlineaccountSnapshots:
+        'id, serverId, account_id, currency, date, balance, is_deleted, deleted_at, createdAt, updatedAt',
+      recurringincomes: 'id, serverId, is_deleted, deleted_at, createdAt, updatedAt',
+      recurringexpenses: 'id, serverId, is_deleted, deleted_at, createdAt, updatedAt',
+      communityideas:
+        'id, serverId, created_by, category, likes_count, comments_count, is_deleted, createdAt, updatedAt',
       syncQueue: '++localId, entityName, operation, timestamp, status'
     })
   }

@@ -5,7 +5,7 @@ export interface IEstate {
   created_by: Types.ObjectId;
   title: string;
   description: string;
-  property_type: 'apartment' | 'house' | 'land' | 'commercial' | 'other' | null;
+  property_type: 'apartment' | 'house' | 'land' | 'commercial' | 'other';
   address: string | null;
   area_sqm: number | null;
   rooms: number | null;
@@ -37,7 +37,8 @@ const estateSchema = new Schema<IEstate>(
     property_type: {
       type: String,
       enum: ['apartment', 'house', 'land', 'commercial', 'other'],
-      default: null,
+      default: 'other',
+      set: (v: string) => (v === '' ? 'other' : v),
     },
 
     address: { type: String, default: null },

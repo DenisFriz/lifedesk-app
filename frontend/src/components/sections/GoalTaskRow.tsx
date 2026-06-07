@@ -14,7 +14,6 @@ import { Star, Archive, Trash2, Bell, X, GripVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDateMedium } from '@/components/utils/formatters'
 import { Draggable } from '@hello-pangea/dnd'
-import { backend } from '@/api/backend'
 
 export default function GoalTaskRow({
   task,
@@ -40,6 +39,7 @@ export default function GoalTaskRow({
   updateTaskOrderMutation,
   playSound,
   queryClient,
+  deleteTaskMutation,
   getGoalTasks
 }) {
   return (
@@ -405,10 +405,7 @@ export default function GoalTaskRow({
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => {
-                        playSound('delete')
-                        backend.entities.Task.delete(task.id).then(() => {
-                          queryClient.invalidateQueries({ queryKey: ['tasks'] })
-                        })
+                        deleteTaskMutation.mutate(task.id)
                       }}
                     >
                       <Trash2 className="h-4 w-4 text-rose-600" />

@@ -17,8 +17,13 @@ import IdeaForm from '@/components/community/IdeaForm'
 import IdeaDetail from '@/components/community/IdeaDetail'
 import { useSubscription } from '@/hooks/useSubscription'
 import { Link } from 'react-router-dom'
-import { Idea } from '@/types/entities'
 import { Helmet } from 'react-helmet-async'
+import { useAuth } from '@/lib/AuthContext'
+import { useCommunityIdeaMutations } from '@/hooks/communityideas/useCommunityIdeaMutations'
+import { CreateCommunityIdeaInput } from '@/repositories/community-idea.repository'
+import { CommunityIdeaRecord } from '@/db'
+import { useCommunityIdeasQuery } from '@/hooks/communityideas/useCommunityIdeasQuery'
+import { useUserLimit } from '@/contexts/UserLimitContext'
 
 const STATUS_TABS = [
   { value: 'new', label: 'New' },
@@ -26,7 +31,7 @@ const STATUS_TABS = [
   { value: 'planned', label: 'Planned' },
   { value: 'in_progress', label: 'In Progress' },
   { value: 'implemented', label: '✅ Implemented' }
-]
+] as const
 
 const CATEGORY_OPTIONS = [
   { value: 'all', label: 'All Categories' },
@@ -35,7 +40,7 @@ const CATEGORY_OPTIONS = [
   { value: 'ui_ux', label: '🎨 UI / UX' },
   { value: 'bug_fix', label: '🐛 Bug Fix' },
   { value: 'other', label: '💡 Other' }
-]
+] as const
 
 type CommunityVote = {
   id: string
@@ -66,19 +71,16 @@ export default function CommunityHub() {
   const queryClient = useQueryClient()
 
   // Current user
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => backend.auth.me()
-  })
-
+  const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
   const { can } = useSubscription()
 
+  const { canCreate } = useUserLimit()
+
+  const canCreateCommunityIdeas = canCreate('communityIdeas')
+
   // Fetch ideas
-  const { data: ideas = [] } = useQuery<Idea[]>({
-    queryKey: ['community_ideas'],
-    queryFn: () => backend.entities.CommunityIdea.list() as Promise<Idea[]>
-  })
+  const { data: ideas = [] } = useCommunityIdeasQuery()
 
   // Fetch user's votes
   const { data: myVotes = [] } = useQuery<CommunityVote[]>({
@@ -100,20 +102,43 @@ export default function CommunityHub() {
 
   const votedIdeaIds = useMemo(() => new Set(myVotes.map(v => v.idea_id)), [myVotes])
 
-  // Create idea
-  const createIdea = useMutation({
-    mutationFn: (data: Record<string, any>) => backend.entities.CommunityIdea.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['community_ideas'] })
+  const {
+    createMutation: createCommunityIdeaMutation,
+    deleteMutation: deleteCommunityIdeaMutation,
+    updateMutation: updateCommunityIdeaMutation
+  } = useCommunityIdeaMutations()
+
+  const handleCreateCommunityIdea = async (data: CreateCommunityIdeaInput) => {
+    try {
+      await createCommunityIdeaMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowForm(false)
     }
-  })
+  }
 
-  // Delete idea (admin)
-  const deleteIdea = useMutation({
-    mutationFn: (id: string) => backend.entities.CommunityIdea.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['community_ideas'] })
-  })
+  const handleDeleteCommunityIdea = async (id: string) => {
+    try {
+      await deleteCommunityIdeaMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleUpdateCommunityIdea = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<CommunityIdeaRecord>
+  }) => {
+    try {
+      await updateCommunityIdeaMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   // Vote
   const voteMutation = useMutation({
@@ -123,24 +148,22 @@ export default function CommunityHub() {
         // Remove vote
         const vote = myVotes.find(v => v.idea_id === idea.id)
         if (vote) await backend.entities.CommunityVote.delete(vote.id)
-        await backend.entities.CommunityIdea.update(idea.id, {
-          likes_count: Math.max(0, (idea.likes_count || 0) - 1)
+        await handleUpdateCommunityIdea({
+          id: idea.id,
+          data: { likes_count: Math.max(0, (idea.likes_count || 0) - 1) }
         })
       } else {
         // Add vote
         await backend.entities.CommunityVote.create({ idea_id: idea.id, user_email: user.email })
-        await backend.entities.CommunityIdea.update(idea.id, {
-          likes_count: (idea.likes_count || 0) + 1
+        await handleUpdateCommunityIdea({
+          id: idea.id,
+          data: { likes_count: (idea.likes_count || 0) + 1 }
         })
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['community_ideas'] })
       queryClient.invalidateQueries({ queryKey: ['community_votes', user?.email] })
-      // Update selected idea if open
-      if (selectedIdea) {
-        queryClient.invalidateQueries({ queryKey: ['community_ideas'] })
-      }
     }
   })
 
@@ -243,8 +266,7 @@ export default function CommunityHub() {
       list.sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0))
     } else {
       list.sort(
-        (a, b) =>
-          new Date(b.created_date || '').getTime() - new Date(a.created_date || '').getTime()
+        (a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime()
       )
     }
 
@@ -252,14 +274,24 @@ export default function CommunityHub() {
   }, [ideas, statusFilter, categoryFilter, search, sortBy])
 
   // Get updated selected idea from fresh data
-  const liveSelectedIdea = selectedIdea
-    ? ideas.find(i => i.id === selectedIdea.id) || selectedIdea
-    : null
+  const liveSelectedIdea = useMemo(
+    () => (selectedIdea ? ideas.find(i => i.id === selectedIdea.id) || selectedIdea : null),
+    [selectedIdea, ideas]
+  )
+
+  // Pre-compute tab counts
+  const tabCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    STATUS_TABS.forEach(tab => {
+      counts[tab.value] = ideas.filter(i => i.status === tab.value).length
+    })
+    return counts
+  }, [ideas])
 
   return (
     <>
       <Helmet>
-        <title>Community Hub</title>
+        <title>Community Hub | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         {/* Implementation Notifications */}
@@ -296,7 +328,7 @@ export default function CommunityHub() {
                 Vote on ideas, suggest new features, and report bugs to shape LifeOS's future
               </p>
             </div>
-            {can('community_submit') ? (
+            {canCreateCommunityIdeas ? (
               <Button
                 onClick={() => setShowForm(true)}
                 className="bg-indigo-600 hover:bg-indigo-700 w-full lg:w-auto"
@@ -305,7 +337,7 @@ export default function CommunityHub() {
                 Submit Idea
               </Button>
             ) : (
-              <Link to="/Upgrade">
+              <Link to="/upgrade">
                 <Button
                   variant="outline"
                   className="w-full lg:w-auto border-indigo-300 text-indigo-600 hover:bg-indigo-50"
@@ -355,22 +387,19 @@ export default function CommunityHub() {
 
           {/* Status Tabs */}
           <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
-            {STATUS_TABS.map(tab => {
-              const count = ideas.filter(i => i.status === tab.value).length
-              return (
-                <button
-                  key={tab.value}
-                  onClick={() => setStatusFilter(tab.value)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                    statusFilter === tab.value
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {tab.label} ({count})
-                </button>
-              )
-            })}
+            {STATUS_TABS.map(tab => (
+              <button
+                key={tab.value}
+                onClick={() => setStatusFilter(tab.value)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                  statusFilter === tab.value
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {tab.label} ({tabCounts[tab.value]})
+              </button>
+            ))}
           </div>
 
           {/* Idea List */}
@@ -402,7 +431,7 @@ export default function CommunityHub() {
                   hasVoted={votedIdeaIds.has(idea.id)}
                   onVote={() => voteMutation.mutate(idea)}
                   onSelect={setSelectedIdea}
-                  onDelete={deleteIdea.mutate}
+                  onDelete={handleDeleteCommunityIdea}
                   isAdmin={isAdmin}
                   canLike={can('community_like')}
                 />
@@ -413,8 +442,8 @@ export default function CommunityHub() {
           <IdeaForm
             open={showForm}
             onClose={() => setShowForm(false)}
-            onSubmit={createIdea.mutate}
-            isLoading={createIdea.isPending}
+            onSubmit={handleCreateCommunityIdea}
+            isLoading={createCommunityIdeaMutation.isPending}
           />
 
           <IdeaDetail
@@ -433,7 +462,7 @@ export default function CommunityHub() {
             isAdmin={isAdmin}
             isLoading={commentMutation.isPending}
             canLike={can('community_like')}
-            canComment={can('community_comment')}
+            canComment={canCreate('community_comment')}
           />
         </div>
       </div>
