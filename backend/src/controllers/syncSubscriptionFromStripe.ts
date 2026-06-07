@@ -45,7 +45,7 @@ export async function syncSubscriptionFromStripe(req: Request, res: Response) {
         else if (priceId === proPriceId) plan_name = 'pro';
 
         const subscriptionData = {
-          user_id: req.user.id,
+          user_id: req.user._id,
           user_email: req.user.email,
           plan_name: plan_name || 'free',
           status: sub.status,

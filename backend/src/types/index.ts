@@ -379,7 +379,7 @@ export interface IBankBalanceSnapshot {
 export interface ISubscription {
   _id?: Types.ObjectId;
   id: string;
-  user_id: string;
+  user_id: Types.ObjectId;
   user_email: string;
   plan_name: string;
   status: string;

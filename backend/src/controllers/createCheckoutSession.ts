@@ -97,7 +97,7 @@ export async function createCheckoutSession(
                 .lean()
                 .select('id');
               await Subscription.create({
-                user_id: user?.id || req.user.id,
+                user_id: user?._id || req.user._id,
                 user_email: req.user.email,
                 stripe_customer_id: stripeCustomerId,
                 stripe_subscription_id: stripeSubscriptionId,
@@ -128,13 +128,13 @@ export async function createCheckoutSession(
             billing_cycle_anchor: 'unchanged',
             metadata: {
               user_email: req.user.email,
-              user_id: req.user.id,
+              user_id: 1,
               plan_name,
             },
           });
 
           await User.findOneAndUpdate(
-            { id: req.user.id },
+            { _id: req.user._id },
             { $set: { subscription_tier: plan_name } },
           );
 
@@ -159,7 +159,7 @@ export async function createCheckoutSession(
       customer: stripeCustomerId || undefined,
       metadata: {
         user_email: req.user.email,
-        user_id: req.user.id,
+        user_id: req.user._id,
         plan_name,
       },
     };

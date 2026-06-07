@@ -44,7 +44,7 @@ export async function plaid(
 
     if (action === 'create_link_token') {
       const response = await plaidClient.linkTokenCreate({
-        user: { client_user_id: req.user.id },
+        user: { client_user_id: req.user._id.toString() },
         client_name: 'LifeDesk',
         products: ['transactions'] as any,
         country_codes: ['DE'] as any,
@@ -65,7 +65,7 @@ export async function plaid(
       });
       const { access_token, item_id } = exchangeResponse.data;
 
-      const userDoc = await User.findOne({ id: req.user.id });
+      const userDoc = await User.findById(req.user._id);
       if (!userDoc) return res.status(404).json({ error: 'User not found' });
 
       const existingConnections = userDoc.plaid_connections || [];
@@ -188,7 +188,7 @@ export async function plaid(
 
       const existingSnapshot = await BankBalanceSnapshot.findOne({
         date: today,
-        created_by: req.user.id,
+        created_by: req.user._id.toString(),
       }).lean();
       if (existingSnapshot)
         return res.json({
@@ -210,7 +210,7 @@ export async function plaid(
             balance: account.balances.current ?? 0,
             available: account.balances.available ?? null,
             currency: account.balances.iso_currency_code || 'USD',
-            created_by: req.user.id,
+            created_by: req.user._id.toString(),
           });
         }
       }
@@ -221,7 +221,7 @@ export async function plaid(
 
     if (action === 'remove_connection') {
       const { item_id } = req.body;
-      const userDoc = await User.findOne({ id: req.user.id });
+      const userDoc = await User.findById(req.user._id);
       if (!userDoc) return res.status(404).json({ error: 'User not found' });
 
       const connections = userDoc.plaid_connections || [];

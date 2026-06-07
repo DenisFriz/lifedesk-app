@@ -5,7 +5,11 @@ import { ISubscription } from '@/types/index.js';
 const subscriptionSchema = new Schema<ISubscription>(
   {
     id: { type: String, default: () => uuidv4(), unique: true, index: true },
-    user_id: { type: String, required: true },
+    user_id: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     user_email: { type: String, required: true },
     plan_name: { type: String, required: true },
     status: { type: String, required: true },

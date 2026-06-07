@@ -13,7 +13,7 @@ export async function debugSubscriptionStatus(req: Request, res: Response) {
 
     res.json({
       user: {
-        id: user.id,
+        id: user._id,
         email: user.email,
         subscription_tier: user.subscription_tier,
       },

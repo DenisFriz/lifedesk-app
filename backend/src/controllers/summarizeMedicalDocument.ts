@@ -37,7 +37,7 @@ export async function summarizeMedicalDocument(req: Request, res: Response) {
       return res.status(404).json({ error: 'Document not found' });
     }
 
-    if ((document as any).created_by !== req.user.id) {
+    if ((document as any).created_by !== req.user._id) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 

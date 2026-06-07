@@ -51,7 +51,7 @@ export async function downgradeToPlan(
       });
 
       await User.findOneAndUpdate(
-        { id: req.user.id },
+        { _id: req.user._id },
         { $set: { subscription_tier: plan_name } },
       );
 
