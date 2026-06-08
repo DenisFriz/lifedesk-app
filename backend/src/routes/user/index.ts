@@ -163,6 +163,7 @@ router.get(
       offlineAccountSnapshot: userUsed.offlineAccountSnapshot ?? 0,
       healthTrackingEnties: userUsed.healthTrackingEnties ?? 0,
       communityIdeas: userUsed.communityIdeas ?? 0,
+      relationships: userUsed.relationships ?? 0,
       community_comment: userUsed.community_comment ?? false,
       ai_assistant: currentPlanLimits.ai_assistant ?? false,
     };

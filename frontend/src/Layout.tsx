@@ -1,6 +1,7 @@
 import {
   useState,
   useEffect,
+  useLayoutEffect,
   useRef,
   useCallback,
   useContext,
@@ -35,7 +36,7 @@ const BUSINESS_SUBMENU_PAGES = [
   'Projects',
   'Clients',
   'Marketing'
-]
+] as const
 
 export const LayoutContext = createContext<LayoutContextValue | null>(null)
 
@@ -108,6 +109,7 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
     return saved ? JSON.parse(saved) : []
   })
   const navRef = useRef<any>(null)
+  const pendingScrollRestoreRef = useRef<number | null>(null)
 
   useEffect(() => {
     const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0
@@ -177,18 +179,12 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
   }, [aiChatMessages])
 
   useEffect(() => {
-    const link = document.createElement('link')
-    link.rel = 'stylesheet'
-    link.href = 'https://data.lifedesk.me/CSS/app-styles 2.css'
-    document.head.appendChild(link)
-
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement)
     }
     document.addEventListener('fullscreenchange', handleFullscreenChange)
 
     return () => {
-      document.head.removeChild(link)
       document.removeEventListener('fullscreenchange', handleFullscreenChange)
     }
   }, [])
@@ -222,7 +218,6 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
 
   const { user } = useAuth()
 
-  console.log(businesses, 'businesses in Layout')
   useEffect(() => {
     const prevBusinesses = prevBusinessesRef.current
     prevBusinessesRef.current = businesses as any[]
@@ -721,6 +716,14 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(collapsed))
   }, [collapsed])
 
+  useLayoutEffect(() => {
+    const scrollTop = pendingScrollRestoreRef.current
+    if (scrollTop !== null) {
+      navRef.current?.scrollTop?.(scrollTop)
+      pendingScrollRestoreRef.current = null
+    }
+  }, [expandedSections])
+
   const toggleSection = useCallback((section: string, event?: MouseEvent<HTMLButtonElement>) => {
     if (event) {
       event.preventDefault()
@@ -728,6 +731,8 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
     }
 
     if (!section || /undefined|null/.test(section)) return
+
+    pendingScrollRestoreRef.current = navRef.current?.getScrollTop?.() ?? 0
 
     setExpandedSections(prev => {
       const newExpanded = {

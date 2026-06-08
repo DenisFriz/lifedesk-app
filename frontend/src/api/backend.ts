@@ -135,13 +135,7 @@ export const backend = {
   },
   integrations: {
     Core: {
-      UploadFile: ({ file }: { file: File }) => apiUpload(file),
-      InvokeLLM: (p: unknown) => apiFetch('POST', '/functions/invokeLLM', p),
-      SendEmail: (p: unknown) => apiFetch('POST', '/functions/sendEmail', p),
-      SendSMS: (p: unknown) => apiFetch('POST', '/functions/sendSMS', p),
-      GenerateImage: (p: unknown) => apiFetch('POST', '/functions/generateImage', p),
-      ExtractDataFromUploadedFile: (p: unknown) =>
-        apiFetch('POST', '/functions/extractDataFromUploadedFile', p)
+      UploadFile: ({ file }: { file: File }) => apiUpload(file)
     }
   }
 }

@@ -82,3 +82,122 @@
     @apply bg-background text-foreground;
   }
 }
+
+/*---Main right page styles---------------------*/
+.tab-container {
+  background-color: #ebecf4;
+}
+
+.min-h-screen {
+  background-color: #f4f7fb;
+  padding-top: 24px;
+}
+
+/*---Main right page styles-END---------------------*/
+
+/*---Tables---------------------*/
+.goal-table-row,
+.task-table-row {
+  height: 2rem;
+}
+.rounded-sm,
+.goal-table-td-star button,
+.task-table-td-star button {
+  vertical-align: middle;
+}
+/*---Tables-END-----------------*/
+
+/*---Sidebar/menu---*/
+
+.nav-level-0 {
+  background-color: #d9dee7;
+}
+.nav-level-1 {
+  background-color: #eaedf3;
+}
+.nav-level-2 {
+  background-color: #f4f7fb;
+}
+
+.sidebar {
+  background-color: #ffffff;
+  box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+}
+
+.ql-toolbar {
+  border: none !important;
+  border-bottom: 2px solid #eaebf4 !important;
+}
+.ql-container {
+  border: none !important;
+}
+.notes-panel .cursor-nwse-resize {
+  right: 16px;
+}
+
+/*Toolbar-*/
+
+.notes-toggle-btn,
+.fullscreen-toggle-btn {
+  margin-top: 13px;
+}
+.fullscreen-toggle-btn {
+  margin-right: 13px;
+}
+.notes-panel {
+  z-index: 51;
+}
+
+.bg-white {
+  border: none;
+}
+
+/*---Mobile View---------------------*/
+
+.top-\[52px\] {
+  top: 60px;
+}
+
+@media only screen and (max-width: 1024px) {
+  .calendar-content {
+    padding-right: 0px;
+    padding-left: 0px;
+  }
+  .min-h-screen > .max-w-7xl {
+    padding: 0px;
+  }
+  /*Sticky header on scroll margin right and left removed*/
+  .-mx-4 {
+    margin: 0px;
+  }
+  .calendar-day-cell > div > span.block > div.text-xs,
+  .calendar-week-days div .text-xs {
+    padding: 2px;
+    padding-left: 4px;
+    font-size: 10px;
+  }
+  .calendar-day-cell > div > button.text-xs,
+  .calendar-week-days div button.text-xs {
+    font-size: 8px;
+    padding: 0px;
+    margin: 0 auto;
+    display: block;
+  }
+  .calendar-day-cell {
+    min-height: 118px;
+  }
+  .calendar-week-timeline .border-slate-200 {
+    padding: 0.2rem;
+    height: 70px;
+  }
+  .calendar-week-days div .p-2 {
+    padding: 0.2rem;
+    height: 70px;
+  }
+  .calendar-day-cell > .absolute {
+    top: 92px !important;
+  }
+  .calendar-week-days > div > .relative > .absolute {
+    top: 48px !important;
+  }
+}

@@ -26,19 +26,18 @@ interface SubscriptionReturn {
 }
 
 export function useSubscription(): SubscriptionReturn {
-  const { data: user } = useQuery({
+  /*   const { data: user } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => backend.user.me() as Promise<User | undefined>
-  })
+  }) */
 
   const { data: subscriptions, isLoading: subLoading } = useQuery({
-    queryKey: ['subscription', user?.email],
+    queryKey: ['subscription'],
     queryFn: async () => {
-      if (!user?.email) return null
       try {
         const subs = (await backend.entities.Subscription.list()) as Subscription[]
 
-        const userSub = subs.find(s => s.user_email === user.email)
+        const userSub = subs.find(s => s.user_email === '')
 
         return userSub || null
       } catch (err) {
@@ -46,7 +45,6 @@ export function useSubscription(): SubscriptionReturn {
         return null
       }
     },
-    enabled: !!user?.email,
     staleTime: 10 * 60 * 1000 // 10 minutes
   })
 
@@ -57,7 +55,7 @@ export function useSubscription(): SubscriptionReturn {
   })
 
   const subscription = subscriptions
-  const planName = user?.subscription_tier ?? 'free'
+  const planName = 'free'
   const planData = useMemo(() => plans?.find(p => p.plan_name === planName), [plans, planName])
   const features = planData?.features ?? {}
 

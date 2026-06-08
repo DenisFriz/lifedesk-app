@@ -79,6 +79,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = useCallback(() => {
     setIsAuthenticated(false)
     queryClient.removeQueries({ queryKey: ['currentUser'] })
+    localStorage.clear()
     backend.auth.logout()
   }, [queryClient])
 

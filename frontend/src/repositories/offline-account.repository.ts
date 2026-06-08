@@ -50,7 +50,6 @@ export const offlineAccountRepository = {
 
     await db.offlineaccounts.put(offlineAccount)
 
-    console.log(offlineAccount)
     await enqueueMutation('offlineaccounts', 'create', {
       ...data,
       optimisticId

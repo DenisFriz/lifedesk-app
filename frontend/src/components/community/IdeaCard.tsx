@@ -11,7 +11,7 @@ const CATEGORY_STYLES = {
   ui_ux: { label: '🎨 UI / UX', cls: 'bg-pink-100 text-pink-700' },
   bug_fix: { label: '🐛 Bug Fix', cls: 'bg-red-100 text-red-700' },
   other: { label: '💡 Other', cls: 'bg-slate-100 text-slate-600' }
-}
+} as const
 
 const STATUS_STYLES = {
   new: { label: 'New', cls: 'bg-slate-100 text-slate-600' },
@@ -20,7 +20,7 @@ const STATUS_STYLES = {
   in_progress: { label: 'In Progress', cls: 'bg-amber-100 text-amber-700' },
   implemented: { label: '✅ Implemented', cls: 'bg-emerald-100 text-emerald-700' },
   rejected: { label: 'Rejected', cls: 'bg-red-100 text-red-700' }
-}
+} as const
 
 interface IdeaCardProps {
   idea: CommunityIdeaRecord

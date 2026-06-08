@@ -40,7 +40,6 @@ export function CategorySelectDialog({
     </Button>
   )
 
-  console.log('Businesses in CategorySelectDialog', businesses)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>

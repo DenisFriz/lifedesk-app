@@ -18,6 +18,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useSubscription } from '@/hooks/useSubscription'
 import { Helmet } from 'react-helmet-async'
 import { SEO } from '@/lib/seo'
+import { useAuth } from '@/lib/AuthContext'
 
 const FREE_FEATURES = [
   '10 Goals / 20 Tasks',
@@ -115,11 +116,13 @@ export default function Upgrade() {
       return next
     })
 
-  const { data: user, error: userError } = useQuery({
+  const { user, authError } = useAuth()
+
+  /*   const { data: user, error: userError } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => backend.user.me(),
     retry: 1
-  })
+  }) */
 
   const { data: subscription = null, error: subError } = useQuery<Subscription | null, Error>({
     queryKey: ['subscription', user?.email],
@@ -153,7 +156,7 @@ export default function Upgrade() {
     : null
 
   // If there are query errors, show error state
-  if (userError || subError) {
+  if (authError || subError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">

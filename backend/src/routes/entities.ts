@@ -1,7 +1,4 @@
-import {
-  SUBSCRIPTION_LIMITS,
-  SubscriptionLimits,
-} from '@/config/subscriptionLimits.js';
+import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits.js';
 import { modelMap } from '@/models/index.js';
 import { UsageKey, UserUsage } from '@/models/UserUsage.js';
 import { Router, type Request, type Response } from 'express';
@@ -248,7 +245,10 @@ router.post('/:entity', async (req: Request, res: Response) => {
           ...sanitizeInput(req.body),
           created_by: userId,
         }),
-        UserUsage.updateOne({ user_id: userId }, { $inc: { communityIdeas: 1 } }),
+        UserUsage.updateOne(
+          { user_id: userId },
+          { $inc: { communityIdeas: 1 } },
+        ),
       ]);
 
       return res.status(201).json(record);

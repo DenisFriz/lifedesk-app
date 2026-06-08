@@ -30,7 +30,7 @@ const STATUS_OPTIONS = [
   { value: 'in_progress', label: 'In Progress' },
   { value: 'implemented', label: '✅ Implemented' },
   { value: 'rejected', label: 'Rejected' }
-]
+] as const
 
 const STATUS_STYLES = {
   new: 'bg-slate-100 text-slate-600',
@@ -39,7 +39,7 @@ const STATUS_STYLES = {
   in_progress: 'bg-amber-100 text-amber-700',
   implemented: 'bg-emerald-100 text-emerald-700',
   rejected: 'bg-red-100 text-red-700'
-}
+} as const
 
 interface IdeaDetailProps {
   idea: CommunityIdeaRecord | null

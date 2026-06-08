@@ -77,7 +77,9 @@ export default function CommunityHub() {
 
   const { canCreate } = useUserLimit()
 
-  const canCreateCommunityIdeas = canCreate('communityIdeas')
+  const canCreateCommunityIdeas =
+    canCreate('communityIdeas') &&
+    (user.subscription_tier === 'plus' || user.subscription_tier === 'pro')
 
   // Fetch ideas
   const { data: ideas = [] } = useCommunityIdeasQuery()
@@ -411,7 +413,7 @@ export default function CommunityHub() {
                   ? 'Be the first to submit an idea!'
                   : 'No ideas match your filters.'}
               </p>
-              {ideas.length === 0 && (
+              {canCreateCommunityIdeas && (
                 <Button
                   onClick={() => setShowForm(true)}
                   className="bg-indigo-600 hover:bg-indigo-700"

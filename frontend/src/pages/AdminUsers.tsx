@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, X, ShieldOff } from 'lucide-react'
 import { format } from 'date-fns'
 import { Helmet } from 'react-helmet-async'
+import { useAuth } from '@/lib/AuthContext'
 
 type User = {
   id: string
@@ -21,15 +22,17 @@ export default function AdminUsers() {
   const [search, setSearch] = useState('')
   const [confirmUserId, setConfirmUserId] = useState(null)
 
-  const { data: currentUser } = useQuery<User>({
+  const { user } = useAuth()
+
+  /*   const { data: currentUser } = useQuery<User>({
     queryKey: ['currentUser'],
     queryFn: () => backend.user.me()
-  })
+  }) */
 
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['allUsers'],
     queryFn: () => backend.entities.User.list() as Promise<User[]>,
-    enabled: currentUser?.role === 'admin'
+    enabled: user?.role === 'admin'
   })
 
   const clearMutation = useMutation<void, Error, string>({
@@ -40,7 +43,7 @@ export default function AdminUsers() {
     }
   })
 
-  if (currentUser?.role !== 'admin') {
+  if (user?.role !== 'admin') {
     return (
       <div
         className="min-h-screen flex items-center justify-center"

@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Upload, FileText, CheckCircle, AlertCircle, Briefcase, Lock } from 'lucide-react'
 import { categorizeTransaction, saveTransactionRule } from './transactionCategorizer'
 import { Link } from 'react-router-dom'
+import { useAuth } from '@/lib/AuthContext'
 
 export default function ImportTransactions({
   open,
@@ -22,11 +23,8 @@ export default function ImportTransactions({
   open: boolean
   onClose: () => void
 }) {
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => backend.user.me()
-  })
-  const isFree = !currentUser?.subscription_tier || currentUser.subscription_tier === 'free'
+  const { user } = useAuth()
+  const isFree = !user?.subscription_tier || user.subscription_tier === 'free'
   const [file, setFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
   const [result, setResult] = useState<{
@@ -205,7 +203,7 @@ export default function ImportTransactions({
             </label>
             {file && (
               <div className="mt-4 flex items-center justify-center gap-2 text-sm text-slate-600">
-                <FileText className="w-4 w-4" />
+                <FileText className="w-4" />
                 {file.name}
               </div>
             )}

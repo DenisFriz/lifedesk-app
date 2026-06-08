@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  ReactNode,
+  useCallback
+} from 'react'
 
 import taskDone from '@/assets/audio/task-done.mp3'
 import deleteSound from '@/assets/audio/delete.mp3'
@@ -28,16 +36,20 @@ const audioCache: Partial<Record<SoundName, HTMLAudioElement>> = {}
 
 export function SoundProvider({ children }: { children: ReactNode }) {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true)
+  const isMounted = useRef(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('sound-enabled')
-
     if (saved !== null) {
       setSoundEnabled(saved === 'true')
     }
   }, [])
 
   useEffect(() => {
+    if (!isMounted.current) {
+      isMounted.current = true
+      return
+    }
     localStorage.setItem('sound-enabled', String(soundEnabled))
   }, [soundEnabled])
 

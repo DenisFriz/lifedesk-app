@@ -76,7 +76,7 @@ export default function Relationships() {
 
   const { data: relationships } = useRelationShipsQuery()
 
-  const atLimit = canCreate('relationships')
+  const atLimit = !canCreate('relationships')
 
   const { createMutation, updateMutation, deleteMutation } = useRelationShipMutations()
 
@@ -335,7 +335,7 @@ export default function Relationships() {
           ) : (
             <div className="space-y-3 pb-8">
               {sorted.map(contact => {
-                const overLimit = canCreate('relationships')
+                const overLimit = !canCreate('relationships')
                 return overLimit ? (
                   <OverLimitItem key={contact.id}>
                     <ContactCard

@@ -65,7 +65,7 @@ export async function plaid(
       });
       const { access_token, item_id } = exchangeResponse.data;
 
-      const userDoc = await User.findById(req.user._id);
+      const userDoc = await User.findOne({ _id: req.user._id });
       if (!userDoc) return res.status(404).json({ error: 'User not found' });
 
       const existingConnections = userDoc.plaid_connections || [];
@@ -97,11 +97,11 @@ export async function plaid(
       const allAccounts: any[] = [];
 
       const responses = await Promise.all(
-        connections.map(conn =>
+        connections.map((conn) =>
           plaidClient.accountsBalanceGet({
             access_token: conn.access_token,
-          })
-        )
+          }),
+        ),
       );
 
       responses.forEach((response, idx) => {
@@ -137,14 +137,14 @@ export async function plaid(
       const allTransactions: any[] = [];
 
       const responses = await Promise.all(
-        connections.map(conn =>
+        connections.map((conn) =>
           plaidClient.transactionsGet({
             access_token: conn.access_token,
             start_date: startDateStr,
             end_date: endDateStr,
             options: { count: 500 },
-          })
-        )
+          }),
+        ),
       );
 
       responses.forEach((response, idx) => {
@@ -210,7 +210,7 @@ export async function plaid(
             balance: account.balances.current ?? 0,
             available: account.balances.available ?? null,
             currency: account.balances.iso_currency_code || 'USD',
-            created_by: req.user._id.toString(),
+            created_by: req.user._id,
           });
         }
       }
@@ -221,7 +221,7 @@ export async function plaid(
 
     if (action === 'remove_connection') {
       const { item_id } = req.body;
-      const userDoc = await User.findById(req.user._id);
+      const userDoc = await User.findOne({ _id: req.user._id });
       if (!userDoc) return res.status(404).json({ error: 'User not found' });
 
       const connections = userDoc.plaid_connections || [];

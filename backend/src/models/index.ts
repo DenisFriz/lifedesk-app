@@ -88,7 +88,7 @@ export const modelMap: Record<string, mongoose.Model<any>> = {
   client: Client,
   hobby: Hobby,
   learning: Learning,
-  relationships: RelationShip,
+  relationship: RelationShip,
   note: Note,
   income: Income,
   expense: Expense,

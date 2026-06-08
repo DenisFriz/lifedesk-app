@@ -38,6 +38,7 @@ import { useOfflineAccountsQuery } from '@/hooks/offlineaccounts/useOfflineAccou
 import { useOfflineAccountMutations } from '@/hooks/offlineaccounts/useOfflineAccountMutations'
 import { CreateOfflineAccountInput } from '@/repositories/offline-account.repository'
 import { OfflineAccountRecord } from '@/db'
+import { useAuth } from '@/lib/AuthContext'
 
 const CHANGE_PERIOD_OPTIONS = [
   { value: 'this_month', label: 'This Month' },
@@ -80,9 +81,11 @@ function OfflineAccountForm({
     notes: account?.notes || ''
   })
 
+  const { user } = useAuth()
+
   const handleSubmit = (e: any) => {
     e.preventDefault()
-    onSubmit({ ...form, balance: account?.balance ?? 0, created_by: account.id })
+    onSubmit({ ...form, balance: account?.balance ?? 0, created_by: user.id })
   }
 
   return (
