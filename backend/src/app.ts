@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 
 import authRouter from '@routes/auth/index.js';
 import userRouter from '@routes/user/index.js';
@@ -34,7 +34,7 @@ app.use('/entities', requireAuth, entitiesRouter);
 app.use('/cloudinary', requireAuth, cloudinaryRouter);
 app.use('/functions', functionsRouter);
 
-app.use((err: unknown, req: Request, res: Response) => {
+app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
   const isAppError = (err: any): err is AppError => {
     return err?.status && err instanceof Error;
   };

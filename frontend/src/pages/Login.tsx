@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch, setToken } from '@/api/apiClient'
 import { Button } from '@/components/ui/button'
@@ -20,7 +20,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false)
   const { login } = useAuth()
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
     setIsLoading(true)
@@ -35,8 +35,30 @@ export default function Login() {
       await login(data.accessToken)
 
       navigate('/home', { replace: true })
-    } catch (err) {
-      setError(err.message || 'Login failed')
+    } catch (err: any) {
+      const data = err.data
+
+      if (data) {
+        const messages: string[] = []
+
+        Object.values(data).forEach((field: any) => {
+          if (field?._errors) {
+            messages.push(...field._errors)
+          }
+        })
+
+        if (messages.length > 0) {
+          setError(messages.join(', '))
+        } else {
+          setError(err.message || 'Login failed')
+        }
+
+        if (data?.message) {
+          setError(data.message)
+        }
+      } else {
+        setError(err.message || 'Login failed')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -57,7 +79,25 @@ export default function Login() {
 
       navigate('/home', { replace: true })
     } catch (err: any) {
-      setError(err.message || 'Google login failed')
+      const data = err.data
+
+      if (data) {
+        const messages: string[] = []
+
+        Object.values(data).forEach((field: any) => {
+          if (field?._errors) {
+            messages.push(...field._errors)
+          }
+        })
+
+        if (messages.length > 0) {
+          setError(messages.join(', '))
+        } else {
+          setError(err.message || 'Google login failed')
+        }
+      } else {
+        setError(err.message || 'Google login failed')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -116,7 +156,7 @@ export default function Login() {
                   <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
                     {/* Error */}
                     {error && (
-                      <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                      <div className="text-center rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                         {error}
                       </div>
                     )}

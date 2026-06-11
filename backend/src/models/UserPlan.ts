@@ -7,7 +7,7 @@ const userPlanSchema = new Schema<IUserPlan>(
     id: { type: String, default: () => uuidv4(), unique: true, index: true },
     plan_name: {
       type: String,
-      enum: ['free', 'plus', 'pro', 'enterprise'],
+      enum: ['free', 'plus', 'pro'],
       required: true,
       index: true,
     },

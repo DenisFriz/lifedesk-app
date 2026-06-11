@@ -650,6 +650,7 @@ export interface RecurringIncomeRecord {
   frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly'
   start_date: string
   category?: string | null
+  active: boolean
   business_id?: string | null
   is_deleted: boolean
   deleted_at?: string | null
@@ -666,6 +667,7 @@ export interface RecurringExpenseRecord {
   frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly'
   start_date: string
   category: string | null
+  active: boolean
   business_id: string | null
   is_deleted: boolean
   deleted_at?: string | null
@@ -687,6 +689,19 @@ export interface CommunityIdeaRecord {
   is_deleted: boolean
   deleted_at?: string | null
   deleted_by_process?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface NoteRecord {
+  id: string
+  serverId?: string | null
+  created_by: string
+  category: string
+  content: string
+  business_id: string | null
+  is_deleted: boolean
+  deleted_at?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -721,12 +736,13 @@ class AppDB extends Dexie {
   recurringincomes!: Table<RecurringIncomeRecord, string>
   recurringexpenses!: Table<RecurringExpenseRecord, string>
   communityideas!: Table<CommunityIdeaRecord, string>
+  notes!: Table<NoteRecord, string>
   syncQueue!: Table<SyncQueueItem, number>
 
   constructor() {
     super('AppDB')
 
-    this.version(25).stores({
+    this.version(26).stores({
       goals: 'id, serverId, status, category, is_deleted',
       tasks: 'id, serverId, status, category, is_deleted',
       events: 'id, serverId, status, category, is_deleted',
@@ -759,6 +775,7 @@ class AppDB extends Dexie {
       recurringexpenses: 'id, serverId, is_deleted, deleted_at, createdAt, updatedAt',
       communityideas:
         'id, serverId, created_by, category, likes_count, comments_count, is_deleted, createdAt, updatedAt',
+      notes: 'id, serverId, category, is_deleted',
       syncQueue: '++localId, entityName, operation, timestamp, status'
     })
   }

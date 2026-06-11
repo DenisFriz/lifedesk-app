@@ -59,6 +59,8 @@ export type UsageKey =
   | 'clients'
   | 'communityIdeas'
   | 'community_comment'
+  | 'community_like'
+  | 'notes_words_limit'
   | 'ai_assistant'
   | 'content'
 

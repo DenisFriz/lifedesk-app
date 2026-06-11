@@ -1,36 +1,56 @@
-import mongoose, { Schema, Model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
-import { encryptNullable, decryptNullable } from '@utils/encryption.js';
-import { INote } from '@/types/index.js';
+import mongoose, { Schema, Model, Types } from 'mongoose';
 
-const NoteSchema = new Schema<INote>(
+export interface INote {
+  _id?: Types.ObjectId;
+  created_by: Types.ObjectId;
+  category: string;
+  content: string;
+  business_id: Types.ObjectId | null;
+  is_deleted: boolean;
+  deleted_at: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const noteSchema = new Schema<INote>(
   {
-    id: { type: String, default: () => uuidv4(), unique: true, index: true },
-    created_by: { type: String, required: true, index: true },
-    title: { type: String },
+    created_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+
+    category: {
+      type: String,
+      required: true,
+    },
+
     content: {
       type: String,
-      default: null,
-      set: encryptNullable,
-      get: decryptNullable,
+      default: '',
     },
-    category: String,
-    is_deleted: { type: Boolean, default: false },
-    deleted_at: String,
-    deleted_by_process: String,
-    created_at: { type: String, default: () => new Date().toISOString() },
-    updated_at: { type: String, default: () => new Date().toISOString() },
+
+    business_id: {
+      type: Schema.Types.ObjectId,
+      ref: 'Business',
+      default: null,
+    },
+
+    is_deleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    deleted_at: {
+      type: Date,
+      default: null,
+    },
   },
   {
-    timestamps: false,
+    timestamps: true,
     versionKey: false,
-    toObject: { getters: true },
-    toJSON: { getters: true },
   },
 );
 
-NoteSchema.pre<INote>('save', function (this: INote) {
-  this.updated_at = new Date().toISOString();
-});
-
-export const Note: Model<INote> = mongoose.model<INote>('Note', NoteSchema);
+export const Note: Model<INote> = mongoose.model<INote>('Note', noteSchema);

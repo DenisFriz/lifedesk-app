@@ -1,10 +1,10 @@
 export type SubscriptionTier = 'free' | 'plus' | 'pro';
 
 export type SubscriptionLimits = {
-  goals?: number;
-  tasks?: number;
-  calendarEntries?: number;
-  events?: number;
+  goals: number;
+  tasks: number;
+  calendarEntries: number;
+  events: number;
   vehicle?: number;
   vehicle_photos?: number;
   vehicle_repairs?: number;
@@ -32,7 +32,7 @@ export type SubscriptionLimits = {
   income?: number;
   expense?: number;
   problem?: number;
-  timeEntries?: number;
+  timeEntries: number;
   projects?: number;
   recurringIncomes?: number;
   recurringExpenses?: number;
@@ -41,8 +41,9 @@ export type SubscriptionLimits = {
   community_read: boolean;
   community_submit: boolean;
   community_like: boolean;
-  community_comment: boolean;
+  communityComment: boolean;
   communityIdeas?: number;
+  notes_words_limit: number;
   unlimited?: boolean;
 };
 
@@ -51,7 +52,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
     free: {
       goals: 10,
       tasks: 20,
-      calendarEntries: 10,
+      calendarEntries: 40,
       events: 10,
       vehicle: 1,
       vehicle_photos: 5,
@@ -88,8 +89,9 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       community_read: true,
       community_submit: false,
       community_like: false,
-      community_comment: false,
+      communityComment: false,
       communityIdeas: 5,
+      notes_words_limit: 1000,
       ai_assistant: false,
     },
     plus: {
@@ -123,7 +125,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       income: 3,
       expense: 3,
       problem: 5,
-      timeEntries: 10,
+      timeEntries: 50,
       projects: 10,
       recurringIncomes: 10,
       recurringExpenses: 10,
@@ -133,17 +135,24 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       community_read: true,
       community_submit: true,
       community_like: true,
-      community_comment: true,
+      communityComment: true,
       communityIdeas: 10,
+      notes_words_limit: 25000,
     },
     pro: {
+      goals: 1000,
+      tasks: 2000,
+      calendarEntries: 4000,
+      events: 1000,
+      timeEntries: 500,
       vehicle_photos: 5,
       vehicle_repairs: 5,
       ai_assistant: true,
       community_read: true,
       community_submit: true,
       community_like: true,
-      community_comment: true,
+      communityComment: true,
+      notes_words_limit: 100000,
       unlimited: true,
     },
   };

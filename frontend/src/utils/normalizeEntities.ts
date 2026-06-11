@@ -13,6 +13,7 @@ import {
   MarketingContentRecord,
   MarketingStrategyRecord,
   MedicalDocumentRecord,
+  NoteRecord,
   OfflineAccountRecord,
   OtherAssetRecord,
   ProblemRecord,
@@ -608,5 +609,20 @@ export function normalizeOfflineAccount(server: any): OfflineAccountRecord {
     deleted_at: server.deleted_at ?? null,
     createdAt: server.createdAt,
     updatedAt: server.updatedAt
+  }
+}
+
+export function normalizeNote(serverNote: any): NoteRecord {
+  return {
+    id: serverNote._id,
+    serverId: serverNote._id,
+    created_by: serverNote.created_by ?? '',
+    category: serverNote.category ?? '',
+    content: serverNote.content ?? '',
+    business_id: serverNote.business_id ?? null,
+    is_deleted: serverNote.is_deleted ?? false,
+    deleted_at: serverNote.deleted_at ?? null,
+    createdAt: serverNote.createdAt,
+    updatedAt: serverNote.updatedAt
   }
 }

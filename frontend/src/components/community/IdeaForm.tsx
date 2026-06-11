@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { ChangeEvent, FormEvent, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -47,7 +47,7 @@ export default function IdeaForm({ open, onClose, onSubmit, isLoading }: IdeaFor
 
   const set = (k: keyof IdeaFormData, v: string): void => setForm(p => ({ ...p, [k]: v }))
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
     onSubmit({ ...form, likes_count: 0, comments_count: 0, anonymous: !showName })
     setForm({ title: '', description: '', category: 'new_feature' })
@@ -65,7 +65,7 @@ export default function IdeaForm({ open, onClose, onSubmit, isLoading }: IdeaFor
             <Input
               placeholder="Give your idea a clear title *"
               value={form.title}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 set('title', e.target.value.slice(0, 50))
               }
               required
@@ -89,7 +89,7 @@ export default function IdeaForm({ open, onClose, onSubmit, isLoading }: IdeaFor
             <Textarea
               placeholder="Describe your idea in detail — what problem does it solve? How should it work?"
               value={form.description}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
                 set('description', e.target.value.slice(0, 500))
               }
               rows={5}

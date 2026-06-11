@@ -1,5 +1,28 @@
-import mongoose, { Schema, Model } from 'mongoose';
-import { ILearning } from '@/types/index.js';
+import mongoose, { Schema, Model, Types } from 'mongoose';
+
+export interface ILearning {
+  _id?: Types.ObjectId;
+  created_by: Types.ObjectId;
+  title: string;
+  type: string | null;
+  status: string;
+  progress: number;
+  description: string | null;
+  url: string | null;
+  skill_category: string | null;
+  priority: string | null;
+  start_date: string | null;
+  completed_date: string | null;
+  time_invested_hours: number;
+  rating: number | null;
+  key_takeaways: string | null;
+  author: string | null;
+  is_deleted: boolean;
+  deleted_at: string | null;
+  deleted_by_process: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 const learningSchema = new Schema<ILearning>(
   {

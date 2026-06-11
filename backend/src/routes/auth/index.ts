@@ -123,7 +123,7 @@ router.post(
     const user = await User.findOne({ email });
 
     if (!user) {
-      throw new AppError('Invalid credentials', 401);
+      throw new AppError('Incorrect email or password', 404);
     }
 
     if (!user.passwordHash) {
@@ -136,7 +136,7 @@ router.post(
     const valid = await comparePassword(password, user.passwordHash);
 
     if (!valid) {
-      throw new AppError('Invalid credentials', 401);
+      throw new AppError('Incorrect email or password', 404);
     }
 
     const [{ accessToken }] = await Promise.all([
@@ -179,7 +179,6 @@ router.post(
     res.json({ message: 'Logged out successfully' });
   }),
 );
-
 
 // GOOGLE LOGIN
 router.post(
@@ -243,8 +242,6 @@ router.post(
     });
   }),
 );
-
-
 
 // REFRESH TOKEN
 router.post(
@@ -324,7 +321,6 @@ router.post(
   }),
 );
 
-
 // FORGOT PASSWORD
 router.post(
   '/forgot-password',
@@ -390,6 +386,5 @@ router.post(
     res.json({ message: 'Password successfully reset' });
   }),
 );
-
 
 export default router;

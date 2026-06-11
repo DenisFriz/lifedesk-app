@@ -20,20 +20,20 @@ export default function TimeTrackerWidget() {
     return isWithinInterval(d, { start: weekStart, end: weekEnd })
   })
 
-  const totalMinutes = thisWeek.reduce((sum, e) => sum + (e.duration || 0), 0)
-  const billableMinutes = thisWeek
+  const totalSeconds = thisWeek.reduce((sum, e) => sum + (e.duration || 0), 0)
+  const billableSeconds = thisWeek
     .filter(e => e.billable)
     .reduce((sum, e) => sum + (e.duration || 0), 0)
-  const nonBillableMinutes = totalMinutes - billableMinutes
+  const nonBillableSeconds = totalSeconds - billableSeconds
 
-  const formatTime = (minutes: number) => {
-    const hrs = Math.floor(minutes / 60)
-    const mins = minutes % 60
+  const formatTime = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600)
+    const mins = Math.floor((seconds % 3600) / 60)
     if (hrs === 0) return `${mins}m`
     return `${hrs}h ${mins}m`
   }
 
-  const pct = totalMinutes > 0 ? Math.round((billableMinutes / totalMinutes) * 100) : 0
+  const pct = totalSeconds > 0 ? Math.round((billableSeconds / totalSeconds) * 100) : 0
 
   return (
     <div>
@@ -43,7 +43,7 @@ export default function TimeTrackerWidget() {
       </div>
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-3xl font-bold text-slate-900">{formatTime(totalMinutes)}</span>
+          <span className="text-3xl font-bold text-slate-900">{formatTime(totalSeconds)}</span>
           <span className="text-xs text-slate-500">
             {format(weekStart, 'MMM d')} – {format(weekEnd, 'MMM d')}
           </span>
@@ -57,9 +57,9 @@ export default function TimeTrackerWidget() {
         <div className="flex justify-between text-xs text-slate-500">
           <span className="flex items-center gap-1">
             <DollarSign className="w-3 h-3 text-emerald-600" />
-            {formatTime(billableMinutes)} billable
+            {formatTime(billableSeconds)} billable
           </span>
-          <span>{formatTime(nonBillableMinutes)} non-billable</span>
+          <span>{formatTime(nonBillableSeconds)} non-billable</span>
         </div>
         {thisWeek.length === 0 && (
           <p className="text-xs text-slate-400 text-center pt-1">No tracked time this week</p>

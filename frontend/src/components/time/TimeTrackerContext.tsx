@@ -8,7 +8,6 @@ import {
   ReactNode
 } from 'react'
 import { useQuery, useMutation, useQueryClient, UseMutationResult } from '@tanstack/react-query'
-import { backend } from '@/api/backend'
 import { format } from 'date-fns'
 import IdleDialog from './IdleDialog'
 import LongRunningDialog from './LongRunningDialog'
@@ -52,8 +51,8 @@ interface LongRunningDialogState {
 
 export const TimeTrackerProvider = ({ children }: TimeTrackerProviderProps) => {
   const queryClient = useQueryClient()
-  const [isPaused, setIsPaused] = useState<boolean>(false)
-  const [elapsedTime, setElapsedTime] = useState<number>(0)
+  const [isPaused, setIsPaused] = useState(false)
+  const [elapsedTime, setElapsedTime] = useState(0)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Idle / visibility state
@@ -77,9 +76,7 @@ export const TimeTrackerProvider = ({ children }: TimeTrackerProviderProps) => {
       const startTime = new Date(`${runningEntry.date}T${runningEntry.start_time}`)
       const now = new Date()
       const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000)
-      const previousDuration = runningEntry.duration || 0
-      const previousDurationSeconds = previousDuration * 60
-      setElapsedTime(elapsed + previousDurationSeconds)
+      setElapsedTime(elapsed)
 
       if (!isPaused) {
         startInterval()
@@ -118,18 +115,23 @@ export const TimeTrackerProvider = ({ children }: TimeTrackerProviderProps) => {
   }, [])
 
   const stopTimerMutation = useMutation({
-    mutationFn: async (entryId: string) => {
+    mutationFn: async (_entryId: string) => {
       const now = new Date()
       const endTime = format(now, 'HH:mm:ss')
-      const entry = queryClient.getQueryData<TimeEntryRecord>(['runningTimeEntry'])
-      const startTime = entry ? new Date(`${entry.date}T${entry.start_time}`) : now
+
+      // Re-read from IndexedDB to avoid a stale-cache race where the optimistic
+      // record was already replaced by sync before the user hit Stop.
+      const entry = await db.timeentries.filter(e => e.is_running && !e.is_deleted).first()
+      if (!entry) throw new Error('No running entry found')
+
+      const startTime = new Date(`${entry.date}T${entry.start_time}`)
       const durationMs = now.getTime() - startTime.getTime()
-      const newDurationMinutes = Math.round(durationMs / 60000)
-      const newDuration = newDurationMinutes === 0 && durationMs > 0 ? 1 : newDurationMinutes
-      const previousDuration = entry?.duration || 0
+      const newDurationSeconds = Math.round(durationMs / 1000)
+      const newDuration = newDurationSeconds
+      const previousDuration = entry.duration || 0
       const totalDuration = previousDuration + newDuration
 
-      return timeEntryRepository.update(entryId, {
+      return timeEntryRepository.update(entry.id, {
         end_time: endTime,
         duration: totalDuration,
         is_running: false
@@ -239,7 +241,7 @@ export const TimeTrackerProvider = ({ children }: TimeTrackerProviderProps) => {
     // Subtract idle duration from the entry
     if (runningEntry) {
       const currentDuration = runningEntry.duration || 0
-      const newDuration = Math.max(0, currentDuration - idleMinutes)
+      const newDuration = Math.max(0, currentDuration - idleMinutes * 60)
       timeEntryRepository.update(runningEntry.id, { duration: newDuration }).then(() => {
         queryClient.invalidateQueries({ queryKey: ['runningTimeEntry'] })
       })

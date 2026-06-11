@@ -32,7 +32,8 @@ const entityMap: Record<string, any> = {
   offlineaccountSnapshots: backend.entities.OfflineAccountSnapshot,
   recurringincomes: backend.entities.RecurringIncome,
   recurringexpenses: backend.entities.RecurringExpense,
-  communityideas: backend.entities.CommunityIdea
+  communityideas: backend.entities.CommunityIdea,
+  notes: backend.entities.Note
 }
 
 let isSyncing = false
@@ -201,6 +202,10 @@ export async function processSyncQueue(queryClient?: QueryClient): Promise<void>
         queryKey: [entityName],
         refetchType: 'all'
       })
+
+      if (entityName === 'timeentries') {
+        queryClient?.invalidateQueries({ queryKey: ['runningTimeEntry'] })
+      }
     }
 
     queryClient?.invalidateQueries({ queryKey: ['usage'] })

@@ -7,6 +7,13 @@ import { cloudinary } from '@/lib/cloudinary.js';
 
 const router = Router();
 
+function countWordsFromHtml(html: string): number {
+  if (!html) return 0;
+  const text = html.replace(/<[^>]*>/g, '');
+  const words = text.split(/\s+/).filter((w) => w.length > 0);
+  return words.length;
+}
+
 const cloudinaryCleanup: Record<string, (record: any) => string[]> = {
   vehicle: (record) =>
     (record.images ?? []).map((img: any) => img.public_id).filter(Boolean),
@@ -212,6 +219,40 @@ router.post('/:entity', async (req: Request, res: Response) => {
       return res.status(201).json(record);
     }
 
+    if (modelKey === 'note') {
+      const wordLimit = limits.notes_words_limit;
+      if (typeof wordLimit === 'number') {
+        const usage = await UserUsage.findOne({ user_id: userId })
+          .lean()
+          .select('notes_words_limit');
+
+        const used = (usage as any)?.notes_words_limit ?? 0;
+
+        if (used >= wordLimit) {
+          return res.status(403).json({
+            error: `Word limit reached. Upgrade your plan.`,
+          });
+        }
+      }
+
+      const content = (req.body as any)?.content ?? '';
+      const wordCount = countWordsFromHtml(content);
+
+      const [record] = await Promise.all([
+        Model.create({
+          ...sanitizeInput(req.body),
+          created_by: userId,
+        }),
+        UserUsage.updateOne(
+          { user_id: userId },
+          { $inc: { notes_words_limit: wordCount } },
+          { upsert: true },
+        ),
+      ]);
+
+      return res.status(201).json(record);
+    }
+
     if (modelKey === 'communityidea') {
       if (!limits.community_submit) {
         return res.status(403).json({
@@ -251,6 +292,40 @@ router.post('/:entity', async (req: Request, res: Response) => {
         ),
       ]);
 
+      return res.status(201).json(record);
+    }
+
+    if (modelKey === 'communitycomment') {
+      if (!limits.communityComment) {
+        return res.status(403).json({
+          error: 'Commenting requires Plus or Pro.',
+        });
+      }
+      const record = await Model.create({
+        ...sanitizeInput(req.body),
+        created_by: userId,
+      });
+      return res.status(201).json(record);
+    }
+
+    if (modelKey === 'communityvote') {
+      if (!limits.community_like) {
+        return res.status(403).json({
+          error: 'Voting requires Plus or Pro.',
+        });
+      }
+      const record = await Model.create({
+        ...sanitizeInput(req.body),
+        created_by: userId,
+      });
+      return res.status(201).json(record);
+    }
+
+    if (modelKey === 'calculationhistory') {
+      const record = await Model.create({
+        ...sanitizeInput(req.body),
+        created_by: userId,
+      });
       return res.status(201).json(record);
     }
 
@@ -337,6 +412,50 @@ router.put('/:entity/:id', async (req: Request, res: Response) => {
       filter.updatedAt = { $lte: new Date(clientUpdatedAt) };
     }
 
+    const userId = req.user._id;
+
+    if (modelKey === 'note') {
+      const oldRecord = await Model.findOne({ _id: id }).lean();
+      if (!oldRecord) {
+        return res.status(404).json({ error: 'Not found or forbidden' });
+      }
+
+      const oldWords = countWordsFromHtml((oldRecord as any).content ?? '');
+      const newWords = countWordsFromHtml((body.content as string) ?? '');
+      const wordDelta = newWords - oldWords;
+
+      const updated = await Model.findOneAndUpdate(
+        filter,
+        {
+          $set: {
+            ...body,
+            updatedAt: new Date(),
+          },
+        },
+        { returnDocument: 'after' },
+      );
+
+      if (!updated) {
+        if (clientUpdatedAt) {
+          return res.status(409).json({
+            error: 'Conflict: stale update',
+            server: oldRecord,
+          });
+        }
+        return res.status(404).json({ error: 'Not found or forbidden' });
+      }
+
+      if (wordDelta !== 0) {
+        await UserUsage.updateOne(
+          { user_id: userId },
+          { $inc: { notes_words_limit: wordDelta } },
+          { upsert: true },
+        );
+      }
+
+      return res.json(updated);
+    }
+
     const updated = await Model.findOneAndUpdate(
       filter,
       {
@@ -415,17 +534,31 @@ router.delete('/:entity/:id', async (req: Request, res: Response) => {
 
     await Model.deleteOne({ _id: id });
 
-    const limitKey = entityToLimitKey[modelKey];
-
-    if (limitKey) {
-      await UserUsage.updateOne(
-        { user_id: userId },
-        {
-          $inc: {
-            [limitKey]: -1,
+    if (modelKey === 'note') {
+      const wordCount = countWordsFromHtml((record as any).content ?? '');
+      if (wordCount > 0) {
+        await UserUsage.updateOne(
+          { user_id: userId },
+          {
+            $inc: {
+              notes_words_limit: -wordCount,
+            },
           },
-        },
-      );
+        );
+      }
+    } else {
+      const limitKey = entityToLimitKey[modelKey];
+
+      if (limitKey) {
+        await UserUsage.updateOne(
+          { user_id: userId },
+          {
+            $inc: {
+              [limitKey]: -1,
+            },
+          },
+        );
+      }
     }
 
     return res.json({ success: true });

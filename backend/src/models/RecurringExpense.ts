@@ -8,6 +8,7 @@ export interface IRecurringExpense {
   frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
   start_date: Date;
   category: string | null;
+  active: boolean;
   business_id: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
@@ -50,6 +51,11 @@ const recurringExpenseSchema = new Schema<IRecurringExpense>(
     category: {
       type: String,
       default: null,
+    },
+
+    active: {
+      type: Boolean,
+      default: true,
     },
 
     business_id: {

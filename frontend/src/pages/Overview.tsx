@@ -1,6 +1,4 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
-import { backend } from '@/api/backend'
-import { useQuery } from '@tanstack/react-query'
 import { Wallet as WalletIcon } from 'lucide-react'
 import {
   PieChart,
@@ -36,14 +34,24 @@ import {
   Package
 } from 'lucide-react'
 import { Helmet } from 'react-helmet-async'
+import { useIncomesQuery } from '@/hooks/incomes/useIncomesQuery'
+import { useExpensesQuery } from '@/hooks/expenses/useExpensesQuery'
+import { useRecurringIncomesQuery } from '@/hooks/recurringincomes/useRecurringIncomesQuery'
+import { useRecurringExpensesQuery } from '@/hooks/recurringexpenses/useRecurringExpensesQuery'
+import { useVehiclesQuery } from '@/hooks/vehicles/useVehiclesQuery'
+import { useEstatesQuery } from '@/hooks/estates/useEstatesQuery'
+import { useOtherAssetsQuery } from '@/hooks/otherassets/useOtherAssetsQuery'
 
-type Income = {
-  id: string
-  date: string
-  amount: number
-  is_deleted?: boolean
-  category?: string
-}
+const COLORS = [
+  '#6366f1',
+  '#8b5cf6',
+  '#ec4899',
+  '#f59e0b',
+  '#10b981',
+  '#3b82f6',
+  '#14b8a6',
+  '#f97316'
+] as const
 
 export default function Overview() {
   const [period, setPeriod] = useState('this_month')
@@ -62,32 +70,44 @@ export default function Overview() {
     return () => observer.disconnect()
   }, [])
 
-  const { data: income = [] } = useQuery<Income[]>({
-    queryKey: ['income'],
-    queryFn: async () => {
-      return backend.entities.Income.list('-date') as Promise<Income[]>
-    }
-  })
+  const { data: income = [] } = useIncomesQuery()
 
-  const { data: expenses = [] } = useQuery({
-    queryKey: ['expenses'],
-    queryFn: () => backend.entities.Expense.list('-date')
-  })
+  const { data: expenses = [] } = useExpensesQuery()
 
-  const { data: recurringIncome = [] } = useQuery({
-    queryKey: ['recurringIncome'],
-    queryFn: () => backend.entities.RecurringIncome.list()
-  })
+  const { data: recurringIncome = [] } = useRecurringIncomesQuery()
 
-  const { data: recurringExpenses = [] } = useQuery({
-    queryKey: ['recurringExpenses'],
-    queryFn: () => backend.entities.RecurringExpense.list()
-  })
+  const { data: recurringExpenses = [] } = useRecurringExpensesQuery()
 
-  const { data: assets = [] } = useQuery({
-    queryKey: ['tangibleAssets'],
-    queryFn: () => backend.entities.TangibleAsset.list()
-  })
+  const { data: vehicles = [] } = useVehiclesQuery()
+  const { data: estates = [] } = useEstatesQuery()
+  const { data: otherAssets = [] } = useOtherAssetsQuery()
+
+  const assets = useMemo(
+    () => [
+      ...vehicles.map(v => ({
+        id: v.id,
+        title: v.title,
+        category: 'vehicle' as string | null,
+        current_value: v.current_value ?? null,
+        purchase_price: v.purchase_price ?? null
+      })),
+      ...estates.map(e => ({
+        id: e.id,
+        title: e.title,
+        category: (e.property_type ?? 'real_estate') as string | null,
+        current_value: e.current_value ?? null,
+        purchase_price: e.purchase_price ?? null
+      })),
+      ...otherAssets.map(a => ({
+        id: a.id,
+        title: a.title,
+        category: a.category ?? null,
+        current_value: a.current_value ?? null,
+        purchase_price: a.purchase_price ?? null
+      }))
+    ],
+    [vehicles, estates, otherAssets]
+  )
 
   const { startDate, endDate } = useMemo(() => {
     const now = new Date()
@@ -111,12 +131,16 @@ export default function Overview() {
   }, [period])
 
   const filteredIncome = income.filter(i => {
-    const date = new Date(i.date)
+    if (!i.date) return false
+    const [y, m, d] = i.date.split('-').map(Number)
+    const date = new Date(y, m - 1, d)
     return date >= startDate && date <= endDate
   })
 
   const filteredExpenses = expenses.filter(e => {
-    const date = new Date(e.date)
+    if (!e.date) return false
+    const [y, m, d] = e.date.split('-').map(Number)
+    const date = new Date(y, m - 1, d)
     return date >= startDate && date <= endDate
   })
 
@@ -143,10 +167,14 @@ export default function Overview() {
   const plannedCashflow = plannedIncome - plannedExpenses
   const budgetRemaining = plannedCashflow - actualCashflow
 
+  const allTimeIncome = income.reduce((sum, i) => sum + (i.amount || 0), 0)
+  const allTimeExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0)
+  const allTimeCashflow = allTimeIncome - allTimeExpenses
+
   const totalAssetValue = assets.reduce((sum, a) => sum + (a.current_value || 0), 0)
   const totalAssetCost = assets.reduce((sum, a) => sum + (a.purchase_price || 0), 0)
   const unrealizedGain = totalAssetValue - totalAssetCost
-  const netWorth = totalAssetValue + actualCashflow
+  const netWorth = totalAssetValue + allTimeCashflow
 
   const savingsRate = actualIncome > 0 ? (actualCashflow / actualIncome) * 100 : 0
 
@@ -189,14 +217,18 @@ export default function Overview() {
 
       const monthIncome = income
         .filter(inc => {
-          const d = new Date(inc.date)
+          if (!inc.date) return false
+          const [y, m, day] = inc.date.split('-').map(Number)
+          const d = new Date(y, m - 1, day)
           return d >= monthStart && d <= monthEnd
         })
         .reduce((sum, inc) => sum + (inc.amount || 0), 0)
 
       const monthExpenses = expenses
         .filter(exp => {
-          const d = new Date(exp.date)
+          if (!exp.date) return false
+          const [y, m, day] = exp.date.split('-').map(Number)
+          const d = new Date(y, m - 1, day)
           return d >= monthStart && d <= monthEnd
         })
         .reduce((sum, exp) => sum + (exp.amount || 0), 0)
@@ -215,17 +247,6 @@ export default function Overview() {
   const topAssets = [...assets]
     .sort((a, b) => (b.current_value || 0) - (a.current_value || 0))
     .slice(0, 5)
-
-  const COLORS = [
-    '#6366f1',
-    '#8b5cf6',
-    '#ec4899',
-    '#f59e0b',
-    '#10b981',
-    '#3b82f6',
-    '#14b8a6',
-    '#f97316'
-  ]
 
   return (
     <>

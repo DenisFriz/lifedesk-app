@@ -1,6 +1,28 @@
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose, { Schema, Model, Types } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import { IContact } from '@/types/index.js';
+
+export interface IContact {
+  _id?: Types.ObjectId;
+  id: string;
+  created_by: string;
+  name: string;
+  relationship: string | null;
+  avatar_color: string | null;
+  birthday: string | null;
+  phone: string | null;
+  email: string | null;
+  location: string | null;
+  notes: string | null;
+  interests: string[];
+  check_in_frequency: string | null;
+  last_contact_date: string | null;
+  status: string;
+  is_deleted: boolean;
+  deleted_at: string | null;
+  deleted_by_process: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export const entityName = 'Contact';
 

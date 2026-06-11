@@ -1,11 +1,10 @@
 import React, { useState, useEffect, createContext, useContext, useCallback, useRef } from 'react'
-import { StickyNote, X, ChevronDown } from 'lucide-react'
+import { X, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
-import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,9 +13,16 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useLayout } from '../../Layout'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useSubscription } from '@/hooks/useSubscription'
 import debounce from 'lodash/debounce'
 import { useToast } from '@/components/ui/use-toast'
+import { syncEntity } from '@/db/syncEntity'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
+import { useNoteMutations } from '@/hooks/notes/useNoteMutations'
+import { CreatNoteInput } from '@/repositories/note.repository'
+import { useAuth } from '@/lib/AuthContext'
+import { NoteRecord } from '@/db'
+import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useNotesQuery } from '@/hooks/notes/useNotesQuery'
 
 interface NotesPanelContextType {
   isOpen: boolean
@@ -28,25 +34,6 @@ const NotesPanelContext = createContext<NotesPanelContextType>({
   setIsOpen: () => {}
 })
 
-interface NotesPanelButtonProps {
-  collapsed: boolean
-}
-
-function NotesPanelButton({ collapsed }: NotesPanelButtonProps) {
-  const { isOpen, setIsOpen } = useContext(NotesPanelContext)
-
-  return (
-    <Button
-      onClick={() => setIsOpen(!isOpen)}
-      size="icon"
-      variant="ghost"
-      className="notes-toggle-btn h-10 w-10 rounded-lg shadow-lg bg-white hover:bg-slate-100 border border-slate-200"
-    >
-      <StickyNote className="w-5 h-5 text-amber-600" />
-    </Button>
-  )
-}
-
 interface NotesPanelContentProps {
   collapsed: boolean
 }
@@ -54,8 +41,6 @@ interface NotesPanelContentProps {
 function NotesPanelContent({ collapsed }: NotesPanelContentProps) {
   const { isOpen, setIsOpen } = useContext(NotesPanelContext)
   const { toast } = useToast()
-  const { limit } = useSubscription()
-  const linesLimit = limit('quick_notes_lines_limit')
   const [content, setContent] = useState('')
   const [savedContent, setSavedContent] = useState('')
   const [isMobile, setIsMobile] = useState(false)
@@ -84,6 +69,10 @@ function NotesPanelContent({ collapsed }: NotesPanelContentProps) {
   const activeTabRef = useRef<string>(activeTab)
   const notesRef = useRef<any[]>([])
 
+  const { canCreate, data: userLimits } = useUserLimit()
+
+  const isOverLimit = !canCreate('notes_words_limit')
+
   useEffect(() => {
     contentRef.current = content
   }, [content])
@@ -94,27 +83,56 @@ function NotesPanelContent({ collapsed }: NotesPanelContentProps) {
     activeTabRef.current = activeTab
   }, [activeTab])
 
-  const { data: notes = [], isSuccess: notesLoaded } = useQuery({
-    queryKey: ['notes'],
-    queryFn: () => backend.entities.Note.list()
-  })
+  const { data: notes = [], isSuccess: notesLoaded } = useNotesQuery()
+
+  const { user } = useAuth()
 
   useEffect(() => {
     notesRef.current = notes
   }, [notes])
 
-  const { data: businesses = [] } = useQuery({
-    queryKey: ['businesses'],
-    queryFn: () => backend.entities.Business.list('order')
-  })
+  useEffect(() => {
+    if (notesLoaded && notes.length > 0) {
+      syncEntity('notes', notes)
+    }
+  }, [notesLoaded])
+
+  const { data: businesses = [] } = useBusinessesQuery()
+
+  const { createMutation, updateMutation } = useNoteMutations()
+
+  const handleCreateNote = async (data: CreatNoteInput) => {
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleUpdateNote = async ({ id, data }: { id: string; data: Partial<NoteRecord> }) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   const updateNoteMutation = useMutation({
     mutationFn: async ({ category, newContent }: { category: string; newContent: string }) => {
       const existingNote = notesRef.current.find(n => n.category === category)
       if (existingNote) {
-        return backend.entities.Note.update(existingNote.id, { content: newContent })
+        return handleUpdateNote({ id: existingNote.id, data: { content: newContent } })
       } else {
-        return backend.entities.Note.create({ category, content: newContent })
+        const business_id = category.startsWith('business-')
+          ? category.slice('business-'.length)
+          : null
+
+        return handleCreateNote({
+          category,
+          content: newContent,
+          business_id,
+          created_by: user.id
+        })
       }
     },
     onSuccess: () => {
@@ -193,7 +211,7 @@ function NotesPanelContent({ collapsed }: NotesPanelContentProps) {
         op => typeof op.insert === 'string' && op.insert.includes('\n')
       )
 
-      if (linesLimit !== Infinity && lineCount > linesLimit) {
+      if (isOverLimit) {
         // Fallback: undo if limit is exceeded (catches paste and other edge cases)
         if (isInsertingNewLines) {
           editor.history.undo()
@@ -202,7 +220,7 @@ function NotesPanelContent({ collapsed }: NotesPanelContentProps) {
         }
       }
 
-      if (linesLimit !== Infinity && isInsertingNewLines && lineCount >= linesLimit) {
+      if (isOverLimit) {
         editor.history.undo()
         showLimitToast()
         return
@@ -330,11 +348,11 @@ function NotesPanelContent({ collapsed }: NotesPanelContentProps) {
 
   const showLimitToast = useCallback(() => {
     toast({
-      title: 'Line limit reached',
-      description: `You've reached the ${linesLimit}-line limit. Upgrade your plan for more lines.`,
+      title: 'Words limit reached',
+      description: `You've reached the ${userLimits?.limits?.notes_words_limit} words limit. Upgrade your plan for more words.`,
       variant: 'destructive'
     })
-  }, [linesLimit, toast])
+  }, [userLimits?.limits?.notes_words_limit, toast])
 
   const modules = React.useMemo(
     () => ({
@@ -350,11 +368,10 @@ function NotesPanelContent({ collapsed }: NotesPanelContentProps) {
           handleEnter: {
             key: 'Enter',
             handler(range) {
-              if (linesLimit === Infinity) return true
               const editor = quillRef.current?.getEditor()
               if (!editor) return true
               const lineCount = editor.getText().split('\n').length - 1
-              if (lineCount >= linesLimit) {
+              if (lineCount >= userLimits?.limits?.notes_words_limit) {
                 showLimitToast()
                 return false
               }
@@ -365,7 +382,7 @@ function NotesPanelContent({ collapsed }: NotesPanelContentProps) {
       },
       clipboard: { matchVisual: false }
     }),
-    [linesLimit, showLimitToast]
+    [userLimits?.limits?.notes_words_limit, showLimitToast]
   )
 
   const { isHidden: isHiddenFromLayout } = useLayout()
@@ -451,17 +468,17 @@ function NotesPanelContent({ collapsed }: NotesPanelContentProps) {
           <div className="px-4 py-3 flex items-center justify-between border-b border-slate-200 flex-shrink-0">
             <h3 className="text-lg font-semibold text-slate-900">Quick Notes</h3>
             <div className="flex items-center gap-2">
-              {linesLimit !== Infinity &&
+              {isOverLimit &&
                 quillRef.current &&
                 (() => {
                   const lines = getCurrentLineCount()
-                  const isNearLimit = lines >= linesLimit * 0.9
-                  const isAtLimit = lines >= linesLimit
+                  const isNearLimit = lines >= userLimits?.limits?.notes_words_limit * 0.9
+                  const isAtLimit = lines >= userLimits?.limits?.notes_words_limit
                   return (
                     <span
                       className={`text-xs font-semibold ${isAtLimit ? 'text-red-600' : isNearLimit ? 'text-amber-600' : 'text-slate-400'}`}
                     >
-                      {lines} / {linesLimit} lines
+                      {lines} / {userLimits?.limits?.notes_words_limit} lines
                     </span>
                   )
                 })()}
@@ -575,17 +592,17 @@ function NotesPanelContent({ collapsed }: NotesPanelContentProps) {
                   <div className="px-4 pt-4 pb-2 flex-shrink-0 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-slate-900">Quick Notes</h3>
                     <div className="flex items-center gap-2">
-                      {linesLimit !== Infinity &&
+                      {isOverLimit &&
                         quillRef.current &&
                         (() => {
                           const lines = getCurrentLineCount()
-                          const isNearLimit = lines >= linesLimit * 0.9
-                          const isAtLimit = lines >= linesLimit
+                          const isNearLimit = lines >= userLimits?.limits?.notes_words_limit * 0.9
+                          const isAtLimit = lines >= userLimits?.limits?.notes_words_limit
                           return (
                             <span
                               className={`text-xs font-semibold ${isAtLimit ? 'text-red-600' : isNearLimit ? 'text-amber-600' : 'text-slate-400'}`}
                             >
-                              {lines} / {linesLimit}
+                              {lines} / {userLimits?.limits?.notes_words_limit}
                             </span>
                           )
                         })()}

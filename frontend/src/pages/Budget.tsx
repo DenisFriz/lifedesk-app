@@ -990,11 +990,11 @@ export default function Budget() {
                           <tbody>
                             {paginatedIncome.map(income => (
                               <tr
-                                key={income.id}
+                                key={income._id}
                                 className="border-b border-slate-100 hover:bg-slate-50"
                               >
                                 <td className="px-4 py-3 align-top w-56">
-                                  {editingField === `${income.id}-title` ? (
+                                  {editingField === `${income._id}-title` ? (
                                     <Input
                                       value={editValue}
                                       onChange={e => setEditValue(e.target.value)}
@@ -1006,7 +1006,7 @@ export default function Budget() {
                                     />
                                   ) : (
                                     <div
-                                      onClick={() => startEdit(income.id, 'title', income.title)}
+                                      onClick={() => startEdit(income._id, 'title', income.title)}
                                       className="cursor-text font-medium text-slate-900 hover:bg-slate-100 px-2 py-1 rounded line-clamp-2"
                                     >
                                       {income.title}
@@ -1014,7 +1014,7 @@ export default function Budget() {
                                   )}
                                 </td>
                                 <td className="px-4 py-3 align-top w-32">
-                                  {editingField === `${income.id}-amount` ? (
+                                  {editingField === `${income._id}-amount` ? (
                                     <Input
                                       type="text"
                                       value={editValue}
@@ -1031,7 +1031,7 @@ export default function Budget() {
                                     />
                                   ) : (
                                     <div
-                                      onClick={() => startEdit(income.id, 'amount', income.amount)}
+                                      onClick={() => startEdit(income._id, 'amount', income.amount)}
                                       className="cursor-text font-semibold text-emerald-600 hover:bg-slate-100 px-2 py-1 rounded"
                                     >
                                       +{formatCurrency(income.amount)}
@@ -1039,13 +1039,13 @@ export default function Budget() {
                                   )}
                                 </td>
                                 <td className="px-4 py-3 align-top w-32">
-                                  {editingField === `${income.id}-frequency` ? (
+                                  {editingField === `${income._id}-frequency` ? (
                                     <Select
                                       value={editValue}
                                       onValueChange={value => {
                                         setEditValue(value)
                                         updateRecurringIncomeMutation.mutate({
-                                          id: income.id,
+                                          id: income._id,
                                           data: { frequency: value }
                                         })
                                         setEditingField(null)
@@ -1069,7 +1069,7 @@ export default function Budget() {
                                   ) : (
                                     <div
                                       onClick={() =>
-                                        startEdit(income.id, 'frequency', income.frequency)
+                                        startEdit(income._id, 'frequency', income.frequency)
                                       }
                                       className="cursor-pointer text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded"
                                     >
@@ -1082,7 +1082,7 @@ export default function Budget() {
                                   )}
                                 </td>
                                 <td className="px-4 py-3 align-top w-40">
-                                  {editingField === `${income.id}-start_date` ? (
+                                  {editingField === `${income._id}-start_date` ? (
                                     <div className="text-sm">
                                       <Input
                                         type="date"
@@ -1090,7 +1090,7 @@ export default function Budget() {
                                         onChange={e => setEditValue(e.target.value)}
                                         onBlur={() => {
                                           updateRecurringIncomeMutation.mutate({
-                                            id: income.id,
+                                            id: income._id,
                                             data: { start_date: editValue }
                                           })
                                           setEditingField(null)
@@ -1098,7 +1098,7 @@ export default function Budget() {
                                         onKeyDown={e => {
                                           if (e.key === 'Enter') {
                                             updateRecurringIncomeMutation.mutate({
-                                              id: income.id,
+                                              id: income._id,
                                               data: { start_date: editValue }
                                             })
                                             setEditingField(null)
@@ -1113,7 +1113,7 @@ export default function Budget() {
                                   ) : (
                                     <div
                                       onClick={() =>
-                                        startEdit(income.id, 'start_date', income.start_date)
+                                        startEdit(income._id, 'start_date', income.start_date)
                                       }
                                       className="text-sm text-slate-600 px-2 py-1 rounded cursor-pointer hover:bg-slate-100"
                                     >
@@ -1123,13 +1123,13 @@ export default function Budget() {
                                 </td>
                                 {!businessId && (
                                   <td className="px-4 py-3 align-top w-32">
-                                    {editingField === `${income.id}-business_id` ? (
+                                    {editingField === `${income._id}-business_id` ? (
                                       <Select
                                         value={editValue || '__private__'}
                                         onValueChange={value => {
                                           setEditValue(value)
                                           updateRecurringIncomeMutation.mutate({
-                                            id: income.id,
+                                            id: income._id,
                                             data: {
                                               business_id: value === '__private__' ? null : value,
                                               category: ''
@@ -1160,7 +1160,7 @@ export default function Budget() {
                                       <div
                                         onClick={() =>
                                           startEdit(
-                                            income.id,
+                                            income._id,
                                             'business_id',
                                             income.business_id ? String(income.business_id) : ''
                                           )
@@ -1177,13 +1177,13 @@ export default function Budget() {
                                   </td>
                                 )}
                                 <td className="px-4 py-3 align-top w-40">
-                                  {editingField === `${income.id}-category` ? (
+                                  {editingField === `${income._id}-category` ? (
                                     <Select
                                       value={editValue}
                                       onValueChange={value => {
                                         setEditValue(value)
                                         updateRecurringIncomeMutation.mutate({
-                                          id: income.id,
+                                          id: income._id,
                                           data: { category: value }
                                         })
                                       }}
@@ -1232,7 +1232,7 @@ export default function Budget() {
                                   ) : (
                                     <div
                                       onClick={() =>
-                                        startEdit(income.id, 'category', income.category || '')
+                                        startEdit(income._id, 'category', income.category || '')
                                       }
                                       className="cursor-pointer text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded"
                                     >
@@ -1245,7 +1245,7 @@ export default function Budget() {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8"
-                                    onClick={() => deleteRecurringIncomeMutation.mutate(income.id)}
+                                    onClick={() => deleteRecurringIncomeMutation.mutate(income._id)}
                                   >
                                     <Trash2 className="h-4 w-4 text-rose-500" />
                                   </Button>

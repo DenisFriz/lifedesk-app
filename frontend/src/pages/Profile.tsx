@@ -562,7 +562,7 @@ export default function Profile() {
                         <div key={comment.id} className="p-3 rounded-lg bg-slate-50">
                           <p className="text-sm text-slate-700 line-clamp-2">{comment.content}</p>
                           <p className="text-xs text-slate-400 mt-1">
-                            {format(new Date(comment.created_date), 'MMM d, yyyy')}
+                            {format(new Date(comment.createdAt), 'MMM d, yyyy')}
                           </p>
                         </div>
                       ))}

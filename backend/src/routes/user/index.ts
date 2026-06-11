@@ -164,7 +164,9 @@ router.get(
       healthTrackingEnties: userUsed.healthTrackingEnties ?? 0,
       communityIdeas: userUsed.communityIdeas ?? 0,
       relationships: userUsed.relationships ?? 0,
+      notes_words_limit: userUsed.notes_words_limit ?? 0,
       community_comment: userUsed.community_comment ?? false,
+      community_like: userUsed.community_like ?? false,
       ai_assistant: currentPlanLimits.ai_assistant ?? false,
     };
 

@@ -86,6 +86,17 @@ api.interceptors.response.use(
       })
     }
 
+    if (
+      originalRequest?.url?.includes('/auth/login') ||
+      originalRequest?.url?.includes('/auth/google')
+    ) {
+      return Promise.reject({
+        message: data?.error || error.message,
+        status,
+        data
+      })
+    }
+
     if (originalRequest._retry) {
       clearToken()
       return Promise.reject({

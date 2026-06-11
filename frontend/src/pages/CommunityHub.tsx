@@ -88,9 +88,11 @@ export default function CommunityHub() {
   const { data: myVotes = [] } = useQuery<CommunityVote[]>({
     queryKey: ['community_votes', user?.email],
     queryFn: () =>
-      backend.entities.CommunityVote.filter({
-        user_email: user?.email
-      }) as Promise<CommunityVote[]>,
+      (
+        backend.entities.CommunityVote.filter({
+          user_email: user?.email
+        }) as Promise<any[]>
+      ).then(records => records.map(r => ({ ...r, id: String(r._id) }))),
     enabled: !!user?.email
   })
 
@@ -172,7 +174,11 @@ export default function CommunityHub() {
   // Comment
   const commentMutation = useMutation({
     mutationFn: async (content: string) => {
-      await backend.entities.CommunityComment.create({ idea_id: selectedIdea.id, content })
+      await backend.entities.CommunityComment.create({
+        idea_id: selectedIdea.id,
+        content,
+        author_display_name: user.full_name
+      })
       await backend.entities.CommunityIdea.update(selectedIdea.id, {
         comments_count: (selectedIdea.comments_count || 0) + 1
       })
@@ -463,7 +469,7 @@ export default function CommunityHub() {
             onStatusChange={(idea, status) => statusMutation.mutate({ idea, status })}
             isAdmin={isAdmin}
             isLoading={commentMutation.isPending}
-            canLike={can('community_like')}
+            canLike={canCreate('community_like')}
             canComment={canCreate('community_comment')}
           />
         </div>

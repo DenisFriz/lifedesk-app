@@ -114,7 +114,8 @@ export default function AddToBudgetModal({
         formData.business_id === '' || formData.business_id === '__private__'
           ? null
           : formData.business_id,
-      created_by: user.id
+      created_by: user.id,
+      active: true
     }
     if (isIncome) {
       await handleCreateRecurringIncome(payload)

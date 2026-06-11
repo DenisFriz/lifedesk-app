@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '@/api/apiClient'
 import { Mail, Lock } from 'lucide-react'
@@ -32,7 +32,7 @@ export default function Register() {
 
   const { login } = useAuth()
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
     setIsLoading(true)
@@ -57,7 +57,29 @@ export default function Register() {
       await login(data.accessToken)
       navigate('/home', { replace: true })
     } catch (err) {
-      setError(err.data.message || err.message || 'Registration failed')
+      const data = err.data
+
+      if (data) {
+        const messages: string[] = []
+
+        Object.values(data).forEach((field: any) => {
+          if (field?._errors) {
+            messages.push(...field._errors)
+          }
+        })
+
+        if (messages.length > 0) {
+          setError(messages.join(', '))
+        } else {
+          setError(err.message || 'Registration failed')
+        }
+
+        if (data?.message) {
+          setError(data.message)
+        }
+      } else {
+        setError(err.message || 'Registration failed')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -148,8 +170,9 @@ export default function Register() {
               />
 
               <form onSubmit={handleSubmit} className="mt-4 space-y-3 sm:space-y-4">
+                {/* Error */}
                 {error && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  <div className="text-center rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                     {error}
                   </div>
                 )}

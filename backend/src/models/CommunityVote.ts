@@ -1,16 +1,15 @@
 import mongoose, { Schema, Model, Types } from 'mongoose';
 
-export interface ICommunityComment {
+export interface ICommunityVote {
   _id: Types.ObjectId;
   idea_id: Types.ObjectId;
   created_by: Types.ObjectId;
-  content: string;
-  author_display_name: string | null;
+  user_email: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const communityCommentSchema = new Schema<ICommunityComment>(
+const communityVoteSchema = new Schema<ICommunityVote>(
   {
     idea_id: {
       type: Schema.Types.ObjectId,
@@ -18,24 +17,16 @@ const communityCommentSchema = new Schema<ICommunityComment>(
       required: true,
       index: true,
     },
-
     created_by: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-
-    content: {
+    user_email: {
       type: String,
       required: true,
       trim: true,
-      maxlength: 5000,
-    },
-
-    author_display_name: {
-      type: String,
-      default: null,
-      maxlength: 255,
+      lowercase: true,
     },
   },
   {
@@ -44,5 +35,8 @@ const communityCommentSchema = new Schema<ICommunityComment>(
   },
 );
 
-export const CommunityComment: Model<ICommunityComment> =
-  mongoose.model<ICommunityComment>('CommunityComment', communityCommentSchema);
+// Prevent a user from voting on the same idea twice
+communityVoteSchema.index({ idea_id: 1, user_email: 1 }, { unique: true });
+
+export const CommunityVote: Model<ICommunityVote> =
+  mongoose.model<ICommunityVote>('CommunityVote', communityVoteSchema);

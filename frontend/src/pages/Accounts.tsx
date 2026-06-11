@@ -39,6 +39,7 @@ import { useOfflineAccountMutations } from '@/hooks/offlineaccounts/useOfflineAc
 import { CreateOfflineAccountInput } from '@/repositories/offline-account.repository'
 import { OfflineAccountRecord } from '@/db'
 import { useAuth } from '@/lib/AuthContext'
+import { useOfflineAccountSnapshotsQuery } from '@/hooks/offlineaccountsnapshot/useOfflineAccountSnapshots'
 
 const CHANGE_PERIOD_OPTIONS = [
   { value: 'this_month', label: 'This Month' },
@@ -279,13 +280,6 @@ function OfflineAccountCard({ account, latestBalance, onEdit, onDelete, isOverLi
   )
 }
 
-type OfflineAccountSnapshot = {
-  id: string
-  account_id: string
-  balance: number
-  date: string
-}
-
 type BankAccount = {
   account_id: string
   name: string
@@ -323,13 +317,7 @@ export default function Accounts() {
 
   const { data: offlineAccounts = [] } = useOfflineAccountsQuery()
 
-  const { data: allSnapshots = [] } = useQuery<OfflineAccountSnapshot[]>({
-    queryKey: ['offlineAccountSnapshots'],
-    queryFn: () =>
-      backend.entities.OfflineAccountSnapshot.list('-date', 1000) as Promise<
-        OfflineAccountSnapshot[]
-      >
-  })
+  const { data: allSnapshots = [] } = useOfflineAccountSnapshotsQuery()
 
   // Compute latest snapshot balance per account
   const latestBalanceByAccount = useMemo(() => {
@@ -397,6 +385,7 @@ export default function Accounts() {
 
   const totalOfflineBalance = offlineAccounts.reduce((sum, a) => {
     const snap = latestBalanceByAccount[a.id]
+    console.log('snap: ', snap)
     return sum + (snap ? snap.balance : 0)
   }, 0)
 
@@ -408,7 +397,7 @@ export default function Accounts() {
     const endStr = format(rangeEnd, 'yyyy-MM-dd')
 
     // Group all snapshots by account
-    const byAccount: Record<string, OfflineAccountSnapshot[]> = {}
+    const byAccount: Record<string, any> = {}
     allSnapshots.forEach(s => {
       if (!byAccount[s.account_id]) byAccount[s.account_id] = []
       byAccount[s.account_id].push(s)

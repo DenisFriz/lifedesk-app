@@ -31,6 +31,8 @@ export { BankBalanceSnapshot } from './BankBalanceSnapshot.js';
 export { TimeEntry } from './TimeEntry.js';
 export { Subscription } from './Subscription.js';
 export { RelationShip } from './RelationShip.js';
+export { CommunityVote } from './CommunityVote.js';
+export { CalculationHistory } from './CalculationHistory.js';
 
 import mongoose from 'mongoose';
 import { User } from './User.js';
@@ -72,6 +74,8 @@ import { Estate } from './Estate.js';
 import { OtherAsset } from './OtherAsset.js';
 import { RelationShip } from './RelationShip.js';
 import { OfflineAccountSnapshot } from './OfflineAccountSnapshot.js';
+import { CommunityVote } from './CommunityVote.js';
+import { CalculationHistory } from './CalculationHistory.js';
 
 export const modelMap: Record<string, mongoose.Model<any>> = {
   user: User,
@@ -112,4 +116,6 @@ export const modelMap: Record<string, mongoose.Model<any>> = {
   timeentry: TimeEntry,
   userplan: UserPlan,
   communityidea: CommunityIdea,
+  communityvote: CommunityVote,
+  calculationhistory: CalculationHistory,
 };

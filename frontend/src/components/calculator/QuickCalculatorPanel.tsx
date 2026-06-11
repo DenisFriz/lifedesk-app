@@ -28,6 +28,49 @@ type ExchangeRatesResponse = {
   rates: Record<string, number>
 }
 
+const fallbackSymbols = {
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  JPY: '¥',
+  AUD: 'A$',
+  CAD: 'C$',
+  CHF: 'Fr',
+  CNY: '¥',
+  HKD: 'HK$',
+  NZD: 'NZ$',
+  SEK: 'kr',
+  KRW: '₩',
+  SGD: 'S$',
+  NOK: 'kr',
+  MXN: '$',
+  INR: '₹',
+  RUB: '₽',
+  ZAR: 'R',
+  TRY: '₺',
+  BRL: 'R$',
+  TWD: 'NT$',
+  DKK: 'kr',
+  PLN: 'zł',
+  THB: '฿',
+  IDR: 'Rp',
+  HUF: 'Ft',
+  CZK: 'Kč',
+  ILS: '₪',
+  CLP: '$',
+  PHP: '₱',
+  AED: 'د.إ',
+  COP: '$',
+  SAR: '﷼',
+  MYR: 'RM',
+  RON: 'lei',
+  ARS: '$',
+  VND: '₫',
+  BGN: 'лв',
+  UAH: '₴',
+  EGP: 'E£'
+} as const
+
 export default function QuickCalculatorPanel({
   collapsed,
   isOpen,
@@ -58,7 +101,6 @@ export default function QuickCalculatorPanel({
 
   // Converter state
   const [convertFrom, setConvertFrom] = useState('')
-  const [convertTo, setConvertTo] = useState('')
   const [conversionType, setConversionType] = useState('currency')
   const [fromUnit, setFromUnit] = useState('EUR')
   const [toUnit, setToUnit] = useState('USD')
@@ -401,48 +443,6 @@ export default function QuickCalculatorPanel({
   }
 
   // Fallback symbols for fiat currencies
-  const fallbackSymbols = {
-    USD: '$',
-    EUR: '€',
-    GBP: '£',
-    JPY: '¥',
-    AUD: 'A$',
-    CAD: 'C$',
-    CHF: 'Fr',
-    CNY: '¥',
-    HKD: 'HK$',
-    NZD: 'NZ$',
-    SEK: 'kr',
-    KRW: '₩',
-    SGD: 'S$',
-    NOK: 'kr',
-    MXN: '$',
-    INR: '₹',
-    RUB: '₽',
-    ZAR: 'R',
-    TRY: '₺',
-    BRL: 'R$',
-    TWD: 'NT$',
-    DKK: 'kr',
-    PLN: 'zł',
-    THB: '฿',
-    IDR: 'Rp',
-    HUF: 'Ft',
-    CZK: 'Kč',
-    ILS: '₪',
-    CLP: '$',
-    PHP: '₱',
-    AED: 'د.إ',
-    COP: '$',
-    SAR: '﷼',
-    MYR: 'RM',
-    RON: 'lei',
-    ARS: '$',
-    VND: '₫',
-    BGN: 'лв',
-    UAH: '₴',
-    EGP: 'E£'
-  }
 
   // Get fiat symbol using Intl.NumberFormat
   const getFiatSymbol = code => {
@@ -1030,7 +1030,10 @@ export default function QuickCalculatorPanel({
                   ) : (
                     <div className="space-y-2">
                       {history.map(item => (
-                        <div key={item.id} className="bg-slate-50 rounded-lg p-3 text-sm space-y-1">
+                        <div
+                          key={item._id}
+                          className="bg-slate-50 rounded-lg p-3 text-sm space-y-1"
+                        >
                           <div className="flex items-center justify-between">
                             <span className="font-medium capitalize">{item.type}</span>
                             <div className="flex gap-1">
@@ -1055,7 +1058,7 @@ export default function QuickCalculatorPanel({
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6 text-red-600 hover:text-red-700"
-                                onClick={() => deleteCalculationMutation.mutate(item.id)}
+                                onClick={() => deleteCalculationMutation.mutate(item._id)}
                               >
                                 <Trash2 className="w-3 h-3" />
                               </Button>

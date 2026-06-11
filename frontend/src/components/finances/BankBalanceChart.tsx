@@ -244,9 +244,9 @@ export default function BankBalanceChart({
   const [timePeriod, setTimePeriod] = useState('this_year')
 
   const { data: bankSnapshots = [], isLoading: isBankLoading } = useQuery<BankBalanceSnapshot[]>({
-    queryKey: ['bankBalanceSnapshots'],
+    queryKey: ['bankBalanceSnapshots', 2000],
     queryFn: () =>
-      backend.entities.BankBalanceSnapshot.list('-date', 500) as Promise<BankBalanceSnapshot[]>
+      backend.entities.BankBalanceSnapshot.list('-date', 2000) as Promise<BankBalanceSnapshot[]>
   })
 
   const { data: offlineSnapshotsRaw = [], isLoading: isOfflineSnapshotsLoading } =

@@ -98,9 +98,9 @@ export default function TimeReports() {
     return project?.name || 'No Project'
   }
 
-  const formatDuration = minutes => {
-    const hrs = Math.floor(minutes / 60)
-    const mins = minutes % 60
+  const formatDuration = seconds => {
+    const hrs = Math.floor(seconds / 3600)
+    const mins = Math.floor((seconds % 3600) / 60)
     return `${hrs}h ${mins}m`
   }
 
@@ -109,7 +109,7 @@ export default function TimeReports() {
       'Date',
       'Start Time',
       'End Time',
-      'Duration (min)',
+      'Duration (sec)',
       'Client',
       'Project',
       'Description',

@@ -156,12 +156,20 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
   const resumeEntryMutation = useMutation({
     mutationFn: (entry: any) => {
       const now = new Date()
-      return backend.entities.TimeEntry.update(entry.serverId || entry.id, {
+      return handleUpdateTimeEntry({
+        id: entry.serverId || entry.id,
+        data: {
+          date: format(now, 'yyyy-MM-dd'),
+          start_time: format(now, 'HH:mm:ss'),
+          end_time: null,
+          is_running: true
+        }
+      }) /*  backend.entities.TimeEntry.update(entry.serverId || entry.id, {
         date: format(now, 'yyyy-MM-dd'),
         start_time: format(now, 'HH:mm:ss'),
         end_time: null,
         is_running: true
-      })
+      }) */
     },
     onSuccess: (_, entry) => {
       queryClient.invalidateQueries({ queryKey: ['runningTimeEntry'] })
@@ -408,9 +416,9 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
     if (editStartTime && editEndTime) {
       const [startH, startM, startS] = editStartTime.split(':').map(Number)
       const [endH, endM, endS] = editEndTime.split(':').map(Number)
-      const startMinutes = startH * 60 + startM + (startS || 0) / 60
-      const endMinutes = endH * 60 + endM + (endS || 0) / 60
-      duration = Math.round(endMinutes - startMinutes)
+      const startSecs = startH * 3600 + startM * 60 + (startS || 0)
+      const endSecs = endH * 3600 + endM * 60 + (endS || 0)
+      duration = Math.round(endSecs - startSecs)
     }
 
     handleUpdateTimeEntry({
@@ -455,10 +463,14 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
   }
 
   const formatDuration = (duration: number | undefined): string => {
-    if (!duration) return '00:00'
-    const hours = Math.floor(duration / 60)
-    const minutes = Math.round(duration % 60)
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+    if (!duration) return '0:00'
+    const hours = Math.floor(duration / 3600)
+    const minutes = Math.floor((duration % 3600) / 60)
+    const seconds = duration % 60
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+    }
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`
   }
 
   // Determine if filtered section is a business

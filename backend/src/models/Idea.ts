@@ -1,6 +1,23 @@
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose, { Schema, Model, Types } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import { IIdea } from '@/types/index.js';
+
+export interface IIdea {
+  _id?: Types.ObjectId;
+  id: string;
+  created_by: string;
+  title: string;
+  business_id: string | null;
+  description: string | null;
+  category: string | null;
+  priority: string;
+  status: string;
+  potential_impact: string | null;
+  is_deleted: boolean;
+  deleted_at: string | null;
+  deleted_by_process: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 const ideaSchema = new Schema<IIdea>(
   {

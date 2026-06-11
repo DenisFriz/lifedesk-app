@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 import { backend } from '@/api/backend'
-import type { User } from '@/types'
 
 interface UserPlan {
   plan_name: string

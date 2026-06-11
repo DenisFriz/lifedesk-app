@@ -12,6 +12,7 @@ import {
   normalizeMarketingContent,
   normalizeMarketingStrategy,
   normalizeMedicalDocument,
+  normalizeNote,
   normalizeOtherAsset,
   normalizeProblem,
   normalizeProgressPhoto,
@@ -122,6 +123,10 @@ const syncMap: Record<string, SyncEntityMap> = {
   marketingcontents: {
     table: db.marketingcontents,
     normalize: normalizeMarketingContent
+  },
+  notes: {
+    table: db.notes,
+    normalize: normalizeNote
   }
 }
 
