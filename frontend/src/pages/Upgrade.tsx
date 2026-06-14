@@ -32,7 +32,7 @@ const FREE_FEATURES = [
   '1 Business / 5 Projects & Clients',
   '1 Marketing Strategy / 1 Campaign / 1 Content',
   'Community (Read Only)'
-]
+] as const
 
 const PLUS_FEATURES = [
   '100 Goals / 200 Tasks',
@@ -51,7 +51,7 @@ const PLUS_FEATURES = [
   '3 Businesses / Budget / 50 Projects & Clients',
   '5 Marketing Strategies / 5 Campaigns / 5 Content',
   'Full Community Access (Like, Comment, Submit)'
-]
+] as const
 
 const PRO_FEATURES = [
   'Unlimited Goals, Tasks, Calendar & Events',
@@ -71,7 +71,7 @@ const PRO_FEATURES = [
   'Unlimited Projects & Clients',
   'Unlimited Marketing Strategies, Campaigns & Content',
   'Full Community Access'
-]
+] as const
 
 type Subscription = {
   id?: string
@@ -117,12 +117,6 @@ export default function Upgrade() {
     })
 
   const { user, authError } = useAuth()
-
-  /*   const { data: user, error: userError } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => backend.user.me(),
-    retry: 1
-  }) */
 
   const { data: subscription = null, error: subError } = useQuery<Subscription | null, Error>({
     queryKey: ['subscription', user?.email],

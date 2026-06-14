@@ -32,8 +32,11 @@ export function UserLimitProvider({ children }: Props) {
       const limit = data.limits[key]
       const used = data.usage[key]
 
-      if (limit === null) return true
-      return used < limit
+      if (limit === null) {
+        if (typeof used === 'boolean') return used
+        return true
+      }
+      return (used as number) < (limit as number)
     },
     [data]
   )

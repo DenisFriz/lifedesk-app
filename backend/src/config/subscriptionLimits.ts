@@ -45,6 +45,7 @@ export type SubscriptionLimits = {
   communityIdeas?: number;
   notes_words_limit: number;
   unlimited?: boolean;
+  push_notifications: boolean;
 };
 
 export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
@@ -93,6 +94,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       communityIdeas: 5,
       notes_words_limit: 1000,
       ai_assistant: false,
+      push_notifications: false,
     },
     plus: {
       goals: 100,
@@ -138,6 +140,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       communityComment: true,
       communityIdeas: 10,
       notes_words_limit: 25000,
+      push_notifications: true,
     },
     pro: {
       goals: 1000,
@@ -154,5 +157,6 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       communityComment: true,
       notes_words_limit: 100000,
       unlimited: true,
+      push_notifications: true,
     },
   };

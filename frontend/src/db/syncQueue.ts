@@ -147,8 +147,10 @@ export async function processSyncQueue(queryClient?: QueryClient): Promise<void>
             const rawId = id || serverId
             const realId = resolvedIds.get(rawId) ?? rawId
 
-            await entity.update(realId, data)
-            queryClient.invalidateQueries({ queryKey: [item.entityName] })
+            if (!isOptimisticId(realId)) {
+              await entity.update(realId, data)
+              queryClient.invalidateQueries({ queryKey: [item.entityName] })
+            }
           }
 
           // =========================

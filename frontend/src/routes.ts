@@ -84,6 +84,7 @@ import Workouts from './pages/Workouts'
 
 import ResetPassword from './pages/ResetPassword'
 import ForgotPassword from './pages/ForgotPassword'
+import AuthCallback from './pages/AuthCallback'
 
 interface AppRoute {
   path: string
@@ -204,5 +205,6 @@ export const authRoutes: AppRoute[] = [
   { path: '/register', name: 'Register', element: Register },
   { path: '/forgot-password', name: 'ForgotPassword', element: ForgotPassword },
   { path: '/reset-password', name: 'ResetPassword', element: ResetPassword },
-  { path: '/page-not-found', name: 'PageNotFound', element: PageNotFound }
+  { path: '/page-not-found', name: 'PageNotFound', element: PageNotFound },
+  { path: '/auth/callback', name: 'AuthCallback', element: AuthCallback }
 ]

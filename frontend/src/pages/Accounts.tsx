@@ -548,9 +548,14 @@ export default function Accounts() {
           )}
 
           {/* Balance Over Time Chart */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
-            <BankBalanceChart income={income} expenses={expenses} />
-          </div>
+          {(bankAccounts.length > 0 ||
+            offlineAccounts.length > 0 ||
+            income.length > 0 ||
+            expenses.length > 0) && (
+            <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+              <BankBalanceChart income={income} expenses={expenses} />
+            </div>
+          )}
 
           {/* Connected Bank Accounts with Monthly Tables */}
           {bankAccounts.length > 0 && (
@@ -588,7 +593,7 @@ export default function Accounts() {
                     latestBalance={latestBalanceByAccount[account.id]?.balance ?? null}
                     onEdit={setEditingAccount}
                     onDelete={id => handleDeleteOfflineAccount(id)}
-                    isOverLimit={!atLimit}
+                    isOverLimit={atLimit}
                   />
                 ))}
               </div>

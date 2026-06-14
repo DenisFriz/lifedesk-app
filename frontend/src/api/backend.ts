@@ -62,6 +62,7 @@ export type UsageKey =
   | 'community_like'
   | 'notes_words_limit'
   | 'ai_assistant'
+  | 'push_notifications'
   | 'content'
 
 type UsageMap = Record<UsageKey, number>

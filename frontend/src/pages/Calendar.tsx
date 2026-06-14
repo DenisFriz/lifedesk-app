@@ -68,6 +68,7 @@ import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
 import { useGoalMutations } from '@/hooks/goals/useGoalMutations'
 import { useWorkoutPlansQuery } from '@/hooks/workoutplans/useWorkoutPlansQuery'
 import { useEventMutations } from '@/hooks/events/useEventMutations'
+import { useUserLimit } from '@/contexts/UserLimitContext'
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -154,7 +155,7 @@ export default function Calendar() {
   })
   const weekViewRef = useRef(null)
 
-  const { can } = useSubscription()
+  const { canCreate } = useUserLimit()
 
   const { data: tasks = [] } = useTasksQuery()
 
@@ -959,7 +960,7 @@ export default function Calendar() {
             </h1>
             <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
               <UpgradeGate
-                enabled={can('home_push_notifications')}
+                enabled={canCreate('push_notifications')}
                 message="Push Notifications require a paid plan. Upgrade to stay on top of your schedule."
                 inline
               >

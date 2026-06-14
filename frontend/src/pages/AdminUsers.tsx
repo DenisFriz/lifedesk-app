@@ -24,11 +24,6 @@ export default function AdminUsers() {
 
   const { user } = useAuth()
 
-  /*   const { data: currentUser } = useQuery<User>({
-    queryKey: ['currentUser'],
-    queryFn: () => backend.user.me()
-  }) */
-
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['allUsers'],
     queryFn: () => backend.entities.User.list() as Promise<User[]>,

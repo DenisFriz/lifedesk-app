@@ -25,8 +25,7 @@ export type UsageKey =
   | 'timeEntries'
   | 'content'
   | 'communityIdeas'
-  | 'notes_words_limit'
-  | 'ai_assistant';
+  | 'notes_words_limit';
 
 export interface IUserUsage {
   user_id: Types.ObjectId;
@@ -62,7 +61,6 @@ export interface IUserUsage {
   community_comment: boolean;
   community_like: boolean;
   notes_words_limit: number;
-  ai_assistant: boolean;
   updated_at: string;
   created_at: string;
 }
@@ -114,7 +112,6 @@ const UserUsageSchema = new Schema<IUserUsageDocument>(
     notes_words_limit: { type: Number, default: 0 },
     community_comment: { type: Boolean, default: false },
     community_like: { type: Boolean, default: false },
-    ai_assistant: { type: Boolean, default: false },
   },
   {
     timestamps: true,

@@ -24,6 +24,7 @@ import { issueAuthSession } from '@/utils/issueAuthSession.js';
 import { validate } from '@/utils/validate.js';
 import {
   forgotPasswordSchema,
+  googleCallbackSchema,
   googleLoginSchema,
   loginUserSchema,
   registerUserSchema,
@@ -31,7 +32,10 @@ import {
 } from '@/schemas/auth.schema.js';
 import z from 'zod';
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+);
 
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -240,6 +244,69 @@ router.post(
       accessToken,
       user: userResponse,
     });
+  }),
+);
+
+// GOOGLE OAUTH2 CALLBACK (authorization code flow)
+router.post(
+  '/google/callback',
+  validate(googleCallbackSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { code, redirectUri } = req.body as { code: string; redirectUri: string };
+
+    const { tokens } = await googleClient.getToken({ code, redirect_uri: redirectUri });
+
+    const idToken = tokens.id_token;
+    if (!idToken) {
+      throw new AppError('No ID token in Google response', 401);
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload) {
+      throw new AppError('Invalid Google token', 401);
+    }
+
+    const { sub, email, name, picture, email_verified } = payload;
+
+    if (!email) {
+      throw new AppError('Google account has no email', 400);
+    }
+
+    let user = await User.findOne({ $or: [{ google_id: sub }, { email }] });
+
+    if (!user) {
+      user = await User.create({
+        email,
+        full_name: name,
+        google_id: sub,
+        google_avatar_url: picture,
+        auth_provider: 'google',
+        email_verified,
+        passwordHash: null,
+      });
+    } else {
+      if (!user.google_id) {
+        user.google_id = sub;
+        user.google_avatar_url = picture ?? null;
+        user.auth_provider = 'google';
+        user.email_verified = true;
+        await user.save();
+      }
+    }
+
+    const [{ accessToken }] = await Promise.all([
+      issueAuthSession(user._id.toString(), res),
+      ensureUserUsage(user._id.toString()),
+    ]);
+
+    const userResponse = sanitizeUser(user);
+
+    res.json({ accessToken, user: userResponse });
   }),
 );
 

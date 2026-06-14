@@ -1,7 +1,12 @@
 import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits.js';
 import { modelMap } from '@/models/index.js';
 import { UsageKey, UserUsage } from '@/models/UserUsage.js';
-import { Router, type Request, type Response } from 'express';
+import {
+  Router,
+  type Request,
+  type Response,
+  type NextFunction,
+} from 'express';
 import { Types } from 'mongoose';
 import { cloudinary } from '@/lib/cloudinary.js';
 
@@ -86,42 +91,26 @@ function sanitizeInput(data: any): Record<string, any> {
   return sanitized;
 }
 
-router.use((req: Request, res: Response, next) => {
-  let entity = req.params.entity;
+router.param(
+  'entity',
+  (req: Request, res: Response, next: NextFunction, entity: string) => {
+    const modelKey = entity.toLowerCase();
 
-  if (Array.isArray(entity)) {
-    entity = entity[0];
-  }
+    if (!modelMap[modelKey]) {
+      return res.status(404).json({
+        error: `Unknown entity: ${modelKey}`,
+      });
+    }
 
-  if (!entity) return next();
+    req.model = modelMap[modelKey];
 
-  const modelKey = entity.toLowerCase();
-
-  if (!modelMap[modelKey]) {
-    return res.status(404).json({
-      error: `Unknown entity: ${modelKey}`,
-    });
-  }
-
-  next();
-});
+    next();
+  },
+);
 
 router.get('/:entity', async (req: Request, res: Response) => {
   try {
-    let { entity } = req.params;
-
-    if (Array.isArray(entity)) {
-      entity = entity[0];
-    }
-
-    entity = entity.toLowerCase();
-
-    const Model = modelMap[entity];
-
-    if (!Model) {
-      return res.status(400).json({ error: `Unknown entity: ${entity}` });
-    }
-
+    const Model = req.model;
     const records = await Model.find({ created_by: req.user._id }).lean();
 
     res.json(records);
@@ -132,18 +121,7 @@ router.get('/:entity', async (req: Request, res: Response) => {
 
 router.post('/:entity/filter', async (req: Request, res: Response) => {
   try {
-    let { entity } = req.params;
-
-    if (Array.isArray(entity)) {
-      entity = entity[0];
-    }
-
-    const modelKey = entity.toLowerCase();
-
-    const Model = modelMap[modelKey];
-    if (!Model) {
-      return res.status(400).json({ error: `Unknown entity: ${modelKey}` });
-    }
+    const Model = req.model;
 
     const conditions = {
       ...sanitizeInput(req.body),
@@ -160,18 +138,8 @@ router.post('/:entity/filter', async (req: Request, res: Response) => {
 
 router.get('/:entity/:id', async (req: Request, res: Response) => {
   try {
-    const entityParam = req.params.entity;
     const id = req.params.id;
-
-    const entity = Array.isArray(entityParam) ? entityParam[0] : entityParam;
-
-    const modelKey = entity.toLowerCase();
-
-    const Model = modelMap[modelKey];
-
-    if (!Model) {
-      return res.status(400).json({ error: `Unknown entity: ${modelKey}` });
-    }
+    const Model = req.model;
 
     const record = await Model.findOne({ id }).lean();
 
@@ -193,15 +161,8 @@ router.post('/:entity', async (req: Request, res: Response) => {
   try {
     const entityParam = req.params.entity;
     const entity = Array.isArray(entityParam) ? entityParam[0] : entityParam;
-
     const modelKey = entity.toLowerCase();
-    const Model = modelMap[modelKey];
-
-    if (!Model) {
-      return res.status(400).json({
-        error: `Unknown entity: ${modelKey}`,
-      });
-    }
+    const Model = req.model;
 
     const user = req.user;
     const userId = user._id;
@@ -362,7 +323,6 @@ router.post('/:entity', async (req: Request, res: Response) => {
     const used = (usage[limitKey] as number) ?? 0;
 
     if (used >= limit) {
-      console.log('reached limit');
       return res.status(403).json({
         error: `Limit reached for ${modelKey}. Upgrade your plan.`,
       });
@@ -390,12 +350,7 @@ router.put('/:entity/:id', async (req: Request, res: Response) => {
 
     const entity = Array.isArray(entityParam) ? entityParam[0] : entityParam;
     const modelKey = entity.toLowerCase();
-
-    const Model = modelMap[modelKey];
-
-    if (!Model) {
-      return res.status(400).json({ error: `Unknown entity: ${modelKey}` });
-    }
+    const Model = req.model;
 
     const body = sanitizeInput(req.body);
 
@@ -500,14 +455,7 @@ router.delete('/:entity/:id', async (req: Request, res: Response) => {
 
     const entity = Array.isArray(entityParam) ? entityParam[0] : entityParam;
     const modelKey = entity.toLowerCase();
-
-    const Model = modelMap[modelKey];
-
-    if (!Model) {
-      return res.status(400).json({
-        error: `Unknown entity: ${modelKey}`,
-      });
-    }
+    const Model = req.model;
 
     const record = await Model.findOne({
       _id: id,
@@ -569,19 +517,7 @@ router.delete('/:entity/:id', async (req: Request, res: Response) => {
 
 router.post('/:entity/bulk', async (req: Request, res: Response) => {
   try {
-    const entityParam = req.params.entity;
-
-    const entity = Array.isArray(entityParam) ? entityParam[0] : entityParam;
-
-    const modelKey = entity.toLowerCase();
-
-    const Model = modelMap[modelKey];
-
-    if (!Model) {
-      return res.status(400).json({
-        error: `Unknown entity: ${modelKey}`,
-      });
-    }
+    const Model = req.model;
 
     const records = (req.body.records || []).map((r: any) => ({
       ...sanitizeInput(r),

@@ -54,6 +54,11 @@ export const googleLoginSchema = z.object({
   credential: z.string().min(10, 'Invalid Google credential format'),
 });
 
+export const googleCallbackSchema = z.object({
+  code: z.string().min(1, 'Authorization code is required'),
+  redirectUri: z.string().url('Invalid redirect URI'),
+});
+
 export const forgotPasswordSchema = z.object({
   email: z.email({
     error: 'Invalid email format',

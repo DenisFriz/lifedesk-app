@@ -168,6 +168,7 @@ router.get(
       community_comment: userUsed.community_comment ?? false,
       community_like: userUsed.community_like ?? false,
       ai_assistant: currentPlanLimits.ai_assistant ?? false,
+      push_notifications: currentPlanLimits.push_notifications ?? false,
     };
 
     const isUnlimited = currentPlanLimits.unlimited === true;

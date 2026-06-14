@@ -80,6 +80,7 @@ export default function ProgressPhotos() {
 
   const handleArchiveProgressPhotos = async (ids: string[]) => {
     try {
+      console.log(ids)
       await bulkUpdateMutation.mutateAsync({ ids, data: { is_archived: true } })
     } catch (e) {
       console.error(e)
