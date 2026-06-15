@@ -92,7 +92,7 @@ export default function Login() {
       </Helmet>
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
         <div className="w-full max-w-md">
-          <div className="relative overflow-hidden rounded-2xl border-0 bg-white/95 backdrop-blur-sm shadow-2xl">
+          <div className="relative overflow-hidden rounded-[40px] border-0 bg-white/95 backdrop-blur-sm shadow-[0_25px_80px_-12px_rgba(0,0,0,0.15)]">
             <div className="p-8 rounded-[40px] sm:p-10 md:pt-12 md:pb-10 md:px-10">
               {/* Header */}
               <div className="flex flex-col items-center text-center space-y-6 sm:space-y-8">
