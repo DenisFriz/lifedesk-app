@@ -29,6 +29,7 @@ export default function Register() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const { login } = useAuth()
 
@@ -287,7 +288,7 @@ export default function Register() {
                   <div className="relative w-full">
                     <Lock className="lucide lucide-lock absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
-                      type={showPassword ? 'text' : 'password'}
+                      type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={e => setConfirmPassword(e.target.value)}
                       placeholder="Re-enter password"
@@ -298,12 +299,16 @@ export default function Register() {
                     />
                     <button
                       type="button"
-                      onClick={() => setShowPassword(v => !v)}
+                      onClick={() => setShowConfirmPassword(v => !v)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                       tabIndex={-1}
                       disabled={isLoading}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                 </div>

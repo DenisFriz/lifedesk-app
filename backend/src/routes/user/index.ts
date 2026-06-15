@@ -4,6 +4,7 @@ import { asyncHandler } from '@utils/asyncHandler.js';
 import { AppError } from '@errors/AppError.js';
 import { User } from '@models/index.js';
 import { cloudinary } from '@lib/cloudinary.js';
+import { comparePassword } from '@lib/bcrypt.js';
 import { sanitizeUser } from '@utils/sanitizeUser.js';
 import { requireAuth } from '@middleware/auth.js';
 import { AuthenticatedRequest } from '@/@types/auth.js';
@@ -255,7 +256,6 @@ router.post(
       );
     }
 
-    const { comparePassword } = await import('@lib/bcrypt.js');
     const valid = await comparePassword(password, dbUser.passwordHash);
 
     if (!valid) {

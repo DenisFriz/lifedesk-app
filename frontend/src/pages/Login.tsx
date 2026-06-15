@@ -93,17 +93,14 @@ export default function Login() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
         <div className="w-full max-w-md">
           <div className="relative overflow-hidden rounded-2xl border-0 bg-white/95 backdrop-blur-sm shadow-2xl">
-            {/* top line */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-slate-200 via-slate-300 to-slate-200" />
-
-            <div className="p-8 sm:p-10 md:pt-12 md:pb-10 md:px-10">
+            <div className="p-8 rounded-[40px] sm:p-10 md:pt-12 md:pb-10 md:px-10">
               {/* Header */}
               <div className="flex flex-col items-center text-center space-y-6 sm:space-y-8">
                 {/* Logo */}
                 <div className="relative group">
                   <div className="absolute inset-0 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 blur-xl opacity-30 transition-opacity duration-300 group-hover:opacity-40" />
 
-                  <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-white shadow-lg ring-4 ring-white/50 flex items-center justify-center overflow-hidden">
+                  <div className="relative h-20 w-[120px] sm:h-24 sm:w-[200px] rounded-full bg-white ring-4 ring-white/50 flex items-center justify-center overflow-hidden">
                     <img
                       src="/assets/lifedesk-icon.png"
                       alt="lifedesk logo"
@@ -114,10 +111,6 @@ export default function Login() {
 
                 {/* Title */}
                 <div className="space-y-2 sm:space-y-3">
-                  <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-                    Welcome to lifedesk
-                  </h1>
-
                   <p className="text-slate-500 text-sm sm:text-base font-medium">
                     Sign in to continue
                   </p>
