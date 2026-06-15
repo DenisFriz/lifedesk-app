@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { User } from '@/models/index.js';
+import { sanitizeUser } from '@/utils/sanitizeUser.js';
 
 type AdminClearDeletedFieldsBody = {
   userId: string;
@@ -31,9 +32,7 @@ export async function adminClearDeletedFields(
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const user = updated.toObject();
-    delete (user as any).passwordHash;
-    delete (user as any).plaid_connections;
+    const user = sanitizeUser(updated);
 
     res.json(user);
   } catch (error: any) {

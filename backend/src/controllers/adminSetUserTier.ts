@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { User } from '@/models/index.js';
+import { sanitizeUser } from '@/utils/sanitizeUser.js';
 
 type SubscriptionTier = 'free' | 'plus' | 'pro';
 
@@ -36,8 +37,7 @@ export async function adminSetUserTier(
 
     await user.save();
 
-    const result = user.toObject();
-    delete (result as any).passwordHash;
+    const result = sanitizeUser(user);
 
     return res.json(result);
   } catch (error: any) {

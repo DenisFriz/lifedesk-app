@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/AuthContext'
 import { Helmet } from 'react-helmet-async'
 import { SEO } from '@/lib/seo'
+import { Eye, EyeOff } from 'lucide-react'
 
 type LoginResponse = {
   accessToken: string
@@ -17,6 +18,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const { login } = useAuth()
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -221,14 +223,28 @@ export default function Login() {
                           </svg>
 
                           <Input
-                            type="password"
+                            type={showPassword ? 'text' : 'password'}
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                             placeholder="••••••••"
                             required
                             disabled={isLoading}
-                            className="pl-10 h-11 sm:h-12 rounded-xl border-slate-200 bg-slate-50/50 placeholder:text-slate-400 focus:border-slate-400 focus:ring-slate-400"
+                            className="pl-10 pr-10 h-11 sm:h-12 rounded-xl border-slate-200 bg-slate-50/50 placeholder:text-slate-400 focus:border-slate-400 focus:ring-slate-400"
                           />
+
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(v => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                            tabIndex={-1}
+                            disabled={isLoading}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
                         </div>
                       </div>
                     </div>

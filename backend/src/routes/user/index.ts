@@ -242,7 +242,7 @@ router.post(
       throw new AppError('Password is required', 400);
     }
 
-    const dbUser = await User.findById(user._id).lean().select('passwordHash');
+    const dbUser = await User.findById(user._id).lean().select('+passwordHash');
 
     if (!dbUser) {
       throw new AppError('User not found', 404);
@@ -255,15 +255,8 @@ router.post(
       );
     }
 
-    if (!user.passwordHash) {
-      throw new AppError(
-        'Password login is not available for this account',
-        400,
-      );
-    }
-
     const { comparePassword } = await import('@lib/bcrypt.js');
-    const valid = await comparePassword(password, user.passwordHash);
+    const valid = await comparePassword(password, dbUser.passwordHash);
 
     if (!valid) {
       throw new AppError('Invalid password', 401);

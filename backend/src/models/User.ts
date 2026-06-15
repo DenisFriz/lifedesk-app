@@ -17,7 +17,7 @@ const PlaidConnectionSchema = new Schema(
 const UserSchema = new Schema<IUserDocument>(
   {
     email: { type: String, required: true, unique: true, index: true },
-    passwordHash: { type: String },
+    passwordHash: { type: String, select: false },
     full_name: { type: String, default: null },
     role: {
       type: String,
@@ -38,10 +38,8 @@ const UserSchema = new Schema<IUserDocument>(
     },
     google_id: {
       type: String,
-      default: null,
       unique: true,
       sparse: true,
-      index: true,
     },
     google_avatar_url: {
       type: String,

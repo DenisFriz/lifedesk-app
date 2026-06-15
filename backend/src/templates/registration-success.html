@@ -1,0 +1,261 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Registration Successful</title>
+    <style>
+      /* Fallback styles for email clients */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f6f7f9 !important;
+        padding: 0;
+        margin: 0;
+        line-height: 1.6;
+        font-size: 16px;
+      }
+
+      .cta-button:hover {
+        background: #080d2f !important;
+        color: #ffffff !important;
+        border: 1px solid #080d2f !important;
+        border-radius: 300px !important;
+      }
+
+      .banner-image {
+        width: 100% !important;
+        height: auto !important;
+        max-width: 650px !important;
+        display: block !important;
+        margin: 0 auto !important;
+      }
+
+      @media only screen and (max-width: 600px) {
+        body {
+          padding: 0 !important;
+          margin: 0 !important;
+          background-color: #f6f7f9 !important;
+        }
+
+        .mobile-main-container {
+          padding: 25px 25px !important;
+        }
+
+        .mobile-padding {
+          padding: 0 15px 30px !important;
+        }
+
+        .banner-image {
+          max-width: 100% !important;
+          height: auto !important;
+        }
+
+        .mobile-text {
+          font-size: 16px !important;
+          line-height: 1.5 !important;
+        }
+
+        .mobile-spacing {
+          margin-bottom: 20px !important;
+        }
+
+        .social-icons {
+          margin-bottom: 15px !important;
+        }
+
+        .social-icons img {
+          width: 28px !important;
+          height: 28px !important;
+          margin: 0 6px !important;
+        }
+
+        .banner-section {
+          padding: 15px 15px 0 15px !important;
+        }
+
+        .inner-content-padding {
+          padding: 40px 25px 50px 25px !important;
+        }
+
+        .footer-section {
+          padding: 20px 25px 30px !important;
+        }
+
+        .verification-code-box {
+          width: 100% !important;
+          padding: 30px 20px !important;
+          background-color: #f8f9fa !important;
+          border-radius: 4px !important;
+          text-align: center !important;
+        }
+      }
+
+      @media only screen and (max-width: 480px) {
+        .mobile-main-container {
+          padding: 15px 20px !important;
+        }
+
+        .banner-section {
+          padding: 10px 10px 0 10px !important;
+        }
+
+        .mobile-padding {
+          padding: 0 10px 30px !important;
+        }
+
+        .inner-content-padding {
+          padding: 40px 25px 50px 25px !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #f6f7f9;
+      font-family: Arial, sans-serif;
+    "
+  >
+    <span
+      style="
+        display: none;
+        font-size: 1px;
+        color: #ffffff;
+        line-height: 1px;
+        max-height: 0px;
+        max-width: 0px;
+        opacity: 0;
+        overflow: hidden;
+      "
+    >
+      Registration successful
+    </span>
+
+    <!-- Main Container -->
+    <table width="100%" style="background-color: #f6f7f9">
+      <tbody>
+        <tr>
+          <td align="center" class="mobile-main-container" style="padding: 20px">
+            <div style="max-width: 600px; margin: 0 auto">
+              <table
+                width="600"
+                style="
+                  max-width: 600px;
+                  background-color: #ffffff;
+                  border-radius: 4px;
+                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                "
+              >
+                <tbody>
+                  <tr>
+                    <td style="padding: 30px 30px" class="mobile-padding">
+                      <table
+                        width="100%"
+                        style="
+                          border: 1px solid #e5e7eb;
+                          border-radius: 4px;
+                          background-color: white;
+                        "
+                      >
+                        <tbody>
+                          <tr>
+                            <td
+                              style="padding: 40px"
+                              class="inner-content-padding"
+                            >
+                              <!-- Greeting -->
+                              <h1 style="font-size: 16px; font-weight: normal;">
+                                Hey {{NAME}},
+                              </h1>
+
+                              <!-- Main message -->
+                              <p style="margin-top: 20px; font-size: 16px;">
+                                Your registration was successful! 🎉<br /><br />
+                                Welcome aboard — your account has been created
+                                and you can now start using our platform.
+                              </p>
+
+                              <!-- CTA -->
+                              <table width="100%" style="margin: 30px 0">
+                                <tr>
+                                  <td
+                                    style="
+                                      background-color: #f8f9fa;
+                                      padding: 30px;
+                                      text-align: center;
+                                      border-radius: 4px;
+                                    "
+                                  >
+                                    <a
+                                      href="{{LOGIN_LINK}}"
+                                      class="cta-button"
+                                      style="
+                                        background-color: #000000;
+                                        color: #ffffff;
+                                        text-decoration: none;
+                                        padding: 12px 32px;
+                                        border-radius: 300px;
+                                        display: inline-block;
+                                        border: 1px solid #000000;
+                                      "
+                                    >
+                                      Go to your account
+                                    </a>
+
+                                    <p style="margin-top: 15px; font-size: 14px;">
+                                      If the button doesn’t work, copy and paste
+                                      the link into your browser.
+                                    </p>
+                                  </td>
+                                </tr>
+                              </table>
+
+                              <!-- Info -->
+                              <p style="font-size: 16px;">
+                                You can now log in anytime and start exploring
+                                your dashboard.
+                              </p>
+
+                              <p
+                                style="
+                                  margin-top: 30px;
+                                  font-size: 16px;
+                                  line-height: 22px;
+                                "
+                              >
+                                Welcome again,<br />
+                                The lifedesk Team
+                              </p>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Footer -->
+    <table width="100%" style="background-color: #f6f7f9">
+      <tr>
+        <td align="center" style="padding: 30px 20px">
+          <p style="font-size: 12px; color: #a5a5a5;">
+            This is a system-generated email confirming successful registration.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

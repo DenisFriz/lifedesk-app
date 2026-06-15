@@ -59,6 +59,24 @@ function getResetPasswordTemplate(resetLink: string, name: string) {
   return html;
 }
 
+let registrationSuccessTemplate: string | null = null;
+
+function getRegistrationSuccessTemplate(loginLink: string, name: string) {
+  if (!registrationSuccessTemplate) {
+    const filePath = path.join(
+      process.cwd(),
+      'src/templates/registration-success.html',
+    );
+    registrationSuccessTemplate = fs.readFileSync(filePath, 'utf-8');
+  }
+
+  let html = registrationSuccessTemplate;
+  html = html.replaceAll('{{LOGIN_LINK}}', loginLink);
+  html = html.replaceAll('{{NAME}}', name);
+
+  return html;
+}
+
 async function ensureUserUsage(userId: string) {
   const { UserUsage } = await import('@/models/UserUsage.js');
   await UserUsage.updateOne(
@@ -108,6 +126,15 @@ router.post(
 
     const { accessToken } = await issueAuthSession(user._id.toString(), res);
 
+    const loginLink = `${process.env.FRONTEND_URL}/login`;
+
+    resend.emails.send({
+      from: 'onboarding@resend.dev',
+      to: user.email,
+      subject: 'Welcome — registration successful!',
+      html: getRegistrationSuccessTemplate(loginLink, user.full_name || 'there'),
+    }).catch((err) => console.error('Registration email failed:', err));
+
     const userResponse = sanitizeUser(user);
 
     res.json({
@@ -124,7 +151,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const { email, password }: LoginDTO = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+passwordHash');
 
     if (!user) {
       throw new AppError('Incorrect email or password', 404);
