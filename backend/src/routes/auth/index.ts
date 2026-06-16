@@ -20,7 +20,7 @@ import {
 } from '@/utils/token.utils.js';
 import { RefreshToken } from '@/models/RefreshToken.js';
 import crypto from 'crypto';
-import { issueAuthSession } from '@/utils/issueAuthSession.js';
+import { issueAuthSession, getRefreshCookieOptions } from '@/utils/issueAuthSession.js';
 import { validate } from '@/utils/validate.js';
 import {
   forgotPasswordSchema,
@@ -201,10 +201,7 @@ router.post(
     );
 
     res.clearCookie('refreshToken', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
+      ...getRefreshCookieOptions(),
     });
 
     res.json({ message: 'Logged out successfully' });
@@ -402,10 +399,7 @@ router.post(
     ]);
 
     res.cookie('refreshToken', newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
+      ...getRefreshCookieOptions(),
       maxAge: REFRESH_TOKEN_TTL_MS,
     });
 

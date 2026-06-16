@@ -1,7 +1,18 @@
 import crypto from 'crypto';
-import type { Response } from 'express';
+import type { Response, CookieOptions } from 'express';
 import { RefreshToken } from '@/models/RefreshToken.js';
 import { createAccessToken, createRefreshToken } from '@/utils/token.utils.js';
+
+export function getRefreshCookieOptions(): CookieOptions {
+  const isProd = process.env.NODE_ENV === 'production';
+
+  return {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? ('none' as const) : ('lax' as const),
+    path: '/',
+  };
+}
 
 export async function issueAuthSession(userId: string, res: Response) {
   const accessToken = createAccessToken(userId);
@@ -20,13 +31,8 @@ export async function issueAuthSession(userId: string, res: Response) {
     revoked: false,
   });
 
-  const isProd = process.env.NODE_ENV === 'production';
-
   res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? 'none' : 'lax',
-    path: '/',
+    ...getRefreshCookieOptions(),
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 
