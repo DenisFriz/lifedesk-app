@@ -22,6 +22,17 @@ import { useMedicalDocumentsQuery } from '@/hooks/medicaldocuments/useMedicalDoc
 import { useMedicalDocumentMutations } from '@/hooks/medicaldocuments/useMedicalDocumentMutations'
 import { CreateMedicalDocumentInput } from '@/repositories/medicaldocument.repository'
 
+const typeLabels = {
+  prescription: 'Prescription',
+  lab_result: 'Lab Result',
+  doctor_note: "Doctor's Note",
+  insurance: 'Insurance',
+  vaccination: 'Vaccination',
+  medical_history: 'Medical History',
+  health_image: 'Health Image',
+  other: 'Other'
+} as const
+
 export default function HealthDocuments() {
   const [showUploadDialog, setShowUploadDialog] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
@@ -29,9 +40,11 @@ export default function HealthDocuments() {
 
   const { data: documents = [], isLoading } = useMedicalDocumentsQuery()
 
-  const { canCreate, data } = useUserLimit()
+  const { canCreate, data: userLimits } = useUserLimit()
 
-  const atLimit = canCreate('medicalDocuments')
+  const isOverLimit = !canCreate('medicalDocuments')
+
+  console.log(userLimits)
 
   const { updateMutation, deleteMutation } = useMedicalDocumentMutations()
 
@@ -67,17 +80,6 @@ export default function HealthDocuments() {
 
   const filteredDocuments = documents.filter(d => d.is_archived === showArchived)
 
-  const typeLabels = {
-    prescription: 'Prescription',
-    lab_result: 'Lab Result',
-    doctor_note: "Doctor's Note",
-    insurance: 'Insurance',
-    vaccination: 'Vaccination',
-    medical_history: 'Medical History',
-    health_image: 'Health Image',
-    other: 'Other'
-  }
-
   if (isLoading) {
     return <div className="p-6">Loading...</div>
   }
@@ -99,12 +101,12 @@ export default function HealthDocuments() {
                 Organize your health records and documents
               </p>
             </div>
-            {atLimit ? (
+            {isOverLimit ? (
               <Link to="/upgrade">
                 <Button className="bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
-                  Limit reached ({data?.usage?.medicalDocuments}/{data?.remaining?.medicalDocuments}
-                  )
+                  Limit reached ({userLimits?.usage?.medicalDocuments}/
+                  {userLimits?.limits?.medicalDocuments})
                 </Button>
               </Link>
             ) : (
@@ -150,7 +152,7 @@ export default function HealthDocuments() {
               <p className="text-slate-600 mb-4">
                 {showArchived ? 'No archived documents' : 'No documents yet'}
               </p>
-              {!showArchived && !atLimit && (
+              {!showArchived && !isOverLimit && (
                 <Button onClick={() => setShowUploadDialog(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Upload Your First Document

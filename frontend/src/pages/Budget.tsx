@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -34,7 +34,6 @@ import {
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 import { cn } from '@/lib/utils'
-import { useSubscription } from '@/hooks/useSubscription'
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -47,38 +46,27 @@ import RecurringExpenseForm from '@/components/finances/RecurringExpenseForm'
 import { formatCurrency, formatDateMedium } from '@/components/utils/formatters'
 import PlannedVsActual from '@/components/finances/PlannedVsActual'
 import { Helmet } from 'react-helmet-async'
+import { useRecurringIncomesQuery } from '@/hooks/recurringincomes/useRecurringIncomesQuery'
+import { useRecurringExpensesQuery } from '@/hooks/recurringexpenses/useRecurringExpensesQuery'
+import { CreateRecurringIncomeInput } from '@/repositories/recurring-income.repository'
+import { useRecurringIncomesMutations } from '@/hooks/recurringincomes/useRecurringIncomeMutations'
+import { useRecurringExpenseMutations } from '@/hooks/recurringexpenses/useRecurringExpenseMutations'
+import { CreateRecurringExpenseInput } from '@/repositories/recurring-exprense.repository'
+import { RecurringExpenseRecord, RecurringIncomeRecord } from '@/db'
+import { useUserLimit } from '@/contexts/UserLimitContext'
 
 type Frequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly'
 
-interface RecurringIncomeInput {
-  title: string
-  amount: number
-  frequency: string
-  category?: string
-  business_id?: string | null
-  start_date?: string
-  end_date?: string | null
-
-  active?: boolean
-
-  notes?: string
-}
-
-interface RecurringExpenseInput {
-  title: string
-  amount: number
-  frequency: Frequency
-
-  category?: string
-  business_id?: string | null
-
-  start_date?: string
-  end_date?: string | null
-
-  active?: boolean
-
-  notes?: string
-}
+const COLORS = [
+  '#6366f1',
+  '#10b981',
+  '#ec4899',
+  '#f59e0b',
+  '#f43f5e',
+  '#14b8a6',
+  '#f97316',
+  '#3b82f6'
+] as const
 
 export default function Budget() {
   const urlParams = new URLSearchParams(window.location.search)
@@ -139,8 +127,10 @@ export default function Budget() {
   const [incomePerPage, setIncomePerPage] = useState(20)
   const [expensePage, setExpensePage] = useState(1)
   const [expensePerPage, setExpensePerPage] = useState(20)
-  const queryClient = useQueryClient()
-  const { limit } = useSubscription()
+
+  const { canCreate, data: userLimits } = useUserLimit()
+
+  const isOverLimit = !canCreate('budgetEntries')
 
   const handleTabChange = (value: string) => {
     setActiveTab(value)
@@ -152,103 +142,101 @@ export default function Budget() {
     queryFn: () => backend.entities.Business.list('order')
   })
 
-  const { data: recurringIncome = [] } = useQuery({
-    queryKey: ['recurring-income', businessId],
-    queryFn: () => {
-      if (businessId) {
-        return backend.entities.RecurringIncome.filter({ business_id: businessId })
-      }
-      return backend.entities.RecurringIncome.list('-start_date')
-    }
-  })
+  const { data: recurringIncome = [] } = useRecurringIncomesQuery({ businessId })
 
-  const { data: recurringExpenses = [] } = useQuery({
-    queryKey: ['recurring-expenses', businessId],
-    queryFn: () => {
-      if (businessId) {
-        return backend.entities.RecurringExpense.filter({ business_id: businessId })
-      }
-      return backend.entities.RecurringExpense.list('-start_date')
-    }
-  })
+  const { data: recurringExpenses = [] } = useRecurringExpensesQuery({ businessId })
 
-  const createRecurringIncomeMutation = useMutation({
-    mutationFn: (data: RecurringIncomeInput) => backend.entities.RecurringIncome.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['recurring-income'] })
+  const {
+    createMutation: createRecurringIncome,
+    updateMutation: updateRecurringIncome,
+    deleteMutation: deleteRecurringIncome
+  } = useRecurringIncomesMutations()
+
+  const {
+    createMutation: createRecurringExpense,
+    updateMutation: updateRecurringExpense,
+    deleteMutation: deleteRecurringExpense
+  } = useRecurringExpenseMutations()
+
+  const handleCreateRecurringIncome = async (data: CreateRecurringIncomeInput) => {
+    try {
+      await createRecurringIncome.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowIncomeForm(false)
       setEditingItem(null)
     }
-  })
+  }
 
-  const createRecurringExpenseMutation = useMutation({
-    mutationFn: (data: RecurringIncomeInput) => backend.entities.RecurringExpense.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['recurring-expenses'] })
+  const handleCreateRecurringExpense = async (data: CreateRecurringExpenseInput) => {
+    try {
+      await createRecurringExpense.mutateAsync(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
       setShowExpenseForm(false)
       setEditingItem(null)
     }
-  })
+  }
 
-  const updateRecurringIncomeMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<RecurringIncomeInput> }) =>
-      backend.entities.RecurringIncome.update(id, data),
-    onMutate: async ({ id, data }) => {
-      await queryClient.cancelQueries({ queryKey: ['recurring-income'] })
-      const previousIncome = queryClient.getQueryData<any[]>(['recurring-income'])
-      queryClient.setQueryData<any[]>(['recurring-income'], old =>
-        old?.map(item => (item.id === id ? { ...item, ...data } : item))
-      )
-      return { previousIncome }
-    },
-    onError: (err, variables, context) => {
-      queryClient.setQueryData(['recurring-income'], context.previousIncome)
+  const handleUpdateRecurringIncome = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<RecurringIncomeRecord>
+  }) => {
+    try {
+      await updateRecurringIncome.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setEditingField(null)
-    },
-    onSuccess: () => {
-      setEditingField(null)
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['recurring-income'] })
       setShowIncomeForm(false)
       setEditingItem(null)
     }
-  })
+  }
 
-  const updateRecurringExpenseMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<RecurringExpenseInput> }) =>
-      backend.entities.RecurringExpense.update(id, data),
-    onMutate: async ({ id, data }) => {
-      await queryClient.cancelQueries({ queryKey: ['recurring-expenses'] })
-      const previousExpenses = queryClient.getQueryData<any[]>(['recurring-expenses'])
-      queryClient.setQueryData<any[]>(['recurring-expenses'], old =>
-        old?.map(item => (item.id === id ? { ...item, ...data } : item))
-      )
-      return { previousExpenses }
-    },
-    onError: (err, variables, context) => {
-      queryClient.setQueryData(['recurring-expenses'], context.previousExpenses)
+  const handleUpdateRecurringExpense = async ({
+    id,
+    data
+  }: {
+    id: string
+    data: Partial<RecurringExpenseRecord>
+  }) => {
+    try {
+      await updateRecurringExpense.mutateAsync({ id, data })
+    } catch (e) {
+      console.error(e)
+    } finally {
       setEditingField(null)
-    },
-    onSuccess: () => {
-      setEditingField(null)
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['recurring-expenses'] })
       setShowExpenseForm(false)
       setEditingItem(null)
     }
-  })
+  }
 
-  const deleteRecurringIncomeMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.RecurringIncome.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recurring-income'] })
-  })
+  const handleDeleteRecurringIncome = async (id: string) => {
+    try {
+      await deleteRecurringIncome.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setShowIncomeForm(false)
+      setEditingItem(null)
+    }
+  }
 
-  const deleteRecurringExpenseMutation = useMutation({
-    mutationFn: (id: string) => backend.entities.RecurringExpense.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recurring-expenses'] })
-  })
+  const handleDeleteRecurringExpense = async (id: string) => {
+    try {
+      await deleteRecurringExpense.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setShowExpenseForm(false)
+      setEditingItem(null)
+    }
+  }
 
   /*   const deleteAllRecurringIncomeMutation = useMutation({
     mutationFn: async () => {
@@ -268,21 +256,19 @@ export default function Budget() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recurring-expenses'] })
   }) */
 
-  const handleIncomeSubmit = (data: RecurringIncomeInput) => {
-    console.log('Income submit handler received:', data)
+  const handleIncomeSubmit = (data: any) => {
     if (editingItem) {
-      updateRecurringIncomeMutation.mutate({ id: editingItem.id, data })
+      handleUpdateRecurringIncome({ id: editingItem.id, data })
     } else {
-      createRecurringIncomeMutation.mutate(data)
+      handleCreateRecurringIncome(data)
     }
   }
 
   const handleExpenseSubmit = data => {
-    console.log('Expense submit handler received:', data)
     if (editingItem) {
-      updateRecurringExpenseMutation.mutate({ id: editingItem.id, data })
+      handleUpdateRecurringExpense({ id: editingItem.id, data })
     } else {
-      createRecurringExpenseMutation.mutate(data)
+      handleCreateRecurringExpense(data)
     }
   }
 
@@ -386,17 +372,6 @@ export default function Budget() {
   }, [recurringIncome, businesses])
 
   const incomeData = incomeGroupBy === 'categories' ? incomeByCategory : incomeByLifeArea
-
-  const COLORS = [
-    '#6366f1',
-    '#10b981',
-    '#ec4899',
-    '#f59e0b',
-    '#f43f5e',
-    '#14b8a6',
-    '#f97316',
-    '#3b82f6'
-  ]
 
   /*   const yearlyForecast = useMemo(() => {
     const months = []
@@ -552,12 +527,12 @@ export default function Budget() {
       }
 
       if (isIncome) {
-        updateRecurringIncomeMutation.mutate({
+        handleUpdateRecurringIncome({
           id: item.id,
           data: updateData
         })
       } else {
-        updateRecurringExpenseMutation.mutate({
+        handleUpdateRecurringExpense({
           id: item.id,
           data: updateData
         })
@@ -567,12 +542,12 @@ export default function Budget() {
     }
 
     if (isIncome) {
-      updateRecurringIncomeMutation.mutate({
+      handleUpdateRecurringIncome({
         id: item.id,
         data: { [field]: value }
       })
     } else {
-      updateRecurringExpenseMutation.mutate({
+      handleUpdateRecurringExpense({
         id: item.id,
         data: { [field]: value }
       })
@@ -588,25 +563,7 @@ export default function Budget() {
     }
   }
 
-  /*   const handleDeleteAllIncome = () => {
-    if (
-      window.confirm(
-        'Are you sure you want to delete all recurring income entries? This action cannot be undone.'
-      )
-    ) {
-      deleteAllRecurringIncomeMutation.mutate()
-    }
-  } */
-
-  /*   const handleDeleteAllExpenses = () => {
-    if (
-      window.confirm(
-        'Are you sure you want to delete all recurring expense entries? This action cannot be undone.'
-      )
-    ) {
-      deleteAllRecurringExpensesMutation.mutate()
-    }
-  } */
+  const getIncomeId = (income: any): string => income._id ?? income.serverId ?? income.id
 
   return (
     <>
@@ -880,9 +837,6 @@ export default function Budget() {
                             />
                           </div>
                           {(() => {
-                            const budgetLimit = limit('finance_budget_entries_limit')
-                            const totalEntries = recurringIncome.length + recurringExpenses.length
-                            const atLimit = totalEntries >= budgetLimit
                             return (
                               <TooltipProvider>
                                 <UITooltip>
@@ -890,26 +844,27 @@ export default function Budget() {
                                     <span>
                                       <Button
                                         onClick={() => {
-                                          if (!atLimit) {
+                                          if (!isOverLimit) {
                                             setEditingItem(null)
                                             setShowIncomeForm(true)
                                           }
                                         }}
-                                        disabled={atLimit}
+                                        disabled={isOverLimit}
                                         className="bg-emerald-600 hover:bg-emerald-700"
                                       >
                                         <Plus className="w-4 h-4 mr-2" />
                                         Add
-                                        {atLimit && (
+                                        {isOverLimit && (
                                           <Lock className="w-3.5 h-3.5 ml-1.5 opacity-70" />
                                         )}
                                       </Button>
                                     </span>
                                   </TooltipTrigger>
-                                  {atLimit && (
+                                  {isOverLimit && (
                                     <TooltipContent>
                                       <p>
-                                        Limit reached ({budgetLimit} total entries on your plan).{' '}
+                                        Limit reached ({userLimits?.limits?.budgetEntries} total
+                                        entries on your plan).{' '}
                                         <Link to="/upgrade" className="underline">
                                           Upgrade
                                         </Link>{' '}
@@ -990,11 +945,11 @@ export default function Budget() {
                           <tbody>
                             {paginatedIncome.map(income => (
                               <tr
-                                key={income._id}
+                                key={getIncomeId(income)}
                                 className="border-b border-slate-100 hover:bg-slate-50"
                               >
                                 <td className="px-4 py-3 align-top w-56">
-                                  {editingField === `${income._id}-title` ? (
+                                  {editingField === `${getIncomeId(income)}-title` ? (
                                     <Input
                                       value={editValue}
                                       onChange={e => setEditValue(e.target.value)}
@@ -1006,7 +961,9 @@ export default function Budget() {
                                     />
                                   ) : (
                                     <div
-                                      onClick={() => startEdit(income._id, 'title', income.title)}
+                                      onClick={() =>
+                                        startEdit(getIncomeId(income), 'title', income.title)
+                                      }
                                       className="cursor-text font-medium text-slate-900 hover:bg-slate-100 px-2 py-1 rounded line-clamp-2"
                                     >
                                       {income.title}
@@ -1014,7 +971,7 @@ export default function Budget() {
                                   )}
                                 </td>
                                 <td className="px-4 py-3 align-top w-32">
-                                  {editingField === `${income._id}-amount` ? (
+                                  {editingField === `${getIncomeId(income)}-amount` ? (
                                     <Input
                                       type="text"
                                       value={editValue}
@@ -1031,7 +988,9 @@ export default function Budget() {
                                     />
                                   ) : (
                                     <div
-                                      onClick={() => startEdit(income._id, 'amount', income.amount)}
+                                      onClick={() =>
+                                        startEdit(getIncomeId(income), 'amount', income.amount)
+                                      }
                                       className="cursor-text font-semibold text-emerald-600 hover:bg-slate-100 px-2 py-1 rounded"
                                     >
                                       +{formatCurrency(income.amount)}
@@ -1039,14 +998,14 @@ export default function Budget() {
                                   )}
                                 </td>
                                 <td className="px-4 py-3 align-top w-32">
-                                  {editingField === `${income._id}-frequency` ? (
+                                  {editingField === `${getIncomeId(income)}-frequency` ? (
                                     <Select
                                       value={editValue}
                                       onValueChange={value => {
                                         setEditValue(value)
-                                        updateRecurringIncomeMutation.mutate({
-                                          id: income._id,
-                                          data: { frequency: value }
+                                        handleUpdateRecurringIncome({
+                                          id: getIncomeId(income),
+                                          data: { frequency: value as Frequency }
                                         })
                                         setEditingField(null)
                                       }}
@@ -1069,7 +1028,11 @@ export default function Budget() {
                                   ) : (
                                     <div
                                       onClick={() =>
-                                        startEdit(income._id, 'frequency', income.frequency)
+                                        startEdit(
+                                          getIncomeId(income),
+                                          'frequency',
+                                          income.frequency
+                                        )
                                       }
                                       className="cursor-pointer text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded"
                                     >
@@ -1082,23 +1045,23 @@ export default function Budget() {
                                   )}
                                 </td>
                                 <td className="px-4 py-3 align-top w-40">
-                                  {editingField === `${income._id}-start_date` ? (
+                                  {editingField === `${getIncomeId(income)}-start_date` ? (
                                     <div className="text-sm">
                                       <Input
                                         type="date"
                                         value={editValue}
                                         onChange={e => setEditValue(e.target.value)}
                                         onBlur={() => {
-                                          updateRecurringIncomeMutation.mutate({
-                                            id: income._id,
+                                          handleUpdateRecurringIncome({
+                                            id: getIncomeId(income),
                                             data: { start_date: editValue }
                                           })
                                           setEditingField(null)
                                         }}
                                         onKeyDown={e => {
                                           if (e.key === 'Enter') {
-                                            updateRecurringIncomeMutation.mutate({
-                                              id: income._id,
+                                            handleUpdateRecurringIncome({
+                                              id: getIncomeId(income),
                                               data: { start_date: editValue }
                                             })
                                             setEditingField(null)
@@ -1113,7 +1076,11 @@ export default function Budget() {
                                   ) : (
                                     <div
                                       onClick={() =>
-                                        startEdit(income._id, 'start_date', income.start_date)
+                                        startEdit(
+                                          getIncomeId(income),
+                                          'start_date',
+                                          income.start_date
+                                        )
                                       }
                                       className="text-sm text-slate-600 px-2 py-1 rounded cursor-pointer hover:bg-slate-100"
                                     >
@@ -1123,13 +1090,13 @@ export default function Budget() {
                                 </td>
                                 {!businessId && (
                                   <td className="px-4 py-3 align-top w-32">
-                                    {editingField === `${income._id}-business_id` ? (
+                                    {editingField === `${getIncomeId(income)}-business_id` ? (
                                       <Select
                                         value={editValue || '__private__'}
                                         onValueChange={value => {
                                           setEditValue(value)
-                                          updateRecurringIncomeMutation.mutate({
-                                            id: income._id,
+                                          handleUpdateRecurringIncome({
+                                            id: getIncomeId(income),
                                             data: {
                                               business_id: value === '__private__' ? null : value,
                                               category: ''
@@ -1160,7 +1127,7 @@ export default function Budget() {
                                       <div
                                         onClick={() =>
                                           startEdit(
-                                            income._id,
+                                            getIncomeId(income),
                                             'business_id',
                                             income.business_id ? String(income.business_id) : ''
                                           )
@@ -1177,13 +1144,13 @@ export default function Budget() {
                                   </td>
                                 )}
                                 <td className="px-4 py-3 align-top w-40">
-                                  {editingField === `${income._id}-category` ? (
+                                  {editingField === `${getIncomeId(income)}-category` ? (
                                     <Select
                                       value={editValue}
                                       onValueChange={value => {
                                         setEditValue(value)
-                                        updateRecurringIncomeMutation.mutate({
-                                          id: income._id,
+                                        handleUpdateRecurringIncome({
+                                          id: getIncomeId(income),
                                           data: { category: value }
                                         })
                                       }}
@@ -1232,7 +1199,11 @@ export default function Budget() {
                                   ) : (
                                     <div
                                       onClick={() =>
-                                        startEdit(income._id, 'category', income.category || '')
+                                        startEdit(
+                                          getIncomeId(income),
+                                          'category',
+                                          income.category || ''
+                                        )
                                       }
                                       className="cursor-pointer text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded"
                                     >
@@ -1245,7 +1216,7 @@ export default function Budget() {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8"
-                                    onClick={() => deleteRecurringIncomeMutation.mutate(income._id)}
+                                    onClick={() => handleDeleteRecurringIncome(getIncomeId(income))}
                                   >
                                     <Trash2 className="h-4 w-4 text-rose-500" />
                                   </Button>
@@ -1335,9 +1306,6 @@ export default function Budget() {
                             />
                           </div>
                           {(() => {
-                            const budgetLimit = limit('finance_budget_entries_limit')
-                            const totalEntries = recurringIncome.length + recurringExpenses.length
-                            const atLimit = totalEntries >= budgetLimit
                             return (
                               <TooltipProvider>
                                 <UITooltip>
@@ -1345,26 +1313,27 @@ export default function Budget() {
                                     <span>
                                       <Button
                                         onClick={() => {
-                                          if (!atLimit) {
+                                          if (!isOverLimit) {
                                             setEditingItem(null)
                                             setShowExpenseForm(true)
                                           }
                                         }}
-                                        disabled={atLimit}
+                                        disabled={isOverLimit}
                                         className="bg-rose-600 hover:bg-rose-700"
                                       >
                                         <Plus className="w-4 h-4 mr-2" />
                                         Add
-                                        {atLimit && (
+                                        {isOverLimit && (
                                           <Lock className="w-3.5 h-3.5 ml-1.5 opacity-70" />
                                         )}
                                       </Button>
                                     </span>
                                   </TooltipTrigger>
-                                  {atLimit && (
+                                  {isOverLimit && (
                                     <TooltipContent>
                                       <p>
-                                        Limit reached ({budgetLimit} total entries on your plan).{' '}
+                                        Limit reached ({userLimits?.limits?.budgetEntries} total
+                                        entries on your plan).{' '}
                                         <Link to="/upgrade" className="underline">
                                           Upgrade
                                         </Link>{' '}
@@ -1504,7 +1473,7 @@ export default function Budget() {
 
                                         setEditValue(value)
 
-                                        updateRecurringExpenseMutation.mutate({
+                                        handleUpdateRecurringExpense({
                                           id: expense.id,
                                           data: { frequency }
                                         })
@@ -1549,7 +1518,7 @@ export default function Budget() {
                                         value={editValue}
                                         onChange={e => setEditValue(e.target.value)}
                                         onBlur={() => {
-                                          updateRecurringExpenseMutation.mutate({
+                                          handleUpdateRecurringExpense({
                                             id: expense.id,
                                             data: { start_date: editValue }
                                           })
@@ -1557,7 +1526,7 @@ export default function Budget() {
                                         }}
                                         onKeyDown={e => {
                                           if (e.key === 'Enter') {
-                                            updateRecurringExpenseMutation.mutate({
+                                            handleUpdateRecurringExpense({
                                               id: expense.id,
                                               data: { start_date: editValue }
                                             })
@@ -1588,7 +1557,7 @@ export default function Budget() {
                                         value={editValue || '__private__'}
                                         onValueChange={value => {
                                           setEditValue(value)
-                                          updateRecurringExpenseMutation.mutate({
+                                          handleUpdateRecurringExpense({
                                             id: expense.id,
                                             data: {
                                               business_id: value === '__private__' ? null : value,
@@ -1642,7 +1611,7 @@ export default function Budget() {
                                       value={editValue}
                                       onValueChange={value => {
                                         setEditValue(value)
-                                        updateRecurringExpenseMutation.mutate({
+                                        handleUpdateRecurringExpense({
                                           id: expense.id,
                                           data: { category: value }
                                         })
@@ -1705,9 +1674,7 @@ export default function Budget() {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8"
-                                    onClick={() =>
-                                      deleteRecurringExpenseMutation.mutate(expense.id)
-                                    }
+                                    onClick={() => handleDeleteRecurringExpense(expense.id)}
                                   >
                                     <Trash2 className="h-4 w-4 text-rose-500" />
                                   </Button>
@@ -1820,9 +1787,7 @@ export default function Budget() {
             }}
             onSubmit={handleIncomeSubmit}
             income={editingItem}
-            isLoading={
-              createRecurringIncomeMutation.isPending || updateRecurringIncomeMutation.isPending
-            }
+            isLoading={createRecurringIncome.isPending || updateRecurringIncome.isPending}
           />
 
           <RecurringExpenseForm
@@ -1833,9 +1798,7 @@ export default function Budget() {
             }}
             onSubmit={handleExpenseSubmit}
             expense={editingItem}
-            isLoading={
-              createRecurringExpenseMutation.isPending || updateRecurringExpenseMutation.isPending
-            }
+            isLoading={createRecurringExpense.isPending || updateRecurringExpense.isPending}
           />
         </div>
       </div>

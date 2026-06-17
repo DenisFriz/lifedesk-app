@@ -227,8 +227,7 @@ export default function Relationships() {
               <Link to="/upgrade" className="w-full lg:w-auto">
                 <Button className="w-full bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
-                  Limit reached ({data?.usage?.relationships}/{data?.limits?.relationships}),
-                  Upgrade to Add More
+                  Limit reached ({data?.usage?.relationships || 0}/{data?.limits?.relationships})
                 </Button>
               </Link>
             ) : (
@@ -322,6 +321,7 @@ export default function Relationships() {
                   ? 'Add your first contact to get started'
                   : 'No contacts match your filters'}
               </p>
+
               {relationships?.length === 0 && !atLimit && (
                 <Button
                   onClick={() => setShowForm(true)}
@@ -334,27 +334,15 @@ export default function Relationships() {
             </div>
           ) : (
             <div className="space-y-3 pb-8">
-              {sorted.map(contact => {
-                const overLimit = !canCreate('relationships')
-                return overLimit ? (
-                  <OverLimitItem key={contact.id}>
-                    <ContactCard
-                      contact={contact}
-                      onEdit={() => {}}
-                      onDelete={() => {}}
-                      onCheckedIn={() => {}}
-                    />
-                  </OverLimitItem>
-                ) : (
-                  <ContactCard
-                    key={contact.id}
-                    contact={contact}
-                    onEdit={handleEdit}
-                    onDelete={id => handleDeleteRelationship(id)}
-                    onCheckedIn={handleCheckedIn}
-                  />
-                )
-              })}
+              {sorted.map(contact => (
+                <ContactCard
+                  key={contact.id}
+                  contact={contact}
+                  onEdit={handleEdit}
+                  onDelete={handleDeleteRelationship}
+                  onCheckedIn={handleCheckedIn}
+                />
+              ))}
             </div>
           )}
 

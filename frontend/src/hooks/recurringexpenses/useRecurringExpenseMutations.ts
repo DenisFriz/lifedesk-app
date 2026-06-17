@@ -6,7 +6,7 @@ import {
 } from '@/repositories/recurring-exprense.repository'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-export function useEstateMutations() {
+export function useRecurringExpenseMutations() {
   const queryClient = useQueryClient()
   const { playSound } = useSound()
 

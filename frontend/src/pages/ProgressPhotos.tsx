@@ -55,7 +55,7 @@ export default function ProgressPhotos() {
   const [longPressTimers, setLongPressTimers] = useState({})
   const [showArchived, setShowArchived] = useState(false)
 
-  const { canCreate, data } = useUserLimit()
+  const { canCreate, data: userLimits } = useUserLimit()
 
   const { data: photos = [], isLoading } = useProgressPhotosQuery()
 
@@ -80,7 +80,6 @@ export default function ProgressPhotos() {
 
   const handleArchiveProgressPhotos = async (ids: string[]) => {
     try {
-      console.log(ids)
       await bulkUpdateMutation.mutateAsync({ ids, data: { is_archived: true } })
     } catch (e) {
       console.error(e)
@@ -155,7 +154,7 @@ export default function ProgressPhotos() {
   }
 
   const filteredPhotos = photos.filter(p => p.is_archived === showArchived)
-  const atLimit = canCreate('progressPhotos')
+  const isOverLimit = !canCreate('progressPhotos')
 
   const handlePrevPhoto = () => {
     setSelectedPhotoIndex(Math.max(0, selectedPhotoIndex - 1))
@@ -188,11 +187,12 @@ export default function ProgressPhotos() {
                 Track your body transformation with photos
               </p>
             </div>
-            {atLimit ? (
+            {isOverLimit ? (
               <Link to="/upgrade">
                 <Button className="bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
-                  Limit reached ({data?.usage?.progressPhotos || 0}/{data?.limits?.progressPhotos})
+                  Limit reached ({userLimits?.usage?.progressPhotos || 0}/
+                  {userLimits?.limits?.progressPhotos})
                 </Button>
               </Link>
             ) : (
@@ -246,7 +246,7 @@ export default function ProgressPhotos() {
               <p className="text-slate-600 mb-4">
                 {showArchived ? 'No archived photos' : 'No progress photos yet'}
               </p>
-              {!showArchived && !atLimit && (
+              {!showArchived && !isOverLimit && (
                 <Button onClick={() => setShowUploadDialog(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Upload Your First Photo

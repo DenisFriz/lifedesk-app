@@ -87,6 +87,7 @@ interface Props {
 
 export default function HobbyForm({ open, onClose, onSubmit, hobby, isLoading = false }: Props) {
   const [form, setForm] = useState<FormData>(EMPTY)
+  const [errors, setErrors] = useState<{ name?: string; category?: string }>({})
 
   useEffect(() => {
     if (hobby) {
@@ -94,12 +95,26 @@ export default function HobbyForm({ open, onClose, onSubmit, hobby, isLoading = 
     } else {
       setForm(EMPTY)
     }
+    setErrors({})
   }, [hobby, open])
 
-  const set = (key: keyof FormData, val: any) => setForm(prev => ({ ...prev, [key]: val }))
+  const set = (key: keyof FormData, val: any) => {
+    setForm(prev => ({ ...prev, [key]: val }))
+    if (key === 'name' || key === 'category') {
+      setErrors(prev => ({ ...prev, [key]: '' }))
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    const errs: { name?: string; category?: string } = {}
+    if (!form.name.trim()) errs.name = 'Name is required'
+    if (!form.category) errs.category = 'Category is required'
+    if (Object.keys(errs).length) {
+      setErrors(errs)
+      return
+    }
+    setErrors({})
     const data = { ...form }
     data.avg_session_minutes = data.avg_session_minutes ?? null
 
@@ -125,6 +140,7 @@ export default function HobbyForm({ open, onClose, onSubmit, hobby, isLoading = 
               onChange={e => set('name', e.target.value)}
               required
             />
+            {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -142,6 +158,7 @@ export default function HobbyForm({ open, onClose, onSubmit, hobby, isLoading = 
                   ))}
                 </SelectContent>
               </Select>
+              {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category}</p>}
             </div>
             <div>
               <Label htmlFor="status">Status</Label>

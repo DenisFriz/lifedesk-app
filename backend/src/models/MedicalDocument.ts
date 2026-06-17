@@ -47,7 +47,6 @@ const medicalDocumentSchema = new Schema<IMedicalDocument>(
     date: {
       type: String,
       required: true,
-      index: true,
     },
 
     type: {
@@ -64,7 +63,6 @@ const medicalDocumentSchema = new Schema<IMedicalDocument>(
         'other',
       ],
       default: 'other',
-      index: true,
     },
 
     file_url: {

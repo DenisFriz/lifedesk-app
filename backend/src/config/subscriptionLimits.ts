@@ -1,5 +1,15 @@
 export type SubscriptionTier = 'free' | 'plus' | 'pro';
 
+export const HARD_CAPPED_KEYS: (keyof SubscriptionLimits)[] = [
+  'vehicle',
+  'offlineBankAccount',
+  'estate',
+  'otherAsset',
+  'timeEntries',
+  'medicalDocuments',
+  'problems',
+];
+
 export type SubscriptionLimits = {
   goals: number;
   tasks: number;
@@ -13,29 +23,26 @@ export type SubscriptionLimits = {
   otherAsset?: number;
   offlineBankAccount?: number;
   offlineAccountSnapshot?: number;
-  healthTrackingEnties?: number;
   medicalDocuments?: number;
-  workouts?: number;
-  workoutPlans?: number;
-  bodyMeasurements?: number;
-  hobbies?: number;
-  learning?: number;
-  relationships?: number;
+  workouts: number;
+  workoutPlans: number;
+  bodyMeasurements: number;
+  hobbies: number;
+  learning: number;
+  relationships: number;
   business?: number;
-  progressPhotos?: number;
+  progressPhotos: number;
   projectsAndClients?: number;
   marketingStrategy?: number;
   marketingCampaign?: number;
   marketingContent?: number;
+  budgetEntries: number;
   campaign?: number;
   content?: number;
   income?: number;
   expense?: number;
-  problem?: number;
   timeEntries: number;
   projects?: number;
-  recurringIncomes?: number;
-  recurringExpenses?: number;
   clients?: number;
   ai_assistant: boolean;
   community_read: boolean;
@@ -58,12 +65,11 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       vehicle: 1,
       vehicle_photos: 5,
       vehicle_repairs: 1,
-      problems: 3,
       estate: 1,
       otherAsset: 1,
       offlineBankAccount: 1,
       offlineAccountSnapshot: 5,
-      healthTrackingEnties: 10,
+      problems: 10,
       medicalDocuments: 5,
       workouts: 3,
       workoutPlans: 3,
@@ -72,19 +78,17 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       learning: 3,
       relationships: 3,
       business: 3,
-      progressPhotos: 5,
+      progressPhotos: 3,
       projectsAndClients: 5,
       marketingStrategy: 1,
       marketingCampaign: 1,
       marketingContent: 1,
+      budgetEntries: 20,
       campaign: 1,
       income: 3,
       expense: 3,
-      problem: 3,
       timeEntries: 5,
       projects: 5,
-      recurringIncomes: 5,
-      recurringExpenses: 5,
       clients: 5,
       content: 1,
       community_read: true,
@@ -101,36 +105,33 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       tasks: 200,
       calendarEntries: 400,
       events: 100,
-      vehicle: 1,
+      vehicle: 4,
       vehicle_photos: 5,
       vehicle_repairs: 3,
-      problems: 5,
-      estate: 1,
-      otherAsset: 1,
+      estate: 4,
+      otherAsset: 4,
       offlineBankAccount: 5,
       offlineAccountSnapshot: 10,
-      healthTrackingEnties: 10,
-      medicalDocuments: 5,
-      workouts: 3,
-      workoutPlans: 3,
-      bodyMeasurements: 5,
-      hobbies: 3,
-      learning: 3,
-      relationships: 3,
+      problems: 50,
+      medicalDocuments: 50,
+      workouts: 10,
+      workoutPlans: 10,
+      bodyMeasurements: 10,
+      hobbies: 10,
+      learning: 10,
+      relationships: 10,
       business: 5,
       progressPhotos: 10,
       projectsAndClients: 5,
       marketingStrategy: 5,
       marketingCampaign: 5,
       marketingContent: 5,
+      budgetEntries: 200,
       campaign: 1,
       income: 3,
       expense: 3,
-      problem: 5,
       timeEntries: 50,
       projects: 10,
-      recurringIncomes: 10,
-      recurringExpenses: 10,
       clients: 10,
       ai_assistant: true,
       content: 1,
@@ -147,9 +148,23 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       tasks: 2000,
       calendarEntries: 4000,
       events: 1000,
+      hobbies: 100,
+      learning: 100,
+      relationships: 100,
       timeEntries: 500,
+      offlineBankAccount: 50,
+      vehicle: 40,
       vehicle_photos: 5,
       vehicle_repairs: 5,
+      estate: 40,
+      otherAsset: 40,
+      problems: 500,
+      medicalDocuments: 500,
+      workouts: 100,
+      workoutPlans: 100,
+      bodyMeasurements: 100,
+      budgetEntries: 2000,
+      progressPhotos: 100,
       ai_assistant: true,
       community_read: true,
       community_submit: true,

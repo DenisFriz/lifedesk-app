@@ -1,4 +1,4 @@
-import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits.js';
+import { SUBSCRIPTION_LIMITS, HARD_CAPPED_KEYS } from '@/config/subscriptionLimits.js';
 import { modelMap } from '@/models/index.js';
 import { UsageKey, UserUsage } from '@/models/UserUsage.js';
 import {
@@ -53,12 +53,12 @@ const entityToLimitKey: Record<string, string> = {
   campaign: 'campaign',
   income: 'income',
   expense: 'expense',
-  problem: 'problem',
+  problem: 'problems',
   timeentry: 'timeEntries',
   content: 'content',
   project: 'projects',
-  recurringincome: 'recurringIncomes',
-  recurringexpense: 'recurringExpenses',
+  recurringincome: 'budgetEntries',
+  recurringexpense: 'budgetEntries',
   communityidea: 'communityIdeas',
   client: 'clients',
 };
@@ -170,8 +170,11 @@ router.post('/:entity', async (req: Request, res: Response) => {
     const tier = user.subscription_tier;
     const limits = SUBSCRIPTION_LIMITS[tier];
 
-    // unlimited plan
-    if (limits.unlimited) {
+    const limitKey = entityToLimitKey[modelKey] as UsageKey;
+    const isHardCapped = limitKey && HARD_CAPPED_KEYS.includes(limitKey as any);
+
+    // unlimited plan (unless resource is hard-capped)
+    if (limits.unlimited && !isHardCapped) {
       const record = await Model.create({
         ...sanitizeInput(req.body),
         created_by: userId,
@@ -289,8 +292,6 @@ router.post('/:entity', async (req: Request, res: Response) => {
       });
       return res.status(201).json(record);
     }
-
-    const limitKey = entityToLimitKey[modelKey] as UsageKey;
 
     if (!limitKey) {
       return res.status(400).json({

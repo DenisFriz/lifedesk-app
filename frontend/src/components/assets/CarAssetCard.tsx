@@ -125,7 +125,6 @@ export default function CarAssetCard({ asset, onEdit, onDelete }: CarAssetCardPr
   const images = asset.images || []
   const displayValue = asset.current_value || asset.purchase_price || 0
 
-  console.log(images)
   return (
     <>
       <div className="bg-white rounded-xl border border-slate-200 hover:shadow-lg transition-shadow overflow-hidden">

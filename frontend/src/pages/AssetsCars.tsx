@@ -23,6 +23,7 @@ export default function AssetsCars() {
   const totalValue = vehicles?.reduce((s, a) => s + (a.current_value || a.purchase_price || 0), 0)
   const atLimit = !canCreate('vehicle')
 
+  console.log(atLimit)
   const { updateMutation, createMutation, deleteMutation } = useVehicleMutations()
 
   const handleUpdateVehicle = async ({

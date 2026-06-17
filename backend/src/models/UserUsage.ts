@@ -10,7 +10,7 @@ export type UsageKey =
   | 'estate'
   | 'otherAsset'
   | 'offlineBankAccount'
-  | 'healthTrackingEnties'
+  | 'problems'
   | 'medicalDocuments'
   | 'workouts'
   | 'workoutPlans'
@@ -21,6 +21,8 @@ export type UsageKey =
   | 'business'
   | 'projectsAndClients'
   | 'marketingStrategy'
+  | 'budgetEntries'
+  | 'progressPhotos'
   | 'campaign'
   | 'timeEntries'
   | 'content'
@@ -36,10 +38,10 @@ export interface IUserUsage {
   vehicle: number;
   vehicle_photos: number;
   estate: number;
+  problems: number;
   otherAsset: number;
   offlineBankAccount: number;
   offlineAccountSnapshot: number;
-  healthTrackingEnties: number;
   medicalDocuments: number;
   workouts: number;
   workoutPlans: number;
@@ -52,6 +54,8 @@ export interface IUserUsage {
   marketingStrategy: number;
   marketingCampaign: number;
   marketingContent: number;
+  budgetEntries: number;
+  progressPhotos: number;
   campaign: number;
   content: number;
   timeEntries: number;
@@ -86,7 +90,7 @@ const UserUsageSchema = new Schema<IUserUsageDocument>(
     offlineBankAccount: { type: Number, default: 0 },
     offlineAccountSnapshot: { type: Number, default: 0 },
 
-    healthTrackingEnties: { type: Number, default: 0 },
+    problems: { type: Number, default: 0 },
     medicalDocuments: { type: Number, default: 0 },
 
     workouts: { type: Number, default: 0 },
@@ -99,6 +103,8 @@ const UserUsageSchema = new Schema<IUserUsageDocument>(
 
     business: { type: Number, default: 0 },
     projectsAndClients: { type: Number, default: 0 },
+    budgetEntries: { type: Number, default: 0 },
+    progressPhotos: { type: Number, default: 0 },
 
     marketingStrategy: { type: Number, default: 0 },
     marketingCampaign: { type: Number, default: 0 },

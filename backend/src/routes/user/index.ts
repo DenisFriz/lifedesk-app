@@ -10,7 +10,11 @@ import { requireAuth } from '@middleware/auth.js';
 import { AuthenticatedRequest } from '@/@types/auth.js';
 
 import { UserUsage } from '@/models/UserUsage.js';
-import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits.js';
+import {
+  SUBSCRIPTION_LIMITS,
+  HARD_CAPPED_KEYS,
+  type SubscriptionLimits,
+} from '@/config/subscriptionLimits.js';
 import { Types } from 'mongoose';
 import { validate } from '@/utils/validate.js';
 import { googleLoginSchema } from '@/schemas/auth.schema.js';
@@ -148,23 +152,27 @@ router.get(
       vehicle: userUsed.vehicle ?? 0,
       vehicle_photos: userUsed.vehicle_photos ?? 0,
       estate: userUsed.estate ?? 0,
+      problems: userUsed.problems ?? 0,
       otherAsset: userUsed.otherAsset ?? 0,
       workoutPlans: userUsed.workoutPlans ?? 0,
       bodyMeasurements: userUsed.bodyMeasurements ?? 0,
       workouts: userUsed.workouts ?? 0,
       hobbies: userUsed.hobbies ?? 0,
+      learning: userUsed.learning ?? 0,
       timeEntries: userUsed.timeEntries ?? 0,
       projects: userUsed.projects ?? 0,
       clients: userUsed.clients ?? 0,
+      medicalDocuments: userUsed.medicalDocuments ?? 0,
       marketingStrategy: userUsed.marketingStrategy ?? 0,
       marketingCampaign: userUsed.marketingCampaign ?? 0,
       marketingContent: userUsed.marketingContent ?? 0,
+      budgetEntries: userUsed.budgetEntries ?? 0,
       content: userUsed.content ?? 0,
       offlineBankAccount: userUsed.offlineBankAccount ?? 0,
       offlineAccountSnapshot: userUsed.offlineAccountSnapshot ?? 0,
-      healthTrackingEnties: userUsed.healthTrackingEnties ?? 0,
       communityIdeas: userUsed.communityIdeas ?? 0,
       relationships: userUsed.relationships ?? 0,
+      progressPhotos: userUsed.progressPhotos ?? 0,
       notes_words_limit: userUsed.notes_words_limit ?? 0,
       community_comment: userUsed.community_comment ?? false,
       community_like: userUsed.community_like ?? false,
@@ -176,16 +184,26 @@ router.get(
 
     const limits = Object.fromEntries(
       (Object.keys(usage) as (keyof typeof usage)[]).map((key) => {
-        if (isUnlimited) return [key, null];
         const limit = currentPlanLimits[key as keyof typeof currentPlanLimits];
+        if (
+          isUnlimited &&
+          !HARD_CAPPED_KEYS.includes(key as keyof SubscriptionLimits)
+        ) {
+          return [key, null];
+        }
         return [key, typeof limit === 'number' ? limit : null];
       }),
     );
 
     const remaining = Object.fromEntries(
       (Object.keys(usage) as (keyof typeof usage)[]).map((key) => {
-        if (isUnlimited) return [key, null];
         const limit = currentPlanLimits[key as keyof typeof currentPlanLimits];
+        if (
+          isUnlimited &&
+          !HARD_CAPPED_KEYS.includes(key as keyof SubscriptionLimits)
+        ) {
+          return [key, null];
+        }
         const used = usage[key] ?? 0;
         return [
           key,

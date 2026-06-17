@@ -440,6 +440,7 @@ export function normalizeProblem(server: any): ProblemRecord {
     title: server.title ?? '',
     description: server.description ?? '',
     priority: server.priority ?? 'medium',
+    problem_type: server.problem_type ?? null,
     business_id: server.business_id ?? null,
     goal_id: server.goal_id ?? null,
     resolved: Boolean(server.resolved),

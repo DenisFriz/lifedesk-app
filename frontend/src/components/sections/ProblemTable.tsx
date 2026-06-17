@@ -31,7 +31,7 @@ const problemTypes = [
   { value: 'food', label: 'Food' },
   { value: 'mental_state', label: 'Mental State' },
   { value: 'medical_event', label: 'Medical Event' }
-]
+] as const
 
 interface ProblemTableProps {
   category: string
@@ -53,15 +53,15 @@ export default function ProblemTable({ category }: ProblemTableProps) {
 
   const { canCreate, data: userLimits } = useUserLimit()
 
-  const isOverLimit = !canCreate('healthTrackingEnties')
+  const isOverLimit = !canCreate('problems')
 
   const { data: allProblems = [] } = useProblemsQuery({ category })
 
   const problems = allProblems.filter(
-    (p: any) => p.problem_type === currentType && p.status === currentTab
+    (p: ProblemRecord) => p.problem_type === currentType && p.status === currentTab
   )
 
-  const { updateMutation, createMutation } = useProblemMutations()
+  const { updateMutation, createMutation, deleteMutation } = useProblemMutations()
 
   const handleUpdateProblem = async ({
     id,
@@ -87,12 +87,13 @@ export default function ProblemTable({ category }: ProblemTableProps) {
     }
   }
 
-  const deleteMutation = useMutation<void, any, string>({
-    mutationFn: id => backend.entities.Problem.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['problems', category] })
+  const handleDeleteProblem = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (e) {
+      console.error(e)
     }
-  })
+  }
 
   const bulkDeleteMutation = useMutation<void, any, string[]>({
     mutationFn: async ids => {
@@ -238,7 +239,7 @@ export default function ProblemTable({ category }: ProblemTableProps) {
           <h2 className="text-lg font-semibold text-slate-900">Health Tracking</h2>
           <span className="text-sm text-slate-500">
             {allProblems.length}
-            {isOverLimit ? `/${userLimits?.limits?.healthTrackingEnties}` : ''} used
+            {isOverLimit ? `/${userLimits?.limits?.problems}` : ''} used
           </span>
         </div>
         {isOverLimit ? (
@@ -545,7 +546,7 @@ export default function ProblemTable({ category }: ProblemTableProps) {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => deleteMutation.mutate(problem.id)}
+                        onClick={() => handleDeleteProblem(problem.id)}
                       >
                         <Trash2 className="h-4 w-4 text-rose-500" />
                       </Button>

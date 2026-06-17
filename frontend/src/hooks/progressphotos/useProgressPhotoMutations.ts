@@ -54,7 +54,8 @@ export function useProgressPhotoMutations() {
     networkMode: 'always',
     mutationFn: ({ ids, data }) => progressPhotosRepository.bulkUpdate(ids, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['progressPhotos'] })
+      queryClient.invalidateQueries({ queryKey: ['progressphotos'] })
+      queryClient.invalidateQueries({ queryKey: ['usage'] })
     }
   })
 

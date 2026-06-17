@@ -50,13 +50,11 @@ export default function Learning() {
     return () => observer.disconnect()
   }, [])
 
-  const { canCreate, data } = useUserLimit()
-
-  const learningLimit = canCreate('learning')
+  const { canCreate, data: userLimits } = useUserLimit()
 
   const { data: learningItems = [] } = useLearningQuery()
 
-  const atLimit = canCreate('learning')
+  const isOverLimit = !canCreate('learning')
 
   const { createMutation, updateMutation, deleteMutation } = useLearningMutations()
 
@@ -161,11 +159,11 @@ export default function Learning() {
                 Track courses, books, skills and everything you're learning
               </p>
             </div>
-            {atLimit ? (
+            {isOverLimit ? (
               <Link to="/upgrade" className="w-full lg:w-auto">
                 <Button className="w-full bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
-                  Limit reached ({learningItems?.length}/{learningLimit})
+                  Limit reached ({userLimits?.usage?.learning || 0}/{userLimits?.limits?.learning})
                 </Button>
               </Link>
             ) : (
@@ -245,7 +243,7 @@ export default function Learning() {
                   ? 'Start tracking your learning journey'
                   : 'No items match your filters'}
               </p>
-              {learningItems?.length === 0 && !atLimit && (
+              {learningItems?.length === 0 && !isOverLimit && (
                 <Button
                   onClick={() => setShowForm(true)}
                   className="bg-indigo-600 hover:bg-indigo-700"
@@ -258,12 +256,7 @@ export default function Learning() {
           ) : (
             <div className="space-y-3 pb-8">
               {sorted.map(item => {
-                const overLimit = canCreate('learning')
-                return overLimit ? (
-                  <OverLimitItem key={item.id}>
-                    <LearningItemCard item={item} onEdit={() => {}} onDelete={() => {}} />
-                  </OverLimitItem>
-                ) : (
+                return (
                   <LearningItemCard
                     key={item.id}
                     item={item}
