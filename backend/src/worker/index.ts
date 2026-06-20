@@ -1,7 +1,23 @@
 import 'dotenv/config';
+import express from 'express';
 import { Worker } from 'bullmq';
 import { Redis as IORedis } from 'ioredis';
 import { Resend } from 'resend';
+
+const app = express();
+const PORT = 8000;
+
+app.get('/', (_req, res) => {
+  res.send('Worker is running 🚀');
+});
+
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok' });
+});
+
+app.listen(PORT, () => {
+  console.log(`[express] server listening on port ${PORT}`);
+});
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
