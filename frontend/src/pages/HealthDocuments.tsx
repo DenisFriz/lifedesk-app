@@ -44,8 +44,6 @@ export default function HealthDocuments() {
 
   const isOverLimit = !canCreate('medicalDocuments')
 
-  console.log(userLimits)
-
   const { updateMutation, deleteMutation } = useMedicalDocumentMutations()
 
   const handleDeleteMedicalDocument = async (id: string) => {

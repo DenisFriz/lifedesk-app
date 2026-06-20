@@ -63,7 +63,7 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
   })
 
   const { updateMutation, createMutation, deleteMutation, bulkDeleteMutation, bulkUpdateMutation } =
-    useProjectMutations()
+    useProjectMutations(businessId)
 
   const handleUpdateProject = async ({
     id,

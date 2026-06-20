@@ -234,8 +234,11 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
         if (oldBusiness) {
           const newBusiness = businesses.find(b => b.name === oldBusiness.name)
           if (newBusiness) {
-            urlParams.set('businessId', newBusiness.id)
-            navigate(`${location.pathname}?${urlParams.toString()}`, { replace: true })
+            const newId = newBusiness.id || newBusiness.serverId || ''
+            if (newId) {
+              urlParams.set('businessId', newId)
+              navigate(`${location.pathname}?${urlParams.toString()}`, { replace: true })
+            }
           }
         }
       }
@@ -251,7 +254,7 @@ export default function Layout({ children, currentPageName }: LayoutProps) {
         if (!newBusiness || String(prevBusiness.id) === String(newBusiness.id)) continue
         const oldKey = `business-${prevBusiness.id}`
         const newKey = `business-${newBusiness.id}`
-        console.log('Migrating expandedSections key', oldKey, 'to', newKey)
+
         if (updated[oldKey]) {
           updated[newKey] = true
           delete updated[oldKey]

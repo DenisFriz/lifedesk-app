@@ -1,0 +1,88 @@
+networks:
+  lifedesk-net:
+    driver: bridge
+
+volumes:
+  mongo-data:
+  redis-data:
+
+services:
+  # MongoDB 7
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    networks:
+      - lifedesk-net
+    ports:
+      - '27018:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test:
+        ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # Redis 7 (alpine)
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - lifedesk-net
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  # Express app
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      - lifedesk-net
+    ports:
+      - '3001:3001'
+    env_file:
+      - .env.local
+    environment:
+      PORT: '3001'
+      MONGODB_URI: 'mongodb://mongodb:27017/lifedesk'
+      REDIS_URL: 'redis://redis:6379'
+      NODE_ENV: 'development'
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # BullMQ worker
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ['node', 'dist/worker/index.js']
+    restart: unless-stopped
+    networks:
+      - lifedesk-net
+    env_file:
+      - .env.local
+    environment:
+      REDIS_URL: 'redis://redis:6379'
+      MONGODB_URI: 'mongodb://mongodb:27017/lifedesk'
+      NODE_ENV: 'development'
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy

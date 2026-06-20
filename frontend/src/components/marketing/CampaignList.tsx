@@ -11,7 +11,6 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Plus, Pencil, Trash2, Megaphone, Lock } from 'lucide-react'
-import { useSubscription } from '@/hooks/useSubscription'
 import { CAMPAIGN_TYPES, CAMPAIGN_STATUSES } from './marketingConstants'
 import CampaignFormDialog from './CampaignFormDialog'
 import { cn } from '@/lib/utils'
@@ -21,6 +20,7 @@ import { useMarketingCampaignsQuery } from '@/hooks/marketingcampaign/useMarketi
 import { useMarketingCampaignMutations } from '@/hooks/marketingcampaign/useMarketingCampaignMutations'
 import { CreateMarketingCampaignInput } from '@/repositories/marketing-campaign.repository'
 import { MarketingCampaignRecord } from '@/db'
+import { useUserLimit } from '@/contexts/UserLimitContext'
 
 const statusInfo = Object.fromEntries(CAMPAIGN_STATUSES.map(s => [s.value, s]))
 const typeInfo = Object.fromEntries(CAMPAIGN_TYPES.map(t => [t.value, t]))
@@ -34,8 +34,10 @@ export default function CampaignList({ businessId }: CampaignListProps) {
   const [editing, setEditing] = useState<any | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
-  const { limit } = useSubscription()
-  const campaignLimit = limit('business_marketing_limit')
+
+  const { canCreate, data: userLimits } = useUserLimit()
+
+  const isOverLimit = !canCreate('marketingCampaign')
 
   const { data: campaigns = [] } = useMarketingCampaignsQuery({ businessId })
 
@@ -53,7 +55,8 @@ export default function CampaignList({ businessId }: CampaignListProps) {
     }
   })
 
-  const { createMutation, updateMutation, deleteMutation } = useMarketingCampaignMutations()
+  const { createMutation, updateMutation, deleteMutation } =
+    useMarketingCampaignMutations(businessId)
 
   const handleCreateMarketingCampaign = async (data: CreateMarketingCampaignInput) => {
     try {
@@ -138,14 +141,15 @@ export default function CampaignList({ businessId }: CampaignListProps) {
             </SelectContent>
           </Select>
         </div>
-        {campaigns.length >= campaignLimit ? (
+        {isOverLimit ? (
           <Button
             size="sm"
             variant="outline"
             className="text-slate-500 cursor-not-allowed"
             disabled
           >
-            <Lock className="w-4 h-4 mr-1" /> Limit Reached ({campaigns.length}/{campaignLimit})
+            <Lock className="w-4 h-4 mr-1" /> Limit Reached (
+            {userLimits?.usage?.marketingCampaign || 0}/{userLimits?.limits?.marketingCampaign})
           </Button>
         ) : (
           <Button
@@ -165,7 +169,7 @@ export default function CampaignList({ businessId }: CampaignListProps) {
         <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
           <Megaphone className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <p className="text-slate-500 mb-4">No campaigns yet</p>
-          {campaigns.length < campaignLimit && (
+          {!isOverLimit && (
             <Button
               variant="outline"
               onClick={() => {

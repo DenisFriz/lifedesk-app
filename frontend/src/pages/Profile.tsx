@@ -33,6 +33,7 @@ import EmailVerificationModal from '@/components/EmailVerificationModal'
 import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload'
 import { useAuth } from '@/lib/AuthContext'
 import { useCommunityIdeasQuery } from '@/hooks/communityideas/useCommunityIdeasQuery'
+import { useUserLimit } from '@/contexts/UserLimitContext'
 
 const tierConfig = {
   free: { icon: Zap, color: 'bg-slate-100 text-slate-700', label: 'Free' },
@@ -64,7 +65,8 @@ export default function Profile() {
   const [searchParams] = useSearchParams()
   const checkoutStatus = searchParams.get('checkout')
 
-  const { planName, subscription } = useSubscription()
+  const { subscription } = useSubscription()
+
   const navigate = useNavigate()
 
   const { upload } = useCloudinaryUpload()
@@ -72,6 +74,8 @@ export default function Profile() {
   const { soundEnabled, setSoundEnabled } = useSound()
 
   const { user, isLoadingAuth: isLoading } = useAuth()
+
+  const planName = user?.subscription_tier || 'free'
 
   // On successful checkout, invalidate cached user + subscription data so plan shows immediately
   useEffect(() => {
@@ -414,11 +418,11 @@ export default function Profile() {
 
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-12 h-12 rounded-lg ${planName === 'plus' ? 'bg-indigo-100' : planName === 'pro' || planName === 'enterprise' ? 'bg-orange-100' : currentTier.color} flex items-center justify-center`}
+                  className={`w-12 h-12 rounded-lg ${planName === 'plus' ? 'bg-indigo-100' : planName === 'pro' ? 'bg-orange-100' : currentTier.color} flex items-center justify-center`}
                 >
                   {planName === 'plus' ? (
                     <Crown className="w-6 h-6 text-indigo-600" />
-                  ) : planName === 'pro' || planName === 'enterprise' ? (
+                  ) : planName === 'pro' ? (
                     <Rocket className="w-6 h-6 text-orange-500" />
                   ) : (
                     <TierIcon className="w-6 h-6" />
@@ -436,7 +440,6 @@ export default function Profile() {
                       (subscription?.cancel_at_period_end === true
                         ? `Cancels ${format(new Date(subscription.current_period_end), 'MMM d, yyyy')}`
                         : `Renews ${format(new Date(subscription.current_period_end), 'MMM d, yyyy')}`)}
-                    {planName === 'enterprise' && 'Enterprise — full access'}
                   </div>
                 </div>
                 {planName === 'free' ? (

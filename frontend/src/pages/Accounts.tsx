@@ -385,7 +385,6 @@ export default function Accounts() {
 
   const totalOfflineBalance = offlineAccounts.reduce((sum, a) => {
     const snap = latestBalanceByAccount[a.id]
-    console.log('snap: ', snap)
     return sum + (snap ? snap.balance : 0)
   }, 0)
 

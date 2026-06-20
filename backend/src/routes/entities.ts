@@ -1,4 +1,7 @@
-import { SUBSCRIPTION_LIMITS, HARD_CAPPED_KEYS } from '@/config/subscriptionLimits.js';
+import {
+  SUBSCRIPTION_LIMITS,
+  HARD_CAPPED_KEYS,
+} from '@/config/subscriptionLimits.js';
 import { modelMap } from '@/models/index.js';
 import { UsageKey, UserUsage } from '@/models/UserUsage.js';
 import {
@@ -175,10 +178,20 @@ router.post('/:entity', async (req: Request, res: Response) => {
 
     // unlimited plan (unless resource is hard-capped)
     if (limits.unlimited && !isHardCapped) {
-      const record = await Model.create({
-        ...sanitizeInput(req.body),
-        created_by: userId,
-      });
+      const [record] = await Promise.all([
+        Model.create({
+          ...sanitizeInput(req.body),
+          created_by: userId,
+        }),
+        ...(limitKey
+          ? [
+              UserUsage.updateOne(
+                { user_id: userId },
+                { $inc: { [limitKey]: 1 } },
+              ),
+            ]
+          : []),
+      ]);
 
       return res.status(201).json(record);
     }

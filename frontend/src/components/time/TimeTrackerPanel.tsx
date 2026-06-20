@@ -55,6 +55,7 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
     handleResume
   } = useTimeTracker()
 
+  const [isMobile, setIsMobile] = useState(false)
   const [description, setDescription] = useState('')
   const [notes, setNotes] = useState('')
   const [selectedSection, setSelectedSection] = useState('')
@@ -82,6 +83,14 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
   const originalFaviconRef = useRef<string | null>(null)
 
   const { isHidden } = useLayout()
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)')
+    setIsMobile(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
 
   const { canCreate, data: userLimit } = useUserLimit()
 
@@ -528,6 +537,444 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
   })
 
   const sidebarWidth = collapsed ? 64 : 256
+
+  // Mobile path
+  if (isMobile && isOpen) {
+    return (
+      <div className="lg:hidden fixed inset-0 z-[60] bg-white flex flex-col overflow-y-auto p-4">
+        <div className="flex items-center justify-between mb-3 sticky top-0 bg-white -mx-4 px-4 pt-4 pb-3 border-b border-slate-200">
+          <h3 className="text-sm font-semibold text-slate-900">Time Tracker</h3>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 -mr-2"
+            onClick={() => setIsOpen(false)}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {runningEntry && (
+          <div className="mb-4 p-3 bg-slate-50 rounded-lg space-y-2">
+            <div className="text-2xl font-mono font-bold text-slate-900 text-center">
+              {formatTime(elapsedTime)}
+            </div>
+            <div className="flex gap-2">
+              {!isPaused ? (
+                <Button onClick={handlePause} size="sm" variant="outline" className="flex-1">
+                  <Pause className="w-4 h-4 mr-1" />
+                  Pause
+                </Button>
+              ) : (
+                <Button onClick={handleResume} size="sm" variant="outline" className="flex-1">
+                  <Play className="w-4 h-4 mr-1" />
+                  Resume
+                </Button>
+              )}
+              <Button onClick={handleStop} size="sm" variant="destructive" className="flex-1">
+                <Square className="w-4 h-4 mr-1" />
+                Stop
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          <Input
+            placeholder="What are you working on?"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            disabled={!!runningEntry}
+          />
+          <Textarea
+            placeholder="Notes / tasks completed..."
+            value={notes}
+            onChange={e => {
+              setNotes(e.target.value)
+              if (runningEntry) {
+                backend.entities.TimeEntry.update(runningEntry.id, { notes: e.target.value })
+              }
+            }}
+            className="text-xs resize-none h-16"
+          />
+
+          <Select
+            value={selectedSection}
+            onValueChange={value => {
+              setSelectedSection(value)
+              setSelectedClient('')
+              setSelectedProject('')
+            }}
+            disabled={!!runningEntry}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select section" />
+            </SelectTrigger>
+            <SelectContent>
+              {allSections.map(section => (
+                <SelectItem key={section.id} value={section.id}>
+                  {section.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {isBusinessSelected && (
+            <>
+              <Select
+                value={selectedClient}
+                onValueChange={value => {
+                  setSelectedClient(value)
+                  setSelectedProject('')
+                }}
+                disabled={!!runningEntry}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select client" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">No client</SelectItem>
+                  {filteredClients.map(client => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={selectedProject}
+                onValueChange={setSelectedProject}
+                disabled={!!runningEntry}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">No project</SelectItem>
+                  {filteredProjects.map(project => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          )}
+
+          {!runningEntry &&
+            (() => {
+              return isOverLimit ? (
+                <div className="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 flex items-center gap-2">
+                  <Zap className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                  <span>Limit of {userLimit?.limits?.timeEntries} entries reached. </span>
+                  <Link
+                    to="/upgrade"
+                    onClick={() => setIsOpen(false)}
+                    className="underline text-amber-700 whitespace-nowrap"
+                  >
+                    Upgrade
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  {
+                    <p className="text-xs text-slate-400 text-right">
+                      {userLimit?.usage?.timeEntries || 0} / {userLimit?.limits?.timeEntries}{' '}
+                      entries
+                    </p>
+                  }
+                  <Button onClick={handleStart} className="w-full bg-green-600 hover:bg-green-700">
+                    <Play className="w-4 h-4 mr-2" />
+                    Start Timer
+                  </Button>
+                </>
+              )
+            })()}
+        </div>
+
+        {/* Recent Time Entries */}
+        <div className="mt-4 border-t border-slate-200 pt-4">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-semibold text-slate-700">Recent Entries</h4>
+            <Select
+              value={filterSection}
+              onValueChange={value => {
+                setFilterSection(value)
+                setFilterClient('')
+                setFilterProject('')
+              }}
+            >
+              <SelectTrigger className="h-6 text-xs w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {allSections.map(section => (
+                  <SelectItem key={section.id} value={section.id}>
+                    {section.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {isFilterBusinessSelected && (
+            <div className="space-y-2 mb-2">
+              <Select
+                value={filterClient}
+                onValueChange={value => {
+                  setFilterClient(value)
+                  setFilterProject('')
+                }}
+              >
+                <SelectTrigger className="h-6 text-xs">
+                  <SelectValue placeholder="Filter by client" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">All clients</SelectItem>
+                  {filterSectionClients.map(client => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={filterProject} onValueChange={setFilterProject}>
+                <SelectTrigger className="h-6 text-xs">
+                  <SelectValue placeholder="Filter by project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">All projects</SelectItem>
+                  {filterSectionProjects.map(project => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            {filteredTimeEntries.length === 0 ? (
+              <p className="text-xs text-slate-500 text-center py-4">No time entries yet</p>
+            ) : (
+              filteredTimeEntries.map(entry => (
+                <div
+                  key={entry.id}
+                  className="bg-slate-50 rounded-lg p-2 text-xs space-y-1 overflow-hidden"
+                >
+                  {editingEntryId === entry.id ? (
+                    <div className="space-y-2 flex-1">
+                      <Input
+                        value={editDescription}
+                        onChange={e => setEditDescription(e.target.value)}
+                        className="h-6 text-xs"
+                        placeholder="Description"
+                        autoFocus
+                      />
+                      <Textarea
+                        value={editNotes}
+                        onChange={e => setEditNotes(e.target.value)}
+                        className="text-xs resize-none h-14"
+                        placeholder="Notes..."
+                      />
+                      <Input
+                        type="date"
+                        value={editDate}
+                        onChange={e => setEditDate(e.target.value)}
+                        className="h-6 text-xs w-full"
+                      />
+                      <Input
+                        type="time"
+                        value={editStartTime}
+                        onChange={e => setEditStartTime(e.target.value)}
+                        className="h-6 text-xs w-full"
+                        placeholder="Start time"
+                      />
+                      <Input
+                        type="time"
+                        value={editEndTime}
+                        onChange={e => setEditEndTime(e.target.value)}
+                        className="h-6 text-xs w-full"
+                        placeholder="End time"
+                      />
+                      <Select
+                        value={editSection}
+                        onValueChange={value => {
+                          setEditSection(value)
+                          setEditClient('')
+                          setEditProject('')
+                        }}
+                      >
+                        <SelectTrigger className="h-6 text-xs">
+                          <SelectValue placeholder="Select section" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allSections.map(section => (
+                            <SelectItem key={section.id} value={section.id}>
+                              {section.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {isEditBusinessSelected && (
+                        <>
+                          <Select
+                            value={editClient}
+                            onValueChange={value => {
+                              setEditClient(value)
+                              setEditProject('')
+                            }}
+                          >
+                            <SelectTrigger className="h-6 text-xs">
+                              <SelectValue placeholder="Select client" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_none">No client</SelectItem>
+                              {editSectionClients.map(client => (
+                                <SelectItem key={client.id} value={client.id}>
+                                  {client.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select value={editProject} onValueChange={setEditProject}>
+                            <SelectTrigger className="h-6 text-xs">
+                              <SelectValue placeholder="Select project" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_none">No project</SelectItem>
+                              {editSectionProjects.map(project => (
+                                <SelectItem key={project.id} value={project.id}>
+                                  {project.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </>
+                      )}
+                      <div className="flex gap-1 justify-end">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-xs px-2"
+                          onClick={() => setEditingEntryId(null)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-6 text-xs px-2"
+                          onClick={() => handleSaveEdit(entry.id)}
+                        >
+                          <Check className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2" style={{ width: '100%' }}>
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <p className="font-medium text-slate-900 truncate leading-tight">
+                          {entry.description || 'No description'}
+                        </p>
+                        {entry.notes && (
+                          <p className="text-slate-500 truncate text-[10px] mt-0.5">
+                            {entry.notes}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 text-slate-600 mt-0.5">
+                          <span>{format(new Date(entry.date), 'MMM d')}</span>
+                          <span>•</span>
+                          <span>{formatDuration(entry.duration)}</span>
+                        </div>
+                        {entry.section_id &&
+                          (filterSection === 'all' || filterSection !== entry.section_id) && (
+                            <div className="text-slate-500 mt-0.5 text-[10px] truncate">
+                              {getSectionName(entry.section_id)}
+                            </div>
+                          )}
+                        {(entry.client_id || entry.project_id) && (
+                          <div className="text-slate-500 mt-0.5 truncate text-[10px]">
+                            {getClientName(entry.client_id)}
+                            {entry.client_id && entry.project_id && ' / '}
+                            {getProjectName(entry.project_id)}
+                          </div>
+                        )}
+                      </div>
+                      <div
+                        className="flex gap-1 flex-shrink-0 items-start"
+                        style={{ opacity: 1, visibility: 'visible' }}
+                      >
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          style={{ opacity: 1, visibility: 'visible' }}
+                          onClick={() => handleResumeEntry(entry)}
+                        >
+                          <Play className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          style={{ opacity: 1, visibility: 'visible' }}
+                          onClick={() => handleEditEntry(entry)}
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 text-red-600 hover:text-red-700"
+                          style={{ opacity: 1, visibility: 'visible' }}
+                          onClick={() => handleDeleteEntry(entry.id)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Total Duration */}
+          {filteredTimeEntries.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-slate-200 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1">
+                <span className="font-medium text-slate-700">Total</span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">Time format: HH:MM (hours:minutes)</p>
+                      <p className="text-xs mt-1">
+                        Duration is stored in minutes and rounded to the nearest minute. Entries
+                        shorter than 1 minute are saved as 1 minute.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <span className="font-semibold text-slate-900">
+                {formatDuration(
+                  filteredTimeEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0)
+                )}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <AnimatePresence>

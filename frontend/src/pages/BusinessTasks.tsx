@@ -42,8 +42,6 @@ export default function BusinessTasks() {
     enabled: !!businessId
   })
 
-  console.log('business')
-  console.log(business)
   return (
     <>
       <Helmet>

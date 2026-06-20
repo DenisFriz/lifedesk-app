@@ -98,7 +98,7 @@ export default function Login() {
               <div className="flex flex-col items-center text-center space-y-6 sm:space-y-8">
                 {/* Logo */}
                 <div className="relative group">
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 blur-xl opacity-30 transition-opacity duration-300 group-hover:opacity-40" />
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 opacity-30 transition-opacity duration-300 group-hover:opacity-40" />
 
                   <div className="relative h-20 w-[120px] sm:h-24 sm:w-[200px] rounded-full bg-white ring-4 ring-white/50 flex items-center justify-center overflow-hidden">
                     <img

@@ -7,8 +7,6 @@ import { User } from '@models/index.js';
 import { comparePassword, hashPassword } from '@lib/bcrypt.js';
 import { sanitizeUser } from '@utils/sanitizeUser.js';
 
-import { Resend } from 'resend';
-
 import fs from 'fs';
 import path from 'path';
 
@@ -20,7 +18,10 @@ import {
 } from '@/utils/token.utils.js';
 import { RefreshToken } from '@/models/RefreshToken.js';
 import crypto from 'crypto';
-import { issueAuthSession, getRefreshCookieOptions } from '@/utils/issueAuthSession.js';
+import {
+  issueAuthSession,
+  getRefreshCookieOptions,
+} from '@/utils/issueAuthSession.js';
 import { validate } from '@/utils/validate.js';
 import {
   forgotPasswordSchema,
@@ -31,6 +32,7 @@ import {
   resetPasswordSchema,
 } from '@/schemas/auth.schema.js';
 import z from 'zod';
+import { sendEmailQueue } from '@/queues/sendEmailQueue.js';
 
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
@@ -97,8 +99,6 @@ async function ensureUserUsage(userId: string) {
   );
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const router = Router();
 
 // REGISTER
@@ -128,12 +128,14 @@ router.post(
 
     const loginLink = `${process.env.FRONTEND_URL}/login`;
 
-    resend.emails.send({
-      from: 'onboarding@resend.dev',
+    await sendEmailQueue.add('send-email', {
       to: user.email,
       subject: 'Welcome — registration successful!',
-      html: getRegistrationSuccessTemplate(loginLink, user.full_name || 'there'),
-    }).catch((err) => console.error('Registration email failed:', err));
+      html: getRegistrationSuccessTemplate(
+        loginLink,
+        user.full_name || 'there',
+      ),
+    });
 
     const userResponse = sanitizeUser(user);
 
@@ -276,9 +278,15 @@ router.post(
   '/google/callback',
   validate(googleCallbackSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const { code, redirectUri } = req.body as { code: string; redirectUri: string };
+    const { code, redirectUri } = req.body as {
+      code: string;
+      redirectUri: string;
+    };
 
-    const { tokens } = await googleClient.getToken({ code, redirect_uri: redirectUri });
+    const { tokens } = await googleClient.getToken({
+      code,
+      redirect_uri: redirectUri,
+    });
 
     const idToken = tokens.id_token;
     if (!idToken) {
@@ -431,8 +439,7 @@ router.post(
 
     const resetLink = `${process.env.FRONTEND_URL}/ResetPassword?token=${token}`;
 
-    await resend.emails.send({
-      from: 'onboarding@resend.dev',
+    await sendEmailQueue.add('send-email', {
       to: user.email,
       subject: 'Reset your password',
       html: getResetPasswordTemplate(resetLink, user.full_name || 'there'),

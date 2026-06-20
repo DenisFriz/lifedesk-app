@@ -3,7 +3,7 @@ import { asyncHandler } from '@utils/asyncHandler.js';
 import { AppError } from '@errors/AppError.js';
 import { User } from '@models/index.js';
 import { requireAuth } from '@middleware/auth.js';
-import { Resend } from 'resend';
+import { sendEmailQueue } from '@queues/sendEmailQueue.js';
 
 import fs from 'fs';
 import path from 'path';
@@ -26,8 +26,6 @@ function getVerificationEmailTemplate(code: string, name: string) {
 
   return html;
 }
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 const router = Router();
 
@@ -59,8 +57,7 @@ router.post(
       },
     );
 
-    await resend.emails.send({
-      from: 'onboarding@resend.dev',
+    await sendEmailQueue.add('send-email', {
       to: user.email,
       subject: 'Verify your email',
       html: getVerificationEmailTemplate(code, user.full_name || 'there'),

@@ -3,7 +3,6 @@ import { backend } from '@/api/backend'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLayout } from '@/Layout'
 import { Button } from '@/components/ui/button'
-import { useSubscription } from '@/hooks/useSubscription'
 import UpgradeGate from '@/components/subscription/UpgradeGate'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -963,6 +962,7 @@ export default function Calendar() {
                 enabled={canCreate('push_notifications')}
                 message="Push Notifications require a paid plan. Upgrade to stay on top of your schedule."
                 inline
+                align="right"
               >
                 <Button
                   onClick={handleToggleNotifications}

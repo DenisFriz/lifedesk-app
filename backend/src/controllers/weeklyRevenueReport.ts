@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { User, Subscription } from '@/models/index.js';
+import { sendEmailQueue } from '@/queues/sendEmailQueue.js';
 
 export async function weeklyRevenueReport(req: Request, res: Response) {
   try {
@@ -44,9 +45,11 @@ export async function weeklyRevenueReport(req: Request, res: Response) {
       </ul>
     `;
 
-    console.log(
-      `[EMAIL] To: ${adminEmail}\nSubject: Weekly Revenue Report\n${reportBody}`,
-    );
+    await sendEmailQueue.add('send-email', {
+      to: adminEmail,
+      subject: 'Weekly Revenue Report',
+      html: reportBody,
+    });
 
     res.json({
       success: true,

@@ -65,7 +65,6 @@ export default function ProgressPhotos() {
     const photo = photos.find(p => p.id === id)
     try {
       await deleteMutation.mutateAsync(id)
-      console.log(photo)
       if (photo?.public_id) {
         try {
           await deleteCloudinaryImage(photo.public_id)

@@ -130,7 +130,8 @@ export default function StrategyList({ businessId }) {
 
   const { data: strategies = [] } = useMarketingStrategiesQuery({ businessId })
 
-  const { createMutation, updateMutation, deleteMutation } = useMarketingStrategyMutations()
+  const { createMutation, updateMutation, deleteMutation } =
+    useMarketingStrategyMutations(businessId)
 
   const handleCreateMarketingStrategy = async (data: CreateMarketingStrategyInput) => {
     try {
@@ -187,7 +188,8 @@ export default function StrategyList({ businessId }) {
     <div>
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-slate-500">
-          {strategies.length} {strategies.length === 1 ? 'strategy' : 'strategies'}
+          {userLimits?.usage?.marketingStrategy}{' '}
+          {userLimits?.usage?.marketingStrategy === 1 ? 'strategy' : 'strategies'}
           {isOverLimit ? ` / ${userLimits?.limits?.marketingStrategy}` : ''}
         </p>
         {isOverLimit ? (

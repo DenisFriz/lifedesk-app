@@ -85,7 +85,6 @@ export default function RecurringExpenseForm({
       amount: parseFloat(formData.amount),
       business_id: formData.business_id === '' ? null : formData.business_id
     }
-    console.log('Submitting expense data:', dataToSubmit)
     onSubmit(dataToSubmit)
   }
 

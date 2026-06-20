@@ -50,7 +50,6 @@ export const expenseRepository = {
 
     await db.expenses.put(expense)
 
-    console.log(expense)
     await enqueueMutation('expenses', 'create', {
       ...data,
       optimisticId

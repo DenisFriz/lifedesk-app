@@ -103,7 +103,7 @@ type DowngradeResponse = {
 export default function Upgrade() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { planName, isLoading: subIsLoading } = useSubscription()
+  const { isLoading: subIsLoading } = useSubscription()
   const [loading, setLoading] = useState(null)
   const [expandedPlans, setExpandedPlans] = useState(new Set())
   const [showDowngradeWarning, setShowDowngradeWarning] = useState(false)
@@ -117,6 +117,8 @@ export default function Upgrade() {
     })
 
   const { user, authError } = useAuth()
+
+  const planName = user?.subscription_tier || 'free'
 
   const { data: subscription = null, error: subError } = useQuery<Subscription | null, Error>({
     queryKey: ['subscription', user?.email],
@@ -224,8 +226,8 @@ export default function Upgrade() {
     }
   }
 
-  const isPlus = planName === 'plus' || planName === 'pro' || planName === 'enterprise'
-  const isPro = planName === 'pro' || planName === 'enterprise'
+  const isPlus = planName === 'plus' || planName === 'pro'
+  const isPro = planName === 'pro'
 
   const handleUpgradePro = async () => {
     setLoading('pro')

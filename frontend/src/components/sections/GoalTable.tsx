@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react'
-import { backend } from '@/api/backend'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import UsageLimitGate from '@/components/subscription/UsageLimitGate'
 import { useTaskMutations } from '@/hooks/tasks/useTaskMutations'
 import { taskRepository } from '@/repositories/task.repository'
+import { goalRepository } from '@/repositories/goal.repository'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -348,9 +348,13 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
     })
 
     // Persist to backend - single invalidation after all writes to avoid per-mutation cache corruption
-    Promise.all(
+    newItems.forEach((task: any, index: number) => {
+      updateMutation.mutate({ id: getGoalId(task), data: { order: index } })
+    })
+
+    /* Promise.all(
       newItems.map((goal: any, index) =>
-        backend.entities.Goal.update(String(goal.serverId || goal.id || ''), { order: index })
+        goalRepository.update(String(goal.id || ''), { order: index })
       )
     )
       .then(() => {
@@ -359,7 +363,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
       .catch(err => {
         console.error(err)
         queryClient.invalidateQueries({ queryKey: ['goals'] })
-      })
+      }) */
   }
 
   const paginatedGoals = useMemo(() => {

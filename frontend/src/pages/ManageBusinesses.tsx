@@ -28,7 +28,7 @@ export default function ManageBusinesses() {
 
   const { data: businesses = [] } = useBusinessesQuery()
 
-  const atLimit = canCreate('business')
+  const isOverLimit = !canCreate('business')
 
   const { createMutation, updateMutation, deleteMutation } = useBusinessMutations()
 
@@ -123,11 +123,11 @@ export default function ManageBusinesses() {
               </h1>
               <p className="text-slate-600">Add, edit, or remove your businesses</p>
             </div>
-            {atLimit ? (
+            {isOverLimit ? (
               <Link to="/upgrade">
                 <Button className="bg-amber-500 hover:bg-amber-600">
                   <Lock className="w-4 h-4 mr-2" />
-                  Limit reached ({data?.usage?.business}/{data?.limits?.business})
+                  Limit reached ({data?.usage?.business || 0}/{data?.limits?.business})
                 </Button>
               </Link>
             ) : (
@@ -206,7 +206,7 @@ export default function ManageBusinesses() {
             <div className="text-center py-12">
               <Briefcase className="w-16 h-16 text-slate-300 mx-auto mb-4" />
               <p className="text-slate-500 mb-4">No businesses yet</p>
-              {!atLimit && (
+              {!isOverLimit && (
                 <Button onClick={() => openForm(null)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Your First Business

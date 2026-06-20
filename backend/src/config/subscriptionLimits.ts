@@ -8,6 +8,12 @@ export const HARD_CAPPED_KEYS: (keyof SubscriptionLimits)[] = [
   'timeEntries',
   'medicalDocuments',
   'problems',
+  'business',
+  'projects',
+  'clients',
+  'marketingStrategy',
+  'marketingCampaign',
+  'marketingContent',
 ];
 
 export type SubscriptionLimits = {
@@ -30,20 +36,20 @@ export type SubscriptionLimits = {
   hobbies: number;
   learning: number;
   relationships: number;
-  business?: number;
+  business: number;
   progressPhotos: number;
   projectsAndClients?: number;
-  marketingStrategy?: number;
-  marketingCampaign?: number;
-  marketingContent?: number;
+  marketingStrategy: number;
+  marketingCampaign: number;
+  marketingContent: number;
   budgetEntries: number;
   campaign?: number;
   content?: number;
   income?: number;
   expense?: number;
   timeEntries: number;
-  projects?: number;
-  clients?: number;
+  projects: number;
+  clients: number;
   ai_assistant: boolean;
   community_read: boolean;
   community_submit: boolean;
@@ -77,7 +83,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       hobbies: 3,
       learning: 3,
       relationships: 3,
-      business: 3,
+      business: 1,
       progressPhotos: 3,
       projectsAndClients: 5,
       marketingStrategy: 1,
@@ -120,7 +126,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       hobbies: 10,
       learning: 10,
       relationships: 10,
-      business: 5,
+      business: 3,
       progressPhotos: 10,
       projectsAndClients: 5,
       marketingStrategy: 5,
@@ -131,9 +137,9 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       income: 3,
       expense: 3,
       timeEntries: 50,
-      projects: 10,
-      clients: 10,
-      ai_assistant: true,
+      projects: 50,
+      clients: 50,
+      ai_assistant: false,
       content: 1,
       community_read: true,
       community_submit: true,
@@ -151,6 +157,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       hobbies: 100,
       learning: 100,
       relationships: 100,
+      business: 30,
       timeEntries: 500,
       offlineBankAccount: 50,
       vehicle: 40,
@@ -165,6 +172,11 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       bodyMeasurements: 100,
       budgetEntries: 2000,
       progressPhotos: 100,
+      projects: 500,
+      clients: 500,
+      marketingStrategy: 50,
+      marketingCampaign: 50,
+      marketingContent: 50,
       ai_assistant: true,
       community_read: true,
       community_submit: true,

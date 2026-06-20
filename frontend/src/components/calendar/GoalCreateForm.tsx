@@ -84,7 +84,10 @@ export default function GoalCreateForm({ date, time, open, onOpenChange, initial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent
+        className="max-w-2xl h-full max-h-full lg:h-auto lg:max-h-[90vh] overflow-y-auto"
+        aria-describedby={undefined}
+      >
         <DialogHeader>
           <DialogTitle>Create Goal</DialogTitle>
         </DialogHeader>

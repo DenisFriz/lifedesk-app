@@ -24,19 +24,6 @@ export default function CreateEntryDialog({
 
   const { canCreate, data: userLimit } = useUserLimit()
 
-  /*  const { data: tasks = [] } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: () => backend.entities.Task.list()
-  })
-  const { data: goals = [] } = useQuery({
-    queryKey: ['goals'],
-    queryFn: () => backend.entities.Goal.list()
-  })
-  const { data: events = [] } = useQuery({
-    queryKey: ['events'],
-    queryFn: () => backend.entities.Event.list()
-  }) */
-
   const isCalendarLimitReached = !canCreate('calendarEntries')
 
   useEffect(() => {

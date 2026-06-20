@@ -21,9 +21,7 @@ export async function debugSubscriptionByEmail(
 
     const subs = await Subscription.find({ user_email: email })
       .lean()
-      .select(
-        'stripe_subscription_id plan_name status cancel_at_period_end',
-      );
+      .select('stripe_subscription_id plan_name status cancel_at_period_end');
     const results: any[] = [];
 
     for (const sub of subs) {

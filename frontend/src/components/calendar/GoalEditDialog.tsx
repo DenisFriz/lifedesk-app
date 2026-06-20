@@ -108,7 +108,7 @@ export default function GoalEditDialog({ goal, open, onOpenChange }) {
       />
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          className="w-full h-full max-w-full max-h-full lg:max-w-2xl lg:h-auto lg:max-h-none overflow-y-auto m-0 lg:m-auto rounded-none lg:rounded-lg"
+          className="w-full h-full max-w-full max-h-full lg:max-w-2xl lg:h-auto lg:max-h-[90vh] overflow-y-auto m-0 lg:m-auto rounded-none lg:rounded-lg"
           aria-describedby="goal-edit-description"
         >
           <DialogHeader>
@@ -187,7 +187,7 @@ export default function GoalEditDialog({ goal, open, onOpenChange }) {
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-1 block">Target Date</label>
                 <Input
@@ -315,7 +315,7 @@ export default function GoalEditDialog({ goal, open, onOpenChange }) {
 
             <RecurrenceField formData={formData} setFormData={setFormData} />
 
-            <div className="flex items-center justify-between pt-4 border-t">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pt-4 border-t">
               <Button
                 variant="destructive"
                 onClick={handleDelete}

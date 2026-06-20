@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { Subscription, User } from '@/models/index.js';
+import { sendEmailQueue } from '@/queues/sendEmailQueue.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -19,10 +20,6 @@ const updateUserTier = async (
     { email: user_email },
     { $set: { subscription_tier: tier } },
   );
-};
-
-const sendEmail = (to: string, subject: string, body: string): void => {
-  console.log(`[EMAIL] To: ${to}\nSubject: ${subject}\n${body}`);
 };
 
 const planLabel = (plan: string | null): string =>
@@ -102,15 +99,15 @@ export async function stripeWebhook(req: Request, res: Response) {
 
       await updateUserTier(user_email, plan_name);
 
-      sendEmail(
-        user_email,
-        `Welcome to Lifedesk ${planLabel(plan_name)}! 🎉`,
-        `<p>Hi there,</p>
+      await sendEmailQueue.add('send-email', {
+        to: user_email,
+        subject: `Welcome to Lifedesk ${planLabel(plan_name)}! 🎉`,
+        html: `<p>Hi there,</p>
         <p>Thank you for upgrading to the <strong>Lifedesk ${planLabel(plan_name)} Plan</strong>!</p>
         <p>You now have access to all the features included in your new plan. Log in to explore your enhanced experience.</p>
         <p>If you have any questions, feel free to reach out to our support team.</p>
         <p>Best regards,<br>The Lifedesk Team</p>`,
-      );
+      });
     }
 
     if (event.type === 'customer.subscription.updated') {
@@ -185,21 +182,21 @@ export async function stripeWebhook(req: Request, res: Response) {
           oldPlan !== null && planRank[plan_name] > planRank[oldPlan];
 
         if (isUpgrade) {
-          sendEmail(
-            user_email,
-            `You've upgraded to Lifedesk ${planLabel(plan_name)}! 🎉`,
-            `<p>Hi there,</p>
+          await sendEmailQueue.add('send-email', {
+            to: user_email,
+            subject: `You've upgraded to Lifedesk ${planLabel(plan_name)}! 🎉`,
+            html: `<p>Hi there,</p>
             <p>Great news! Your Lifedesk plan has been upgraded to <strong>${planLabel(plan_name)}</strong>.</p>
             <p>You now have access to all the features of your new plan. Log in to explore!</p>
             <p>Best regards,<br>The Lifedesk Team</p>`,
-          );
+          });
         }
 
         if (isDowngrade) {
-          sendEmail(
-            user_email,
-            `Your Lifedesk plan has changed to ${planLabel(plan_name)}`,
-            `<p>Hi there,</p>
+          await sendEmailQueue.add('send-email', {
+            to: user_email,
+            subject: `Your Lifedesk plan has changed to ${planLabel(plan_name)}`,
+            html: `<p>Hi there,</p>
             <p>Your Lifedesk subscription has been changed from <strong>${planLabel(oldPlan)}</strong> to <strong>${planLabel(plan_name)}</strong>.</p>
             <p>Please note the following:</p>
             <ul>
@@ -209,7 +206,7 @@ export async function stripeWebhook(req: Request, res: Response) {
             <p>You can review what's included in each plan on our <a href="https://app.lifedesk.me/Upgrade">Upgrade page</a>.</p>
             <p>If you have any questions or need help, please contact our support team.</p>
             <p>Best regards,<br>The Lifedesk Team</p>`,
-          );
+          });
         }
       }
     }
@@ -241,10 +238,10 @@ export async function stripeWebhook(req: Request, res: Response) {
 
       await updateUserTier(user_email, 'free');
 
-      sendEmail(
-        user_email,
-        `Your Lifedesk subscription has been cancelled`,
-        `<p>Hi there,</p>
+      await sendEmailQueue.add('send-email', {
+        to: user_email,
+        subject: `Your Lifedesk subscription has been cancelled`,
+        html: `<p>Hi there,</p>
         <p>Your Lifedesk subscription has been cancelled and your account has been downgraded.</p>
         <p>Please note:</p>
         <ul>
@@ -253,7 +250,7 @@ export async function stripeWebhook(req: Request, res: Response) {
         </ul>
         <p>We'd love to have you back! You can resubscribe anytime on our <a href="https://app.lifedesk.me/Upgrade">Upgrade page</a>.</p>
         <p>Best regards,<br>The Lifedesk Team</p>`,
-      );
+      });
     }
 
     res.json({ received: true });

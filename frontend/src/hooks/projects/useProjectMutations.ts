@@ -3,17 +3,18 @@ import { ProjectRecord } from '@/db'
 import { CreateProjectInput, projectRepository } from '@/repositories/project.repository'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-export function useProjectMutations() {
+export function useProjectMutations(businessId?: string | null) {
   const queryClient = useQueryClient()
   const { playSound } = useSound()
+  const queryKey = ['projects', businessId ?? undefined] as const
 
   const updateMutation = useMutation<any, any, { id: string; data: Partial<ProjectRecord> }>({
     networkMode: 'always',
     mutationFn: ({ id, data }) => projectRepository.update(id, data),
     onMutate: async ({ id, data }) => {
-      await queryClient.cancelQueries({ queryKey: ['projects'] })
-      const previousProjects = queryClient.getQueryData(['projects'])
-      queryClient.setQueryData(['projects'], (oldProjects: any) => {
+      await queryClient.cancelQueries({ queryKey })
+      const previousProjects = queryClient.getQueryData(queryKey)
+      queryClient.setQueryData(queryKey, (oldProjects: any) => {
         if (!oldProjects) return oldProjects
         return oldProjects.map((project: any) =>
           project.id === id || project.serverId === id ? { ...project, ...data } : project
@@ -23,7 +24,7 @@ export function useProjectMutations() {
     },
     onError: (err, variables, context: any) => {
       if (context?.previousProjects) {
-        queryClient.setQueryData(['projects'], context.previousProjects)
+        queryClient.setQueryData(queryKey, context.previousProjects)
       }
     }
   })
@@ -34,30 +35,26 @@ export function useProjectMutations() {
       return projectRepository.create(data)
     },
     onMutate: async data => {
-      await queryClient.cancelQueries({ queryKey: ['projects'] })
-      const previousProjects = queryClient.getQueryData<any[]>(['projects']) ?? []
-      queryClient.setQueryData(
-        ['projects'],
-        [
-          {
-            ...data,
-            id: `optimistic-${Date.now()}`,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            is_deleted: false
-          },
-          ...previousProjects
-        ]
-      )
+      await queryClient.cancelQueries({ queryKey })
+      const previousProjects = queryClient.getQueryData<any[]>(queryKey) ?? []
+      queryClient.setQueryData(queryKey, [
+        {
+          ...data,
+          id: `optimistic-${Date.now()}`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          is_deleted: false
+        },
+        ...previousProjects
+      ])
       return { previousProjects }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      queryClient.invalidateQueries({ queryKey })
       queryClient.invalidateQueries({ queryKey: ['usage'] })
     },
     onError: (err, variables, context: any) => {
-      if (context?.previousProjects)
-        queryClient.setQueryData(['projects'], context.previousProjects)
+      if (context?.previousProjects) queryClient.setQueryData(queryKey, context.previousProjects)
     }
   })
 
@@ -68,9 +65,9 @@ export function useProjectMutations() {
       return projectRepository.delete(id)
     },
     onMutate: async id => {
-      await queryClient.cancelQueries({ queryKey: ['projects'] })
-      const previousProjects = queryClient.getQueryData(['projects'])
-      queryClient.setQueryData(['projects'], (oldProjects: any) => {
+      await queryClient.cancelQueries({ queryKey })
+      const previousProjects = queryClient.getQueryData(queryKey)
+      queryClient.setQueryData(queryKey, (oldProjects: any) => {
         if (!oldProjects) return oldProjects
         return oldProjects.filter((p: any) => p.id !== id && p.serverId !== id)
       })
@@ -78,7 +75,7 @@ export function useProjectMutations() {
     },
     onError: (err, id, context: any) => {
       if (context?.previousProjects) {
-        queryClient.setQueryData(['projects'], context.previousProjects)
+        queryClient.setQueryData(queryKey, context.previousProjects)
       }
     }
   })
@@ -99,7 +96,7 @@ export function useProjectMutations() {
       await projectRepository.bulkDelete(ids)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      queryClient.invalidateQueries({ queryKey })
       queryClient.invalidateQueries({ queryKey: ['usage'] })
     }
   })
@@ -113,9 +110,9 @@ export function useProjectMutations() {
       await projectRepository.bulkUpdate(ids, data)
     },
     onMutate: async ({ ids, data }) => {
-      await queryClient.cancelQueries({ queryKey: ['projects'] })
-      const previousProjects = queryClient.getQueryData(['projects'])
-      queryClient.setQueryData(['projects'], (oldProjects: any) => {
+      await queryClient.cancelQueries({ queryKey })
+      const previousProjects = queryClient.getQueryData(queryKey)
+      queryClient.setQueryData(queryKey, (oldProjects: any) => {
         if (!oldProjects) return oldProjects
         return oldProjects.map((project: any) =>
           ids.includes(project.id) ? { ...project, ...data } : project
@@ -124,11 +121,11 @@ export function useProjectMutations() {
       return { previousProjects }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      queryClient.invalidateQueries({ queryKey })
     },
     onError: (err, variables, context: any) => {
       if (context?.previousProjects) {
-        queryClient.setQueryData(['projects'], context.previousProjects)
+        queryClient.setQueryData(queryKey, context.previousProjects)
       }
     }
   })

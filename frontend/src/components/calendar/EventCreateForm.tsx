@@ -83,7 +83,10 @@ export default function EventCreateForm({ date, time, open, onOpenChange, initia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent
+        className="max-w-2xl h-full max-h-full lg:h-auto lg:max-h-[90vh] overflow-y-auto"
+        aria-describedby={undefined}
+      >
         <DialogHeader>
           <DialogTitle>Create Event</DialogTitle>
         </DialogHeader>

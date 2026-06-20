@@ -65,7 +65,8 @@ const calculationHistorySchema = new Schema<ICalculationHistory>(
   },
 );
 
-export const CalculationHistory: Model<ICalculationHistory> = mongoose.model<ICalculationHistory>(
-  'CalculationHistory',
-  calculationHistorySchema,
-);
+export const CalculationHistory: Model<ICalculationHistory> =
+  mongoose.model<ICalculationHistory>(
+    'CalculationHistory',
+    calculationHistorySchema,
+  );
