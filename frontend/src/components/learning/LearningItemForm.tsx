@@ -128,7 +128,7 @@ export default function LearningItemForm({
             onChange={e => set('author', e.target.value)}
           />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-3">
             <Select value={form.type} onValueChange={v => set('type', v)}>
               <SelectTrigger id="type" name="type">
                 <SelectValue placeholder="Type" />
@@ -157,7 +157,7 @@ export default function LearningItemForm({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-3">
             <Select value={form.skill_category} onValueChange={v => set('skill_category', v)}>
               <SelectTrigger id="skill_category" name="skill_category">
                 <SelectValue placeholder="Skill Category" />
@@ -196,7 +196,7 @@ export default function LearningItemForm({
             onChange={e => set('url', e.target.value)}
           />
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-3">
             <div>
               <label htmlFor="progress" className="text-xs text-slate-500 mb-1 block">
                 Progress (%)
@@ -244,7 +244,7 @@ export default function LearningItemForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-3">
             <div>
               <label htmlFor="start_date" className="text-xs text-slate-500 mb-1 block">
                 Start Date

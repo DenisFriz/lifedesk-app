@@ -106,7 +106,7 @@ function OfflineAccountForm({
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-60 overflow-y-auto">
             {CURRENCIES.map(c => (
               <SelectItem key={c} value={c}>
                 {c}
@@ -442,7 +442,7 @@ export default function Accounts() {
                 Manage your bank connections and offline accounts in one place.
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-row items-center max-[320px]:flex-col gap-2">
               <Button
                 variant="outline"
                 className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"

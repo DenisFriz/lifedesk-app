@@ -105,7 +105,7 @@ export default function TangibleAssetForm({ open, onClose, onSubmit, asset, isLo
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="purchase_price">Purchase Price</Label>
               <Input

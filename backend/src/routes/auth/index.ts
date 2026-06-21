@@ -437,7 +437,7 @@ router.post(
 
     await user.save();
 
-    const resetLink = `${process.env.FRONTEND_URL}/ResetPassword?token=${token}`;
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 
     await sendEmailQueue.add('send-email', {
       to: user.email,

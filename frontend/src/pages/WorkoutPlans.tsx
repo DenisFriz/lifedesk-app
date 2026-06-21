@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Plus, Trash2, Pencil, Play, Calendar as CalendarIcon, Lock } from 'lucide-react'
@@ -153,7 +153,7 @@ export default function WorkoutPlans() {
           <div className="grid gap-4">
             {plans.length === 0 ? (
               <Card>
-                <CardContent className="p-12 text-center">
+                <CardContent className="p-6 md:p-12 text-center">
                   <CalendarIcon className="w-16 h-16 text-slate-300 mx-auto mb-4" />
                   <p className="text-slate-500 mb-4">No workout plans created yet</p>
                   {!atLimit && (
@@ -282,7 +282,7 @@ function WorkoutPlanForm({ open, onClose, onSubmit, plan, isLoading }) {
     active: true
   })
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (plan) {
       setFormData({
         name: plan.name || '',
@@ -489,7 +489,7 @@ function WorkoutPlanForm({ open, onClose, onSubmit, plan, isLoading }) {
                         <Trash2 className="w-4 h-4 text-rose-600" />
                       </Button>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-2">
                       {isStrengthType && (
                         <>
                           <Input

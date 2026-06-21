@@ -214,7 +214,7 @@ export default function Workouts() {
           <div className="grid gap-4">
             {filteredWorkouts.length === 0 ? (
               <Card>
-                <CardContent className="p-12 text-center">
+                <CardContent className="p-6 md:p-12 text-center">
                   <Dumbbell className="w-16 h-16 text-slate-300 mx-auto mb-4" />
                   <p className="text-slate-500 mb-4">
                     {workouts.length === 0

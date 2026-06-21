@@ -157,7 +157,7 @@ export default function ImportTransactions({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-white">
+      <DialogContent className="sm:max-w-md bg-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Import Transactions</DialogTitle>
         </DialogHeader>

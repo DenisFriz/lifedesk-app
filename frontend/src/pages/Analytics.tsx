@@ -242,7 +242,7 @@ export default function Analytics() {
           No data for this period
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 max-[320px]:grid-cols-1 gap-6">
           <div className="space-y-2 overflow-y-auto max-h-[320px]">
             {data.map((item, index) => {
               const total = data.reduce((sum, d) => sum + d.value, 0)

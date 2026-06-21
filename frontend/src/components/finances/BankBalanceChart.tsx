@@ -311,9 +311,9 @@ export default function BankBalanceChart({
   const isLoading = isBankLoading || isOfflineSnapshotsLoading || isOfflineAccountsLoading
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col min-[580px]:flex-row items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-slate-900">Balance Over Time</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col min-[580px]:flex-row items-center gap-2">
           <Select value={timePeriod} onValueChange={setTimePeriod}>
             <SelectTrigger className="w-40">
               <SelectValue />

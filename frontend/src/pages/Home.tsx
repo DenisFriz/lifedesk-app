@@ -221,7 +221,7 @@ export default function Home() {
 
           {/* What's New */}
           <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm mb-12">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 flex-wrap">
               <h2 className="text-2xl font-bold text-slate-900">What's New</h2>
               <button
                 onClick={() => toggleSection('whatsnew')}
@@ -244,7 +244,7 @@ export default function Home() {
 
           {/* Customizable Widgets */}
           <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm mb-12">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 flex-wrap">
               <h2 className="home-widgets-title text-2xl font-bold text-slate-900">
                 Dashboard Widgets
               </h2>
@@ -356,7 +356,7 @@ export default function Home() {
 
           {/* Sections */}
           <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm mb-12">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 flex-wrap">
               <h2 className="text-2xl font-bold text-slate-900">Life Areas</h2>
               <button
                 onClick={() => toggleSection('sections')}

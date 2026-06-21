@@ -822,7 +822,7 @@ export default function Budget() {
 
                   <TabsContent value="income">
                     <div className="bg-white rounded-lg border border-slate-200 p-6">
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center flex-col min-[640px]:flex-row justify-between mb-4">
                         <h2 className="budget-income-table-title text-lg font-semibold text-slate-900">
                           Recurring Income
                         </h2>

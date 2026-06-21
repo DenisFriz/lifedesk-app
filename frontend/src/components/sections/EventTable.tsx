@@ -1477,7 +1477,7 @@ export default function EventTable({ category, businessId, filterType }: EventTa
 
                                           {/* Dates & Actions */}
                                           <div className="space-y-2">
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                               <div>
                                                 <label className="text-xs text-slate-500 block mb-1">
                                                   Start Date

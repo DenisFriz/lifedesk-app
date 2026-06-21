@@ -114,7 +114,7 @@ export default function ExpenseForm({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-white">
+      <DialogContent className="sm:max-w-md bg-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{expense ? 'Edit Expense' : 'New Expense'}</DialogTitle>
         </DialogHeader>
@@ -165,7 +165,7 @@ export default function ExpenseForm({
             </label>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 max-[320px]:grid-cols-1 gap-4">
             <div className="space-y-2">
               <Label htmlFor="amount">Amount</Label>
               <Input

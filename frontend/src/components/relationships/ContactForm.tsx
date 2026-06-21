@@ -105,7 +105,7 @@ export default function ContactForm({
             required
           />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-3">
             <Select value={form.relationship} onValueChange={v => set('relationship', v)}>
               <SelectTrigger id="relationship" name="relationship">
                 <SelectValue placeholder="Relationship" />
@@ -145,7 +145,7 @@ export default function ContactForm({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-3">
             <div>
               <label htmlFor="birthday" className="text-xs text-slate-500 mb-1 block">
                 Birthday

@@ -291,7 +291,7 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="make">Make</Label>
                 <Input
@@ -314,7 +314,7 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="year">Year</Label>
                 <Input
@@ -338,7 +338,7 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="fuel_type">Fuel Type</Label>
                 <Select value={f.fuel_type} onValueChange={v => set('fuel_type', v)}>
@@ -368,7 +368,7 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="mileage">Mileage (km)</Label>
                 <Input
@@ -403,7 +403,7 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="purchase_price">Purchase Price</Label>
                 <Input
@@ -599,7 +599,7 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
                   {f.repairs.map((r, idx) => (
                     <div key={idx} className="p-3 bg-slate-50 rounded-lg space-y-2">
                       <div className="flex gap-2 items-start">
-                        <div className="flex-1 grid grid-cols-2 gap-2">
+                        <div className="flex-1 grid grid-cols-1 min-[480px]:grid-cols-2 gap-2">
                           <Input
                             id={`repair_date_${idx}`}
                             name={`repair_date_${idx}`}
@@ -607,6 +607,7 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
                             value={r.date}
                             onChange={e => updateRepair(idx, 'date', e.target.value)}
                           />
+
                           <Input
                             id={`repair_cost_${idx}`}
                             name={`repair_cost_${idx}`}
@@ -616,13 +617,14 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
                             onChange={e => updateRepair(idx, 'cost', e.target.value)}
                             placeholder="Cost"
                           />
+
                           <Input
                             id={`repair_description_${idx}`}
                             name={`repair_description_${idx}`}
                             value={r.description}
                             onChange={e => updateRepair(idx, 'description', e.target.value)}
                             placeholder="Description"
-                            className="col-span-2"
+                            className="min-[480px]:col-span-2"
                           />
                         </div>
                         <Button

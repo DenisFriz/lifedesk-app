@@ -1227,9 +1227,7 @@ export default function TaskTable({
                                       index === 0 && 'border-t-[10px]',
                                       animatingTask === taskId &&
                                         'animate-[wiggle_0.3s_ease-in-out]',
-                                      snapshot.isDragging && 'opacity-50',
-                                      !canCreate('tasks') &&
-                                        'opacity-50 pointer-events-none select-none'
+                                      snapshot.isDragging && 'opacity-50'
                                     )}
                                     style={{
                                       borderBottomColor: '#f5f7fb',

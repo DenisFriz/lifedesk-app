@@ -198,7 +198,7 @@ export default function PlannedVsActual({
       </div>
 
       {/* Summary KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
           {
             label: 'Planned Income',

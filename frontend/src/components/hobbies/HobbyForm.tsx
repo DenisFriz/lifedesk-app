@@ -143,7 +143,7 @@ export default function HobbyForm({ open, onClose, onSubmit, hobby, isLoading = 
             {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-3">
             <div>
               <Label htmlFor="category">Category *</Label>
               <Select value={form.category} onValueChange={v => set('category', v)} required>
@@ -188,7 +188,7 @@ export default function HobbyForm({ open, onClose, onSubmit, hobby, isLoading = 
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-3">
             <div>
               <Label htmlFor="skill_level">Skill Level</Label>
               <Select value={form.skill_level} onValueChange={v => set('skill_level', v)}>
@@ -220,7 +220,7 @@ export default function HobbyForm({ open, onClose, onSubmit, hobby, isLoading = 
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-3">
             <div>
               <Label htmlFor="started_date">Started Date</Label>
               <Input

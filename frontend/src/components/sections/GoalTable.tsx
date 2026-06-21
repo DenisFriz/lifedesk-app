@@ -1693,9 +1693,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                       index === 0 && 'border-t-[10px]',
                                       animatingGoal === goalId &&
                                         'animate-[wiggle_0.3s_ease-in-out]',
-                                      snapshot.isDragging && 'opacity-50',
-                                      !canCreate('goals') &&
-                                        'opacity-50 pointer-events-none select-none'
+                                      snapshot.isDragging && 'opacity-50'
                                     )}
                                     style={{
                                       borderBottomColor: '#f5f7fb',

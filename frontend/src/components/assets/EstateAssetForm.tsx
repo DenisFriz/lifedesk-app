@@ -221,7 +221,7 @@ export default function EstateAssetForm({ open, onClose, onSubmit, asset, isLoad
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="mortgage_amount">Outstanding Mortgage</Label>
               <Input
@@ -250,7 +250,7 @@ export default function EstateAssetForm({ open, onClose, onSubmit, asset, isLoad
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="monthly_costs">Monthly Costs</Label>
               <Input

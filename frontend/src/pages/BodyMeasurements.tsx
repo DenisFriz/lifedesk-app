@@ -221,7 +221,7 @@ export default function BodyMeasurements() {
           <div className="grid gap-4">
             {measurements.length === 0 ? (
               <Card>
-                <CardContent className="p-12 text-center">
+                <CardContent className="p-6 md:p-12 text-center">
                   <TrendingUp className="w-16 h-16 text-slate-300 mx-auto mb-4" />
                   <p className="text-slate-500 mb-4">No measurements recorded yet</p>
                   {!atLimit && (
@@ -401,7 +401,7 @@ function MeasurementForm({ open, onClose, onSubmit, measurement, isLoading }) {
                   <Icon className={cn('w-4 h-4', group.color)} />
                   <h3 className="text-sm font-semibold text-slate-700">{group.label}</h3>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-3">
                   {group.fields.map(f => (
                     <Input
                       key={f.key}

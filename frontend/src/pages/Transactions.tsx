@@ -485,8 +485,8 @@ export default function Transactions() {
 
           <div className="space-y-6">
             <div className="bg-white rounded-lg border border-slate-200 p-4 mb-4">
-              <div className="flex items-center gap-3">
-                <div className="relative flex-1 max-w-md">
+              <div className="flex flex-col min-[640px]:flex-row items-center gap-3">
+                <div className="relative flex-1 w-full">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input
                     placeholder="Search transactions..."
@@ -886,7 +886,7 @@ export default function Transactions() {
             </div>
 
             {filteredTransactions.length > 0 && (
-              <div className="flex items-center justify-between mt-4 px-4 pb-4">
+              <div className="flex flex-col items-center justify-between min-[480px]:flex-row gap-3 mt-4 px-4 pb-4">
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-slate-700">Show</span>
                   <Select
