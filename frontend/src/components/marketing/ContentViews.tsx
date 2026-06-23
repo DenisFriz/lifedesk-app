@@ -179,7 +179,7 @@ function KanbanView({ items, campaigns, onEdit, onDelete }: KanbanViewProps) {
     campaigns.find(c => c.id === id)?.name
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {KANBAN_COLUMNS.map(col => {
         const colItems = items.filter(i => i.status === col.value)
         return (
@@ -436,7 +436,7 @@ export default function ContentViews({ businessId }: ContentViewsProps2) {
   return (
     <div>
       {/* Toolbar */}
-      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+      <div className="flex items-center justify-center min-[480px]:justify-between mb-4 gap-2 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-32 h-8 text-sm">
@@ -493,7 +493,7 @@ export default function ContentViews({ businessId }: ContentViewsProps2) {
             </Select>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col min-[480px]:flex-row justify-between w-full items-center gap-2 self-center">
           {/* View toggle */}
           <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden">
             <button

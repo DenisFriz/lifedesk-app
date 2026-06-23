@@ -582,7 +582,7 @@ export default function Budget() {
             </div>
           )}
           <div ref={headerRef} className="py-6 sm:py-8">
-            <h1 className="budget-page-title text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
+            <h1 className="flex-col min-[480px]:flex-row text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
               <Coins className="w-8 h-8 sm:w-9 sm:h-9" />
               {business ? `${business.name} - Budget` : 'Budget & Recurring Items'}
             </h1>
@@ -830,6 +830,8 @@ export default function Budget() {
                           <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <Input
+                              id="income-search"
+                              name="incomeSearch"
                               placeholder="Search income..."
                               value={incomeSearch}
                               onChange={e => setIncomeSearch(e.target.value)}

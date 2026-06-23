@@ -145,7 +145,7 @@ export default function BusinessOverview() {
             </div>
           )}
           <div ref={headerRef} className="py-6 sm:py-8">
-            <h1 className="businessoverview-page-title text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
+            <h1 className="businessoverview-page-title flex-col min-[480px]:flex-row text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
               <BriefcaseIcon className="w-8 h-8 sm:w-9 sm:h-9" />
               {business?.name || 'Business'} - Overview
             </h1>

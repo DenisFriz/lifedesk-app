@@ -117,8 +117,8 @@ export default function ManageBusinesses() {
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex flex-col min-[480px]:flex-row items-center justify-between mb-8">
-            <div>
-              <h1 className="managebusinesses-page-title text-4xl font-bold text-slate-900 mb-2">
+            <div className="text-center min-[480px]:text-left">
+              <h1 className="managebusinesses-page-title  text-4xl font-bold text-slate-900 mb-2">
                 Manage Businesses
               </h1>
               <p className="text-slate-600">Add, edit, or remove your businesses</p>

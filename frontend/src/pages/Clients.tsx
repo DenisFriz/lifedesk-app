@@ -58,7 +58,7 @@ export default function Clients() {
             </div>
           )}
           <div ref={headerRef} className="py-6 sm:py-8">
-            <h1 className="clients-page-title text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
+            <h1 className="flex-col min-[480px]:flex-row text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
               <Handshake className="w-8 h-8 sm:w-9 sm:h-9" />
               {business ? `${business.name} - Clients` : 'Clients'}
             </h1>

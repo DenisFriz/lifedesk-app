@@ -90,14 +90,14 @@ export default function ProblemForm({
             />
           </div>
           <div className="space-y-2">
-            <Label>Priority</Label>
+            <Label htmlFor="priority">Priority</Label>
             <Select
               value={formData.priority}
               onValueChange={(value: string) =>
                 setFormData({ ...formData, priority: value as 'low' | 'medium' | 'high' })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger id="priority">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

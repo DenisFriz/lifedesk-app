@@ -93,8 +93,11 @@ export default function EventCreateForm({ date, time, open, onOpenChange, initia
 
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Title</label>
+            <label htmlFor="event-title" className="text-sm font-medium text-slate-700 mb-1 block">
+              Title
+            </label>
             <Input
+              id="event-title"
               value={formData.title}
               onChange={e => setFormData({ ...formData, title: e.target.value })}
               placeholder="Event title"
@@ -104,8 +107,14 @@ export default function EventCreateForm({ date, time, open, onOpenChange, initia
           </div>
 
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Description</label>
+            <label
+              htmlFor="event-description"
+              className="text-sm font-medium text-slate-700 mb-1 block"
+            >
+              Description
+            </label>
             <Textarea
+              id="event-description"
               value={formData.description}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
               placeholder="Event description"
@@ -115,7 +124,12 @@ export default function EventCreateForm({ date, time, open, onOpenChange, initia
           </div>
 
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Category</label>
+            <label
+              htmlFor="event-category"
+              className="text-sm font-medium text-slate-700 mb-1 block"
+            >
+              Category
+            </label>
             <Select
               value={
                 formData.category === 'business' && formData.business_id
@@ -134,7 +148,7 @@ export default function EventCreateForm({ date, time, open, onOpenChange, initia
                 }
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger id="event-category">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -155,8 +169,14 @@ export default function EventCreateForm({ date, time, open, onOpenChange, initia
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Start Date</label>
+              <label
+                htmlFor="event-start-date"
+                className="text-sm font-medium text-slate-700 mb-1 block"
+              >
+                Start Date
+              </label>
               <Input
+                id="event-start-date"
                 type="date"
                 value={formData.start_date}
                 onChange={e => setFormData({ ...formData, start_date: e.target.value })}
@@ -164,8 +184,14 @@ export default function EventCreateForm({ date, time, open, onOpenChange, initia
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Start Time</label>
+              <label
+                htmlFor="event-start-time"
+                className="text-sm font-medium text-slate-700 mb-1 block"
+              >
+                Start Time
+              </label>
               <Input
+                id="event-start-time"
                 type="time"
                 value={formData.start_time}
                 onChange={e => setFormData({ ...formData, start_time: e.target.value })}
@@ -175,10 +201,14 @@ export default function EventCreateForm({ date, time, open, onOpenChange, initia
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">
+              <label
+                htmlFor="event-end-date"
+                className="text-sm font-medium text-slate-700 mb-1 block"
+              >
                 End Date (Optional)
               </label>
               <Input
+                id="event-end-date"
                 type="date"
                 value={formData.end_date}
                 onChange={e => setFormData({ ...formData, end_date: e.target.value })}
@@ -186,8 +216,14 @@ export default function EventCreateForm({ date, time, open, onOpenChange, initia
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">End Time</label>
+              <label
+                htmlFor="event-end-time"
+                className="text-sm font-medium text-slate-700 mb-1 block"
+              >
+                End Time
+              </label>
               <Input
+                id="event-end-time"
                 type="time"
                 value={formData.end_time}
                 onChange={e => setFormData({ ...formData, end_time: e.target.value })}

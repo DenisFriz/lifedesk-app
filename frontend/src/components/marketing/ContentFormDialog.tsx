@@ -106,7 +106,7 @@ export default function ContentFormDialog({
                 placeholder="e.g., 5 Tips for Better Instagram Engagement"
               />
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1 block">
                 Related Campaign
               </label>
@@ -127,7 +127,7 @@ export default function ContentFormDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1 block">Type</label>
               <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
                 <SelectTrigger>
@@ -142,7 +142,7 @@ export default function ContentFormDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1 block">Platform</label>
               <Select
                 value={form.platform}
@@ -160,7 +160,7 @@ export default function ContentFormDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1 block">Status</label>
               <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
                 <SelectTrigger>
@@ -175,7 +175,7 @@ export default function ContentFormDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1 block">Publish Date</label>
               <Input
                 type="date"
@@ -183,7 +183,7 @@ export default function ContentFormDialog({
                 onChange={e => setForm(f => ({ ...f, publish_date: e.target.value }))}
               />
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1 block">CTA</label>
               <Input
                 value={form.cta}

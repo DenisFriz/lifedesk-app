@@ -234,7 +234,7 @@ export default function ProblemTable({ category }: ProblemTableProps) {
 
   return (
     <div className="bg-white rounded-xl border border-slate-200">
-      <div className="flex items-center justify-between p-4 border-b border-slate-200">
+      <div className="flex flex-col min-[480px]:flex-row items-center justify-between p-4 border-b border-slate-200">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold text-slate-900">Health Tracking</h2>
           <span className="text-sm text-slate-500">
@@ -558,7 +558,7 @@ export default function ProblemTable({ category }: ProblemTableProps) {
           </table>
 
           {sortedProblems.length > 0 && (
-            <div className="flex items-center justify-between mt-4 px-4 pb-4">
+            <div className="flex flex-col min-[480px]:flex-row items-center justify-between mt-4 px-4 pb-4">
               <div className="flex items-center gap-3">
                 <span className="text-sm text-slate-700">Show</span>
                 <Select

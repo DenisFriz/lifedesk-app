@@ -257,7 +257,7 @@ export default function Upgrade() {
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="mb-8 flex items-center gap-4">
+          <div className="mb-8 flex flex-col min-[480px]:flex-row items-center gap-4">
             <Link to="/profile">
               <Button variant="ghost" size="sm" className="gap-2">
                 <ArrowLeft className="w-4 h-4" /> Back

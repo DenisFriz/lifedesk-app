@@ -117,8 +117,11 @@ export default function TaskCreateForm({ date, time, open, onOpenChange, initial
 
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Title</label>
+            <label htmlFor="task-title" className="text-sm font-medium text-slate-700 mb-1 block">
+              Title
+            </label>
             <Input
+              id="task-title"
               value={formData.title}
               onChange={e => setFormData({ ...formData, title: e.target.value })}
               placeholder="Task title"
@@ -128,8 +131,14 @@ export default function TaskCreateForm({ date, time, open, onOpenChange, initial
           </div>
 
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Description</label>
+            <label
+              htmlFor="task-description"
+              className="text-sm font-medium text-slate-700 mb-1 block"
+            >
+              Description
+            </label>
             <Textarea
+              id="task-description"
               value={formData.description}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
               placeholder="Task description"
@@ -140,7 +149,12 @@ export default function TaskCreateForm({ date, time, open, onOpenChange, initial
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Category</label>
+              <label
+                htmlFor="task-category"
+                className="text-sm font-medium text-slate-700 mb-1 block"
+              >
+                Category
+              </label>
               <Select
                 value={
                   formData.category === 'business' && formData.business_id
@@ -160,7 +174,7 @@ export default function TaskCreateForm({ date, time, open, onOpenChange, initial
                   }
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger id="task-category">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -180,14 +194,16 @@ export default function TaskCreateForm({ date, time, open, onOpenChange, initial
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Goal</label>
+              <label htmlFor="task-goal" className="text-sm font-medium text-slate-700 mb-1 block">
+                Goal
+              </label>
               <Select
                 value={formData.goal_id || 'none'}
                 onValueChange={value =>
                   setFormData({ ...formData, goal_id: value === 'none' ? null : value })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger id="task-goal">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -204,8 +220,14 @@ export default function TaskCreateForm({ date, time, open, onOpenChange, initial
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Due Date</label>
+              <label
+                htmlFor="task-due-date"
+                className="text-sm font-medium text-slate-700 mb-1 block"
+              >
+                Due Date
+              </label>
               <Input
+                id="task-due-date"
                 type="date"
                 value={formData.due_date}
                 onChange={e => setFormData({ ...formData, due_date: e.target.value })}
@@ -213,8 +235,14 @@ export default function TaskCreateForm({ date, time, open, onOpenChange, initial
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Due Time</label>
+              <label
+                htmlFor="task-due-time"
+                className="text-sm font-medium text-slate-700 mb-1 block"
+              >
+                Due Time
+              </label>
               <Input
+                id="task-due-time"
                 type="time"
                 value={formData.due_time}
                 onChange={e => setFormData({ ...formData, due_time: e.target.value })}

@@ -94,8 +94,11 @@ export default function GoalCreateForm({ date, time, open, onOpenChange, initial
 
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Title</label>
+            <label htmlFor="goal-title" className="text-sm font-medium text-slate-700 mb-1 block">
+              Title
+            </label>
             <Input
+              id="goal-title"
               value={formData.title}
               onChange={e => setFormData({ ...formData, title: e.target.value })}
               placeholder="Goal title"
@@ -105,8 +108,14 @@ export default function GoalCreateForm({ date, time, open, onOpenChange, initial
           </div>
 
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Description</label>
+            <label
+              htmlFor="goal-description"
+              className="text-sm font-medium text-slate-700 mb-1 block"
+            >
+              Description
+            </label>
             <Textarea
+              id="goal-description"
               value={formData.description}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
               placeholder="Goal description"
@@ -116,7 +125,12 @@ export default function GoalCreateForm({ date, time, open, onOpenChange, initial
           </div>
 
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Category</label>
+            <label
+              htmlFor="goal-category"
+              className="text-sm font-medium text-slate-700 mb-1 block"
+            >
+              Category
+            </label>
             <Select
               value={
                 formData.category === 'business' && formData.business_id
@@ -135,7 +149,7 @@ export default function GoalCreateForm({ date, time, open, onOpenChange, initial
                 }
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger id="goal-category">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -156,8 +170,14 @@ export default function GoalCreateForm({ date, time, open, onOpenChange, initial
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Target Date</label>
+              <label
+                htmlFor="goal-target-date"
+                className="text-sm font-medium text-slate-700 mb-1 block"
+              >
+                Target Date
+              </label>
               <Input
+                id="goal-target-date"
                 type="date"
                 value={formData.target_date}
                 onChange={e => setFormData({ ...formData, target_date: e.target.value })}
@@ -165,8 +185,14 @@ export default function GoalCreateForm({ date, time, open, onOpenChange, initial
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Target Time</label>
+              <label
+                htmlFor="goal-target-time"
+                className="text-sm font-medium text-slate-700 mb-1 block"
+              >
+                Target Time
+              </label>
               <Input
+                id="goal-target-time"
                 type="time"
                 value={formData.target_time}
                 onChange={e => setFormData({ ...formData, target_time: e.target.value })}

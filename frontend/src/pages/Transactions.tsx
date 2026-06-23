@@ -407,7 +407,7 @@ export default function Transactions() {
             </div>
           )}
           <div ref={headerRef} className="py-6 sm:py-8">
-            <h1 className="transactions-page-title text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
+            <h1 className="flex-col min-[480px]:flex-row text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
               <ArrowLeftRight className="w-8 h-8 sm:w-9 sm:h-9" />
               {business ? `${business.name} - Transactions` : 'Transactions'}
             </h1>
@@ -489,6 +489,8 @@ export default function Transactions() {
                 <div className="relative flex-1 w-full">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input
+                    id="transaction-search"
+                    name="transactionSearch"
                     placeholder="Search transactions..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}

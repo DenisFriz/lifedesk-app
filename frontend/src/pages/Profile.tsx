@@ -302,7 +302,7 @@ export default function Profile() {
                 <div>
                   <Label>Full Name</Label>
                   {isEditing ? (
-                    <div className="mt-1 flex gap-2">
+                    <div className="mt-1 flex flex-col min-[480px]:flex-row gap-2">
                       <Input
                         value={fullName}
                         onChange={e => setFullName(e.target.value)}
@@ -380,7 +380,7 @@ export default function Profile() {
             {/* Subscription */}
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <p>For testing purpose only</p>
-              <div className="mt-4 flex items-center gap-2">
+              <div className="mt-4 flex flex-wrap items-center gap-2">
                 {(['free', 'plus', 'pro'] as const).map(plan => (
                   <button
                     key={plan}
@@ -416,7 +416,7 @@ export default function Profile() {
                 </div>
               )}
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col min-[480px]:flex-row items-center gap-3">
                 <div
                   className={`w-12 h-12 rounded-lg ${planName === 'plus' ? 'bg-indigo-100' : planName === 'pro' ? 'bg-orange-100' : currentTier.color} flex items-center justify-center`}
                 >

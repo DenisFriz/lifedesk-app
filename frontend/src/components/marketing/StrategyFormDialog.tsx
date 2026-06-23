@@ -114,7 +114,7 @@ export default function StrategyFormDialog({ open, onOpenChange, strategy, onSav
 
             {/* SMART Goal Section */}
             <div className="col-span-2 border border-indigo-100 rounded-lg p-4 bg-indigo-50/40">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex flex-col min-[480px]:flex-row items-center gap-2 mb-3">
                 <span className="text-xs font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">
                   SMART Goal
                 </span>
@@ -150,7 +150,7 @@ export default function StrategyFormDialog({ open, onOpenChange, strategy, onSav
                     placeholder: 'By when? (e.g. End of Q2 2026)'
                   }
                 ].map(({ key, label, placeholder }) => (
-                  <div key={key} className="flex gap-3 items-start">
+                  <div key={key} className="flex flex-col min-[480px]:flex-row gap-3 items-start">
                     <span className="text-xs font-semibold text-indigo-600 w-32 flex-shrink-0 pt-2">
                       {label}
                     </span>
@@ -164,8 +164,7 @@ export default function StrategyFormDialog({ open, onOpenChange, strategy, onSav
                 ))}
               </div>
             </div>
-
-            <div>
+            <div className="col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1 block">
                 Target Audience
               </label>
@@ -176,7 +175,7 @@ export default function StrategyFormDialog({ open, onOpenChange, strategy, onSav
                 rows={2}
               />
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1 block">USP</label>
               <Textarea
                 value={form.usp}
@@ -206,7 +205,7 @@ export default function StrategyFormDialog({ open, onOpenChange, strategy, onSav
                   </Badge>
                 ))}
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col min-[480px]:flex-row gap-2">
                 <Select value="" onValueChange={addChannel}>
                   <SelectTrigger className="w-48">
                     <SelectValue placeholder="Add channel..." />

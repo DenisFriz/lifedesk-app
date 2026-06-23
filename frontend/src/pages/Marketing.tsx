@@ -54,15 +54,17 @@ export default function Marketing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {/* Header */}
           <div className="mb-6">
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 flex items-center gap-3 mb-1">
+            <h1 className="text-3xl sm:text-4xl flex-col min-[480px]:flex-row font-bold text-slate-900 flex items-center gap-3 mb-1">
               <Megaphone className="w-8 h-8 sm:w-9 sm:h-9" />
               {business ? `${business.name} — Marketing` : 'Marketing'}
             </h1>
-            <p className="text-slate-500 text-sm">{activeTabInfo?.desc}</p>
+            <p className="text-slate-500 text-sm text-center min-[480px]:text-left">
+              {activeTabInfo?.desc}
+            </p>
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 p-1 bg-white rounded-xl border border-slate-200 mb-6 w-full sm:w-auto sm:inline-flex">
+          <div className="flex flex-wrap gap-1 p-1 bg-white rounded-xl border border-slate-200 mb-6 w-full sm:w-auto sm:inline-flex">
             {TABS.map(tab => {
               const Icon = tab.icon
               return (

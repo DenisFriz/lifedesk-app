@@ -93,10 +93,11 @@ export default function GoalForm({ open, onClose, onSubmit, goal, isLoading }: G
           </div>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Target Date</Label>
+              <Label id="target-date-label">Target Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
+                    aria-labelledby="target-date-label"
                     variant="outline"
                     className={cn(
                       'w-full justify-start text-left font-normal',

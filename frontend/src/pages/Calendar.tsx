@@ -797,11 +797,6 @@ export default function Calendar() {
     return { tasks: dayTasks, goals: dayGoals, events: dayEvents, workouts: dayWorkouts }
   }
 
-  /*   const getBusinessName = businessId => {
-    const business = businesses.find(b => b.id === businessId)
-    return business ? business.name : 'Business'
-  } */
-
   const getCategoryColors = category => {
     const colorMap = {
       assets: 'bg-yellow-50 text-yellow-900',
@@ -1277,7 +1272,7 @@ export default function Calendar() {
               </div>
 
               {viewType === 'month' && (
-                <div className="calendar-month-view grid grid-cols-7 border-t border-l border-slate-200">
+                <div className="grid grid-cols-7 border-t border-l border-slate-200">
                   {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
                     <div
                       key={day}

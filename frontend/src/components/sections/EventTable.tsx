@@ -410,6 +410,8 @@ export default function EventTable({ category, businessId, filterType }: EventTa
               <div className="relative hidden lg:block">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 <Input
+                  id="event-search"
+                  name="eventSearch"
                   placeholder="Search events..."
                   value={table.searchQuery}
                   onChange={e => {

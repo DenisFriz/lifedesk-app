@@ -101,7 +101,7 @@ export default function TaskFormSimple({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-white">
+      <DialogContent className="sm:max-w-md bg-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{task ? 'Edit Task' : 'New Task'}</DialogTitle>
         </DialogHeader>
@@ -128,16 +128,16 @@ export default function TaskFormSimple({
               className="min-h-[80px]"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Priority</Label>
+              <Label htmlFor="tsf-priority">Priority</Label>
               <Select
                 value={formData.priority}
                 onValueChange={value =>
                   setFormData({ ...formData, priority: value as 'low' | 'medium' | 'high' })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger id="tsf-priority">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -148,10 +148,11 @@ export default function TaskFormSimple({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Due Date</Label>
+              <Label htmlFor="tsf-due-date">Due Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
+                    id="tsf-due-date"
                     variant="outline"
                     className={cn(
                       'w-full justify-start text-left font-normal',
@@ -175,12 +176,12 @@ export default function TaskFormSimple({
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Link to Problem (optional)</Label>
+            <Label htmlFor="tsf-problem">Link to Problem (optional)</Label>
             <Select
               value={formData.problem_id}
               onValueChange={value => setFormData({ ...formData, problem_id: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger id="tsf-problem">
                 <SelectValue placeholder="Select problem" />
               </SelectTrigger>
               <SelectContent>
@@ -196,12 +197,12 @@ export default function TaskFormSimple({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Link to Goal (optional)</Label>
+            <Label htmlFor="tsf-goal">Link to Goal (optional)</Label>
             <Select
               value={formData.goal_id}
               onValueChange={value => setFormData({ ...formData, goal_id: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger id="tsf-goal">
                 <SelectValue placeholder="Select goal" />
               </SelectTrigger>
               <SelectContent>
@@ -236,14 +237,14 @@ export default function TaskFormSimple({
               <div className="space-y-3 pl-6 border-l-2 border-purple-200">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Frequency</Label>
+                    <Label htmlFor="tsf-recurrence-frequency">Frequency</Label>
                     <Select
                       value={formData.recurrence_frequency}
                       onValueChange={value =>
                         setFormData({ ...formData, recurrence_frequency: value })
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id="tsf-recurrence-frequency">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -254,8 +255,9 @@ export default function TaskFormSimple({
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Every</Label>
+                    <Label htmlFor="tsf-recurrence-interval">Every</Label>
                     <Input
+                      id="tsf-recurrence-interval"
                       type="number"
                       min="1"
                       value={formData.recurrence_interval}

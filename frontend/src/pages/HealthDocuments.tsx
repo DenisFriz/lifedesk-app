@@ -151,7 +151,10 @@ export default function HealthDocuments() {
                 {showArchived ? 'No archived documents' : 'No documents yet'}
               </p>
               {!showArchived && !isOverLimit && (
-                <Button onClick={() => setShowUploadDialog(true)}>
+                <Button
+                  onClick={() => setShowUploadDialog(true)}
+                  className="flex-col sm:flex-row text-center sm:text-left max-[480px]:h-12"
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Upload Your First Document
                 </Button>

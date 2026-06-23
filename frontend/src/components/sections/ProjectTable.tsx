@@ -218,7 +218,7 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
   return (
     <>
       <div className="bg-white rounded-xl border border-slate-200">
-        <div className="flex items-center justify-between p-4 border-b border-slate-200">
+        <div className="flex items-center flex-col min-[480px]:flex-row justify-between p-4 border-b border-slate-200">
           <div className="flex items-center gap-3">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-40">
@@ -503,7 +503,7 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
             </div>
 
             {sortedProjects.length > 0 && (
-              <div className="flex items-center justify-between mt-4 px-4 pb-4">
+              <div className="flex flex-col min-[480px]:flex-row items-center justify-between mt-4 px-4 pb-4">
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-slate-700">Show</span>
                   <Select

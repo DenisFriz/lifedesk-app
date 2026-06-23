@@ -123,7 +123,7 @@ export default function CampaignFormDialog({
                 placeholder="e.g., Summer Launch 2026"
               />
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1 block">
                 Related Strategy
               </label>
@@ -146,7 +146,7 @@ export default function CampaignFormDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1 block">Campaign Type</label>
               <Select
                 value={form.campaign_type}
@@ -174,7 +174,7 @@ export default function CampaignFormDialog({
                 placeholder="What should this campaign achieve?"
               />
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1 block">Channel</label>
               <Select
                 value={form.channel || 'none'}
@@ -193,7 +193,7 @@ export default function CampaignFormDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1 block">Budget</label>
               <Input
                 type="number"
@@ -204,7 +204,7 @@ export default function CampaignFormDialog({
                 step="0.01"
               />
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1 block">Start Date</label>
               <Input
                 type="date"
@@ -212,7 +212,7 @@ export default function CampaignFormDialog({
                 onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
               />
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1 block">End Date</label>
               <Input
                 type="date"
@@ -220,7 +220,7 @@ export default function CampaignFormDialog({
                 onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
               />
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="text-sm font-medium text-slate-700 mb-1 block">Status</label>
               <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
                 <SelectTrigger>
@@ -268,7 +268,10 @@ export default function CampaignFormDialog({
               )}
               <div className="space-y-2">
                 {form.kpis.map((kpi, i) => (
-                  <div key={i} className="flex gap-2 items-center">
+                  <div
+                    key={i}
+                    className="flex flex-col items-left min-[480px]:flex-row min-[480px]:items-center gap-2"
+                  >
                     <Input
                       placeholder="KPI name (e.g. Leads)"
                       value={kpi.name}
