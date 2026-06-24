@@ -50,6 +50,8 @@ export interface IUserUsage {
   learning: number;
   relationships: number;
   business: number;
+  income: number;
+  expense: number;
   projectsAndClients: number;
   marketingStrategy: number;
   marketingCampaign: number;
@@ -100,6 +102,8 @@ const UserUsageSchema = new Schema<IUserUsageDocument>(
     hobbies: { type: Number, default: 0 },
     learning: { type: Number, default: 0 },
     relationships: { type: Number, default: 0 },
+    income: { type: Number, default: 0 },
+    expense: { type: Number, default: 0 },
 
     business: { type: Number, default: 0 },
     projectsAndClients: { type: Number, default: 0 },

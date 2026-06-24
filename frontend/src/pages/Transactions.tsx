@@ -51,6 +51,7 @@ import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
 import { useExpensesQuery } from '@/hooks/expenses/useExpensesQuery'
 import { useExpenseMutations } from '@/hooks/expenses/useExpenseMutations'
 import { CreateExpenseInput } from '@/repositories/expense.repository'
+import { useUserLimit } from '@/contexts/UserLimitContext'
 
 type Business = {
   id: string
@@ -107,6 +108,8 @@ export default function Transactions() {
   )
   const [customStartDate, setCustomStartDate] = useState(null)
   const [customEndDate, setCustomEndDate] = useState(null)
+
+  const { canCreate } = useUserLimit()
 
   useEffect(() => {
     localStorage.setItem('transactions_timePeriod', timePeriod)
@@ -396,7 +399,7 @@ export default function Transactions() {
         <title>Transactions | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto !px-4 !sm:px-6 !lg:px-8">
           {isScrolled && (
             <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
               <div className="py-3">
@@ -500,6 +503,7 @@ export default function Transactions() {
                 <Button
                   onClick={() => setShowIncomeForm(true)}
                   className="bg-emerald-600 hover:bg-emerald-700"
+                  disabled={!canCreate('income')}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Income
@@ -507,6 +511,7 @@ export default function Transactions() {
                 <Button
                   onClick={() => setShowExpenseForm(true)}
                   className="bg-rose-600 hover:bg-rose-700"
+                  disabled={!canCreate('expense')}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Expense

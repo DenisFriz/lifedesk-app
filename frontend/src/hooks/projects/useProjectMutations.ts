@@ -37,19 +37,26 @@ export function useProjectMutations(businessId?: string | null) {
     onMutate: async data => {
       await queryClient.cancelQueries({ queryKey })
       const previousProjects = queryClient.getQueryData<any[]>(queryKey) ?? []
+      const tempId = `optimistic-${Date.now()}`
       queryClient.setQueryData(queryKey, [
         {
           ...data,
-          id: `optimistic-${Date.now()}`,
+          id: tempId,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           is_deleted: false
         },
         ...previousProjects
       ])
-      return { previousProjects }
+      return { previousProjects, tempId }
     },
-    onSuccess: () => {
+    onSuccess: (createdProject, _variables, context: any) => {
+      queryClient.setQueryData(queryKey, (oldProjects: any) => {
+        if (!oldProjects) return oldProjects
+        return oldProjects.map((project: any) =>
+          project.id === context?.tempId ? createdProject : project
+        )
+      })
       queryClient.invalidateQueries({ queryKey })
       queryClient.invalidateQueries({ queryKey: ['usage'] })
     },

@@ -96,8 +96,8 @@ export default function MainTasks() {
       <Helmet>
         <title>Main Tasks | LifeDesk</title>
       </Helmet>
-      <div className="all-tasks-page min-h-screen page-bg">
-        <div className="all-tasks-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen page-bg">
+        <div className="max-w-7xl mx-auto !px-4 !sm:px-6 !lg:px-8">
           {isScrolled && (
             <div className="all-tasks-sticky-header lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
               <div className="py-3">

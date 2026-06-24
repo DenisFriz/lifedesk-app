@@ -8,6 +8,8 @@ export const HARD_CAPPED_KEYS: (keyof SubscriptionLimits)[] = [
   'timeEntries',
   'medicalDocuments',
   'problems',
+  'income',
+  'expense',
   'business',
   'projects',
   'clients',
@@ -45,8 +47,8 @@ export type SubscriptionLimits = {
   budgetEntries: number;
   campaign?: number;
   content?: number;
-  income?: number;
-  expense?: number;
+  income: number;
+  expense: number;
   timeEntries: number;
   projects: number;
   clients: number;
@@ -91,8 +93,8 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       marketingContent: 1,
       budgetEntries: 20,
       campaign: 1,
-      income: 3,
-      expense: 3,
+      income: 20,
+      expense: 20,
       timeEntries: 5,
       projects: 5,
       clients: 5,
@@ -134,8 +136,8 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       marketingContent: 5,
       budgetEntries: 200,
       campaign: 1,
-      income: 3,
-      expense: 3,
+      income: 200,
+      expense: 200,
       timeEntries: 50,
       projects: 50,
       clients: 50,
@@ -166,6 +168,8 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       estate: 40,
       otherAsset: 40,
       problems: 500,
+      income: 2000,
+      expense: 2000,
       medicalDocuments: 500,
       workouts: 100,
       workoutPlans: 100,

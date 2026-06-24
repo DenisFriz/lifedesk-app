@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,7 +28,8 @@ import {
   Rows3,
   GripVertical,
   Copy,
-  Search
+  Search,
+  Lock
 } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import {
@@ -475,12 +477,26 @@ export default function EventTable({ category, businessId, filterType }: EventTa
           <TabsContent value={table.currentTab} className="m-0" ref={table.tableRef}>
             {events.length === 0 ? (
               <div className="p-12 text-center">
-                <p className="text-slate-500 mb-4">No {table.currentTab} events</p>
-                {table.currentTab === 'active' && (
-                  <Button onClick={handleAddNew} variant="outline">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Your First Event
-                  </Button>
+                {!canCreate('events') ? (
+                  <>
+                    <p className="text-slate-500 mb-4">You've reached your events limit</p>
+                    <Link to="/upgrade">
+                      <Button variant="outline">
+                        <Lock className="w-4 h-4 mr-2" />
+                        Upgrade to add more
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-slate-500 mb-4">No {table.currentTab} events</p>
+                    {table.currentTab === 'active' && (
+                      <Button onClick={handleAddNew} variant="outline">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Your First Event
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             ) : (

@@ -254,7 +254,7 @@ export default function Overview() {
         <title>Overview | LifeDesk</title>
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto !pb-4 !px-4 !sm:px-6 !lg:px-8">
           {isScrolled && (
             <div className="lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
               <div className="py-3">

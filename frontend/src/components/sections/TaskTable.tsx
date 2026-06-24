@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import UsageLimitGate from '@/components/subscription/UsageLimitGate'
 import { Button } from '@/components/ui/button'
@@ -30,7 +31,8 @@ import {
   Rows3,
   GripVertical,
   Copy,
-  Search
+  Search,
+  Lock
 } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import {
@@ -501,12 +503,26 @@ export default function TaskTable({
           <TabsContent value={statusFilter} className="m-0" ref={table.tableRef}>
             {filteredTasksByStatus.length === 0 ? (
               <div className="p-12 text-center">
-                <p className="text-slate-500 mb-4">No {statusFilter} tasks</p>
-                {statusFilter === 'active' && (
-                  <Button onClick={handleAddNew} variant="outline">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Your First Task
-                  </Button>
+                {!canCreate('tasks') ? (
+                  <>
+                    <p className="text-slate-500 mb-4">You've reached your tasks limit</p>
+                    <Link to="/upgrade">
+                      <Button variant="outline">
+                        <Lock className="w-4 h-4 mr-2" />
+                        Upgrade to add more
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-slate-500 mb-4">No {statusFilter} tasks</p>
+                    {statusFilter === 'active' && (
+                      <Button onClick={handleAddNew} variant="outline">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Your First Task
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             ) : (

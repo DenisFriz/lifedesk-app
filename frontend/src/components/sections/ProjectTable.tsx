@@ -1,6 +1,4 @@
 import React, { useState, useMemo } from 'react'
-import { backend } from '@/api/backend'
-import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,6 +15,7 @@ import { Link } from 'react-router-dom'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useProjectsQuery } from '@/hooks/projects/useProjectsQuery'
+import { useClientsQuery } from '@/hooks/clients/useClientsQuery'
 import { useProjectMutations } from '@/hooks/projects/useProjectMutations'
 import { ProjectRecord } from '@/db'
 import { CreateProjectInput } from '@/repositories/project.repository'
@@ -53,10 +52,7 @@ export default function ProjectTable({ businessId }: ProjectTableProps) {
 
   const { data: allProjects = [] } = useProjectsQuery({ businessId })
 
-  const { data: clients = [] } = useQuery<any[]>({
-    queryKey: ['clients'],
-    queryFn: () => backend.entities.Client.filter({ is_deleted: false }, 'name')
-  })
+  const { data: clients = [] } = useClientsQuery()
 
   const filteredProjects = allProjects.filter((project: any) => {
     return statusFilter === 'all' || project.status === statusFilter

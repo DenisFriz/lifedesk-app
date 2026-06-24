@@ -96,8 +96,8 @@ export default function MainGoals() {
       <Helmet>
         <title>Main Goals | LifeDesk</title>
       </Helmet>
-      <div className="all-goals-page min-h-screen page-bg">
-        <div className="all-goals-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen page-bg">
+        <div className="max-w-7xl mx-auto !px-4 !sm:px-6 !lg:px-8">
           {/* Page Title - Sticky on mobile when scrolled */}
           {isScrolled && (
             <div className="all-goals-sticky-header lg:hidden sticky top-[52px] z-20 bg-white border-b border-slate-200 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">

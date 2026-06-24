@@ -163,6 +163,8 @@ router.get(
       projects: userUsed.projects ?? 0,
       clients: userUsed.clients ?? 0,
       business: userUsed.business ?? 0,
+      income: userUsed.income ?? 0,
+      expense: userUsed.expense ?? 0,
       medicalDocuments: userUsed.medicalDocuments ?? 0,
       marketingStrategy: userUsed.marketingStrategy ?? 0,
       marketingCampaign: userUsed.marketingCampaign ?? 0,

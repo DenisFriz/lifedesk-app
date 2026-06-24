@@ -742,7 +742,7 @@ class AppDB extends Dexie {
   constructor() {
     super('AppDB')
 
-    this.version(26).stores({
+    this.version(28).stores({
       goals: 'id, serverId, status, category, is_deleted',
       tasks: 'id, serverId, status, category, is_deleted',
       events: 'id, serverId, status, category, is_deleted',
@@ -762,8 +762,8 @@ class AppDB extends Dexie {
       expenses: 'id, serverId, status, category, is_deleted',
       problems: 'id, serverId, status, category, is_deleted',
       timeentries: 'id, serverId, date, is_deleted',
-      projects: 'id, serverId, name, status, is_deleted',
-      clients: 'id, serverId, name, status, is_deleted',
+      projects: 'id, serverId, name, status, business_id, is_deleted',
+      clients: 'id, serverId, name, status, business_id, is_deleted',
       marketingstrategies: 'id, serverId, name, status, is_deleted',
       marketingcampaigns: 'id, serverId, name, status, is_deleted',
       marketingcontents: 'id, serverId, title, status, category, is_deleted',
