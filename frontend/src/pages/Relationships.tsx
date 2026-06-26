@@ -214,7 +214,7 @@ export default function Relationships() {
             className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 py-6 sm:py-8"
           >
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2 flex items-center gap-3">
+              <h1 className="text-3xl sm:text-4xl flex-col min-[480px]:flex-row text-center font-bold text-slate-900 mb-2 flex items-center gap-3">
                 <Users className="w-8 h-8 sm:w-9 sm:h-9" />
                 Relationships & Friends
               </h1>

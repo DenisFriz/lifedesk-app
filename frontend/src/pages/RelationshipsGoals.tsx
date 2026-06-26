@@ -36,7 +36,7 @@ export default function RelationshipsGoals() {
             </div>
           )}
           <div ref={headerRef} className="py-6 sm:py-8">
-            <h1 className="relationshipsgoals-page-title text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
+            <h1 className="text-3xl sm:text-4xl font-bold flex-col min-[480px]:flex-row text-slate-900 text-center lg:text-left mb-2 flex items-center justify-center lg:justify-start gap-3">
               <Target className="w-8 h-8 sm:w-9 sm:h-9" />
               Relationships - Goals
             </h1>

@@ -657,7 +657,7 @@ export default function Budget() {
                     </TabsList>
                   </Tabs>
                   {incomeData.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         {incomeData.map((item, index) => {
                           const total = incomeData.reduce((sum, cat) => sum + cat.value, 0)
@@ -736,7 +736,7 @@ export default function Budget() {
                     </TabsList>
                   </Tabs>
                   {expensesData.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         {expensesData.map((item, index) => {
                           const total = expensesData.reduce((sum, cat) => sum + cat.value, 0)
@@ -1242,7 +1242,7 @@ export default function Budget() {
                       </div>
 
                       {filteredRecurringIncome.length > 0 && (
-                        <div className="flex items-center justify-between mt-4 px-2">
+                        <div className="flex flex-col min-[480px]:flex-row items-center justify-between mt-4 px-2">
                           <div className="flex items-center gap-3">
                             <span className="text-sm text-slate-700">Show</span>
                             <Select

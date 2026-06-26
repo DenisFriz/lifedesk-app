@@ -141,14 +141,14 @@ export default function PlannedVsActual({
     const pct = planned > 0 ? (actual / planned) * 100 : null
     return (
       <tr className="border-b border-slate-100 hover:bg-slate-50">
-        <td className="px-4 py-2 text-sm text-slate-700">{category}</td>
-        <td className="px-4 py-2 text-sm text-slate-500 text-right">
+        <td className="px-2 sm:px-4 py-2 text-sm text-slate-700">{category}</td>
+        <td className="px-2 sm:px-4 py-2 text-sm text-slate-500 text-right">
           {planned > 0 ? formatCurrency(planned) : '—'}
         </td>
-        <td className="px-4 py-2 text-sm text-slate-900 font-medium text-right">
+        <td className="px-2 sm:px-4 py-2 text-sm text-slate-900 font-medium text-right">
           {actual > 0 ? formatCurrency(actual) : '—'}
         </td>
-        <td className="px-4 py-2 text-right">
+        <td className="px-2 sm:px-4 py-2 text-right">
           {planned > 0 && actual > 0 ? (
             <span
               className={cn(
@@ -163,7 +163,7 @@ export default function PlannedVsActual({
             <span className="text-slate-300 text-xs">—</span>
           )}
         </td>
-        <td className="px-4 py-2 w-24">
+        <td className="px-2 sm:px-4 py-2 w-24">
           {pct !== null && (
             <div className="flex items-center gap-1">
               <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
@@ -244,27 +244,29 @@ export default function PlannedVsActual({
           {allIncomeCategories.length === 0 ? (
             <p className="text-sm text-slate-400 py-4 text-center">No income data</p>
           ) : (
-            <table className="w-full text-left">
-              <thead>
-                <tr className="text-xs text-slate-400 border-b border-slate-100">
-                  <th className="px-4 pb-2">Category</th>
-                  <th className="px-4 pb-2 text-right">Planned</th>
-                  <th className="px-4 pb-2 text-right">Actual</th>
-                  <th className="px-4 pb-2 text-right">Diff</th>
-                  <th className="px-4 pb-2 w-24">Progress</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allIncomeCategories.map(cat => (
-                  <ComparisonRow
-                    key={cat}
-                    category={cat}
-                    planned={plannedIncome[cat] || 0}
-                    actual={actualIncome[cat] || 0}
-                  />
-                ))}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left min-w-[400px]">
+                <thead>
+                  <tr className="text-xs text-slate-400 border-b border-slate-100">
+                    <th className="px-2 sm:px-4 pb-2">Category</th>
+                    <th className="px-2 sm:px-4 pb-2 text-right">Planned</th>
+                    <th className="px-2 sm:px-4 pb-2 text-right">Actual</th>
+                    <th className="px-2 sm:px-4 pb-2 text-right">Diff</th>
+                    <th className="px-2 sm:px-4 pb-2 w-24">Progress</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allIncomeCategories.map(cat => (
+                    <ComparisonRow
+                      key={cat}
+                      category={cat}
+                      planned={plannedIncome[cat] || 0}
+                      actual={actualIncome[cat] || 0}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
@@ -276,27 +278,29 @@ export default function PlannedVsActual({
           {allExpenseCategories.length === 0 ? (
             <p className="text-sm text-slate-400 py-4 text-center">No expense data</p>
           ) : (
-            <table className="w-full text-left">
-              <thead>
-                <tr className="text-xs text-slate-400 border-b border-slate-100">
-                  <th className="px-4 pb-2">Category</th>
-                  <th className="px-4 pb-2 text-right">Planned</th>
-                  <th className="px-4 pb-2 text-right">Actual</th>
-                  <th className="px-4 pb-2 text-right">Diff</th>
-                  <th className="px-4 pb-2 w-24">Progress</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allExpenseCategories.map(cat => (
-                  <ComparisonRow
-                    key={cat}
-                    category={cat}
-                    planned={plannedExpenses[cat] || 0}
-                    actual={actualExpenses[cat] || 0}
-                  />
-                ))}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left min-w-[400px]">
+                <thead>
+                  <tr className="text-xs text-slate-400 border-b border-slate-100">
+                    <th className="px-2 sm:px-4 pb-2">Category</th>
+                    <th className="px-2 sm:px-4 pb-2 text-right">Planned</th>
+                    <th className="px-2 sm:px-4 pb-2 text-right">Actual</th>
+                    <th className="px-2 sm:px-4 pb-2 text-right">Diff</th>
+                    <th className="px-2 sm:px-4 pb-2 w-24">Progress</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allExpenseCategories.map(cat => (
+                    <ComparisonRow
+                      key={cat}
+                      category={cat}
+                      planned={plannedExpenses[cat] || 0}
+                      actual={actualExpenses[cat] || 0}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

@@ -201,3 +201,16 @@
     top: 48px !important;
   }
 }
+
+@media only screen and (max-width: 639px) {
+  .calendar-day-cell {
+    min-height: 88px;
+  }
+  .calendar-day-cell > .absolute {
+    top: 66px !important;
+  }
+  .calendar-day-cell > div > span.block > div.text-xs,
+  .calendar-day-cell > div > button.text-xs {
+    font-size: 9px;
+  }
+}

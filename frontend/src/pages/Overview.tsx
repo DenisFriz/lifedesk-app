@@ -269,7 +269,7 @@ export default function Overview() {
             className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 py-6 sm:py-8"
           >
             <div>
-              <h1 className="overview-page-title text-3xl sm:text-4xl font-bold text-slate-900 text-center lg:text-left flex items-center justify-center lg:justify-start gap-3">
+              <h1 className="text-3xl sm:text-4xl flex-col min-[480px]:flex-row font-bold text-slate-900 text-center lg:text-left flex items-center justify-center lg:justify-start gap-3">
                 <WalletIcon className="w-8 h-8 sm:w-9 sm:h-9" />
                 Financial Overview
               </h1>

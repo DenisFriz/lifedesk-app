@@ -76,6 +76,12 @@ export default function Calendar() {
   const { isHidden } = useLayout()
 
   useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 640)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+
+  useEffect(() => {
     if (!headerRef.current) return
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -86,6 +92,8 @@ export default function Calendar() {
     observer.observe(headerRef.current)
     return () => observer.disconnect()
   }, [])
+
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640)
 
   const [viewType, setViewType] = useState(() => {
     const saved = localStorage.getItem('calendarViewType')
@@ -1273,12 +1281,21 @@ export default function Calendar() {
 
               {viewType === 'month' && (
                 <div className="grid grid-cols-7 border-t border-l border-slate-200">
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                  {[
+                    { short: 'M', long: 'Mon' },
+                    { short: 'T', long: 'Tue' },
+                    { short: 'W', long: 'Wed' },
+                    { short: 'T', long: 'Thu' },
+                    { short: 'F', long: 'Fri' },
+                    { short: 'S', long: 'Sat' },
+                    { short: 'S', long: 'Sun' }
+                  ].map((day, i) => (
                     <div
-                      key={day}
-                      className="text-center text-sm font-medium text-slate-600 py-2 border-r border-b border-slate-200"
+                      key={i}
+                      className="text-center text-xs sm:text-sm font-medium text-slate-600 py-1 sm:py-2 border-r border-b border-slate-200"
                     >
-                      {day}
+                      <span className="sm:hidden">{day.short}</span>
+                      <span className="hidden sm:inline">{day.long}</span>
                     </div>
                   ))}
 
@@ -1296,7 +1313,7 @@ export default function Calendar() {
                     /*    const totalEvents = allDayItems.length */
                     const dayKey = day.toISOString()
                     const isExpanded = expandedDays.has(dayKey)
-                    const maxVisible = 3
+                    const maxVisible = isMobile ? 2 : 3
                     const visibleItems = allDayItems.slice(0, maxVisible)
                     const hiddenItems = allDayItems.slice(maxVisible)
 

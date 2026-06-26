@@ -171,7 +171,7 @@ export default function Login() {
                     <div className="space-y-3 sm:space-y-4">
                       {/* Email */}
                       <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-slate-700">Email</label>
+                        <label htmlFor="email" className="text-sm font-medium text-slate-700">Email</label>
 
                         <div className="relative">
                           <svg
@@ -187,6 +187,7 @@ export default function Login() {
                           </svg>
 
                           <Input
+                            id="email"
                             type="email"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
@@ -200,7 +201,7 @@ export default function Login() {
 
                       {/* Password */}
                       <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-slate-700">Password</label>
+                        <label htmlFor="password" className="text-sm font-medium text-slate-700">Password</label>
 
                         <div className="relative">
                           <svg
@@ -216,6 +217,7 @@ export default function Login() {
                           </svg>
 
                           <Input
+                            id="password"
                             type={showPassword ? 'text' : 'password'}
                             value={password}
                             onChange={e => setPassword(e.target.value)}

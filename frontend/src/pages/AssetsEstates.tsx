@@ -70,7 +70,7 @@ export default function AssetsEstates() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="flex flex-col min-[480px]:flex-row items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+              <h1 className="text-3xl font-bold text-slate-900 flex items-center justify-center min-[480px]:justify-start gap-3">
                 <Home className="w-8 h-8" /> Estates
               </h1>
               <p className="text-slate-600 mt-1">Track your real estate properties</p>

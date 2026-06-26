@@ -89,9 +89,9 @@ export default function HealthDocuments() {
       </Helmet>
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+          <div className="flex flex-col min-[480px]:flex-row items-center min-[480px]:justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 flex items-center gap-3 mb-2">
+              <h1 className="text-3xl sm:text-4xl flex-col min-[480px]:flex-row font-bold text-slate-900 flex items-center gap-3 mb-2">
                 <FileText className="w-9 h-9" />
                 Medical Documents
               </h1>
@@ -145,7 +145,7 @@ export default function HealthDocuments() {
           )}
 
           {filteredDocuments.length === 0 ? (
-            <div className="bg-white rounded-lg border border-slate-200 p-12 text-center">
+            <div className="bg-white rounded-lg border border-slate-200 p-6 min-[480px]:p-12 text-center">
               <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
               <p className="text-slate-600 mb-4">
                 {showArchived ? 'No archived documents' : 'No documents yet'}
