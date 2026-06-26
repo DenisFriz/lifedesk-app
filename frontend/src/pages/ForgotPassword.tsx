@@ -165,7 +165,9 @@ export default function ForgotPassword() {
                           </div>
                         )}
                         <div className="space-y-1.5">
-                          <label htmlFor="email" className="text-sm font-medium text-slate-700">Email</label>
+                          <label htmlFor="email" className="text-sm font-medium text-slate-700">
+                            Email
+                          </label>
 
                           <div className="relative">
                             <svg

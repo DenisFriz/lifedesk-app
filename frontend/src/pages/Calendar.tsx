@@ -93,7 +93,9 @@ export default function Calendar() {
     return () => observer.disconnect()
   }, [])
 
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640)
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 640
+  )
 
   const [viewType, setViewType] = useState(() => {
     const saved = localStorage.getItem('calendarViewType')
