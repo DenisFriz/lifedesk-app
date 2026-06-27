@@ -76,7 +76,10 @@ export default function Calendar() {
   const { isHidden } = useLayout()
 
   useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 640)
+    const handler = () => {
+      setIsMobile(window.innerWidth < 640)
+      setIsCompact(window.innerWidth <= 1024)
+    }
     window.addEventListener('resize', handler)
     return () => window.removeEventListener('resize', handler)
   }, [])
@@ -95,6 +98,9 @@ export default function Calendar() {
 
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== 'undefined' && window.innerWidth < 640
+  )
+  const [isCompact, setIsCompact] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth <= 1024
   )
 
   const [viewType, setViewType] = useState(() => {
@@ -163,6 +169,9 @@ export default function Calendar() {
     return isGranted && storedValue !== 'false'
   })
   const weekViewRef = useRef(null)
+
+  const hourHeight = isCompact ? 70 : 90
+  const weekTotalHeight = hourHeight * 24
 
   const { canCreate } = useUserLimit()
 
@@ -659,10 +668,10 @@ export default function Calendar() {
     // Scroll to 7 AM in week view
     if (viewType === 'week' && weekViewRef.current) {
       setTimeout(() => {
-        weekViewRef.current.scrollTop = 7 * 90 // 7 hours * 90px per hour
+        weekViewRef.current.scrollTop = 7 * hourHeight
       }, 0)
     }
-  }, [viewType])
+  }, [viewType, hourHeight])
 
   const filteredTasks = useMemo(() => {
     if (!showTasks) return []
@@ -1129,7 +1138,7 @@ export default function Calendar() {
                         Filters
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-80" align="end">
+                    <PopoverContent className="w-80 max-h-[80vh] overflow-y-auto" align="end">
                       <div className="space-y-6">
                         <div>
                           <h3 className="calendar-filter-title text-lg font-semibold text-slate-900 mb-3">
@@ -1567,11 +1576,11 @@ export default function Calendar() {
 
               {viewType === 'week' && (
                 <div
-                  className="calendar-week-view border-t border-slate-200 overflow-x-auto"
+                  className="border-t border-slate-200 overflow-x-auto overflow-y-hidden"
                   style={{ height: 'calc(100vh - 250px)' }}
                 >
                   {/* Fixed Header */}
-                  <div className="calendar-week-header flex bg-white sticky top-0 z-10">
+                  <div className="flex bg-white sticky top-0 z-10">
                     <div className="w-6 lg:w-20 border-r border-b border-slate-200 flex-shrink-0" />
                     <div className="flex-1 grid grid-cols-7 border-b border-slate-200">
                       {calendarDays.map((day, idx) => {
@@ -1612,8 +1621,8 @@ export default function Calendar() {
                   >
                     {/* Timeline column */}
                     <div
-                      className="calendar-week-timeline w-6 lg:w-20 border-r border-slate-200 flex-shrink-0"
-                      style={{ minHeight: '2160px' }}
+                      className="calendar-week-timeline w-6 lg:w-20 border-r border-slate-200 flex-shrink-0 self-start"
+                      style={{ height: `${weekTotalHeight}px` }}
                     >
                       {Array.from({ length: 24 }, (_, hour) => (
                         <div
@@ -1630,8 +1639,8 @@ export default function Calendar() {
 
                     {/* Days grid */}
                     <div
-                      className="calendar-week-days flex-1 grid grid-cols-7"
-                      style={{ minHeight: '2160px' }}
+                      className="calendar-week-days flex-1 grid grid-cols-7 self-start"
+                      style={{ height: `${weekTotalHeight}px` }}
                     >
                       {calendarDays.map((day, idx) => {
                         /*  const isToday = isSameDay(day, new Date()) */

@@ -1293,7 +1293,7 @@ export default function Budget() {
 
                   <TabsContent value="expenses">
                     <div className="bg-white rounded-lg border border-slate-200 p-6">
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex flex-col min-[480px]:flex-row items-center justify-between mb-4">
                         <h2 className="budget-expenses-table-title text-lg font-semibold text-slate-900">
                           Recurring Expenses
                         </h2>
@@ -1700,7 +1700,7 @@ export default function Budget() {
                       </div>
 
                       {filteredRecurringExpenses.length > 0 && (
-                        <div className="flex items-center justify-between mt-4 px-2">
+                        <div className="flex flex-col min-[480px]:flex-row items-center justify-between mt-4 px-2">
                           <div className="flex items-center gap-3">
                             <span className="text-sm text-slate-700">Show</span>
                             <Select

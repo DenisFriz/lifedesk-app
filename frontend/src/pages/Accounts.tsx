@@ -592,7 +592,7 @@ export default function Accounts() {
                     latestBalance={latestBalanceByAccount[account.id]?.balance ?? null}
                     onEdit={setEditingAccount}
                     onDelete={id => handleDeleteOfflineAccount(id)}
-                    isOverLimit={atLimit}
+                    isOverLimit={!atLimit}
                   />
                 ))}
               </div>
