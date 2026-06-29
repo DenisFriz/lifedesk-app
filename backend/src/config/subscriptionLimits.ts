@@ -59,7 +59,6 @@ export type SubscriptionLimits = {
   communityComment: boolean;
   communityIdeas?: number;
   notes_words_limit: number;
-  unlimited?: boolean;
   push_notifications: boolean;
 };
 
@@ -187,7 +186,6 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       community_like: true,
       communityComment: true,
       notes_words_limit: 100000,
-      unlimited: true,
       push_notifications: true,
     },
   };

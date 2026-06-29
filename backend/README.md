@@ -2,6 +2,10 @@
 
 A standalone Express.js backend server that replaces the Deno serverless functions from the Base44 BaaS platform. Features complete in-memory data storage and integrations with Stripe, Plaid, and Anthropic APIs.
 
+Stripe 
+
+stripe listen --forward-to localhost:3001/functions/stripeWebhook
+
 ## Quick Start
 
 ### Installation

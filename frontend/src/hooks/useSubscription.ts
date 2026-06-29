@@ -12,6 +12,7 @@ interface Subscription {
   plan_name: string
   cancel_at_period_end?: boolean
   current_period_end?: string
+  current_period_start?: string | null
 }
 
 interface SubscriptionReturn {
@@ -35,11 +36,7 @@ export function useSubscription(): SubscriptionReturn {
     enabled: !!user?.email,
     queryFn: async () => {
       try {
-        const subs = (await backend.entities.Subscription.list()) as Subscription[]
-
-        const userSub = subs.find(s => s.user_email === user?.email)
-
-        return userSub || null
+        return (await backend.user.subscription()) as Subscription | null
       } catch (err) {
         console.error('[useSubscription] Error fetching subscription:', err)
         return null

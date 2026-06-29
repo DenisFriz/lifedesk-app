@@ -88,10 +88,7 @@ type BillingPortalResponse = {
 }
 
 type CheckoutSessionResponse = {
-  data?: {
-    url?: string
-    success?: boolean
-  }
+  url: string
 }
 
 type DowngradeResponse = {
@@ -219,8 +216,8 @@ export default function Upgrade() {
       cancel_url: `${window.location.origin}/upgrade`
     })
 
-    if (res.data?.url) {
-      window.location.href = res.data.url
+    if (res?.url) {
+      window.location.href = res.url
     } else {
       setLoading(null)
     }
@@ -238,8 +235,8 @@ export default function Upgrade() {
       cancel_url: `${window.location.origin}/upgrade`
     })
 
-    if (res.data?.url) {
-      window.location.href = res.data.url
+    if (res?.url) {
+      window.location.href = res.url
     } else {
       setLoading(null)
     }

@@ -33,7 +33,6 @@ import EmailVerificationModal from '@/components/EmailVerificationModal'
 import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload'
 import { useAuth } from '@/lib/AuthContext'
 import { useCommunityIdeasQuery } from '@/hooks/communityideas/useCommunityIdeasQuery'
-import { useUserLimit } from '@/contexts/UserLimitContext'
 
 const tierConfig = {
   free: { icon: Zap, color: 'bg-slate-100 text-slate-700', label: 'Free' },
@@ -61,6 +60,7 @@ export default function Profile() {
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false)
   const [verifyModalOpen, setVerifyModalOpen] = useState(false)
   const [verifying, setVerifying] = useState(false)
+  const [portalLoading, setPortalLoading] = useState(false)
 
   const [searchParams] = useSearchParams()
   const checkoutStatus = searchParams.get('checkout')
@@ -77,11 +77,16 @@ export default function Profile() {
 
   const planName = user?.subscription_tier || 'free'
 
-  // On successful checkout, invalidate cached user + subscription data so plan shows immediately
+  // On successful checkout, sync subscription from Stripe then invalidate cached user + subscription data
   useEffect(() => {
     if (checkoutStatus === 'success') {
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] })
-      queryClient.invalidateQueries({ queryKey: ['subscription'] })
+      backend.functions
+        .invoke('syncSubscriptionFromStripe')
+        .catch(() => {})
+        .finally(() => {
+          queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+          queryClient.invalidateQueries({ queryKey: ['subscription'] })
+        })
     }
   }, [checkoutStatus, queryClient])
 
@@ -99,6 +104,20 @@ export default function Profile() {
       navigate('/login')
     } catch (error) {
       console.error(error)
+    }
+  }
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true)
+    try {
+      const result = await backend.functions.invoke<{ url: string }>('createBillingPortalSession', {
+        return_url: window.location.href
+      })
+      if (result?.url) {
+        window.location.href = result.url
+      }
+    } finally {
+      setPortalLoading(false)
     }
   }
 
@@ -184,6 +203,10 @@ export default function Profile() {
     enabled: !!user?.email
   })
 
+  const [ideasPage, setIdeasPage] = useState(1)
+  const [commentsPage, setCommentsPage] = useState(1)
+  const PAGE_SIZE = 5
+
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'plus' | 'pro'>('free')
 
   useEffect(() => {
@@ -200,10 +223,6 @@ export default function Profile() {
       queryClient.invalidateQueries({ queryKey: ['currentUser'] })
     }
   })
-
-  const [ideasPage, setIdeasPage] = useState(1)
-  const [commentsPage, setCommentsPage] = useState(1)
-  const PAGE_SIZE = 5
 
   if (isLoading) {
     return (
@@ -416,9 +435,17 @@ export default function Profile() {
                 </div>
               )}
 
-              <div className="flex flex-col min-[480px]:flex-row items-center gap-3">
+              {/* Plan icon + name + status badge */}
+              <div className="flex flex-col min-[480px]:flex-row items-start min-[480px]:items-center gap-3 mb-5">
                 <div
-                  className={`w-12 h-12 rounded-lg ${planName === 'plus' ? 'bg-indigo-100' : planName === 'pro' ? 'bg-orange-100' : currentTier.color} flex items-center justify-center`}
+                  className={cn(
+                    'w-12 h-12 rounded-lg flex-shrink-0 flex items-center justify-center',
+                    planName === 'plus'
+                      ? 'bg-indigo-100'
+                      : planName === 'pro'
+                        ? 'bg-orange-100'
+                        : currentTier.color.split(' ')[0]
+                  )}
                 >
                   {planName === 'plus' ? (
                     <Crown className="w-6 h-6 text-indigo-600" />
@@ -428,32 +455,93 @@ export default function Profile() {
                     <TierIcon className="w-6 h-6" />
                   )}
                 </div>
-                <div className="flex-1">
-                  <div className="font-medium text-slate-900 capitalize">{planName} Plan</div>
-                  <div className="text-sm text-slate-500 flex items-center gap-1.5">
-                    {subscription?.cancel_at_period_end === true && (
-                      <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-slate-900 capitalize">{planName} Plan</span>
+                    {planName !== 'free' && (
+                      <Badge
+                        variant="outline"
+                        className={
+                          subscription?.cancel_at_period_end === true
+                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : 'bg-green-50 text-green-700 border-green-200'
+                        }
+                      >
+                        {subscription?.cancel_at_period_end === true ? (
+                          <span className="flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3" /> Canceling
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" /> Active
+                          </span>
+                        )}
+                      </Badge>
                     )}
-                    {planName === 'free' && 'Basic access — upgrade to unlock more'}
-                    {(planName === 'plus' || planName === 'pro') &&
-                      subscription?.current_period_end &&
-                      (subscription?.cancel_at_period_end === true
-                        ? `Cancels ${format(new Date(subscription.current_period_end), 'MMM d, yyyy')}`
-                        : `Renews ${format(new Date(subscription.current_period_end), 'MMM d, yyyy')}`)}
+                  </div>
+                  {planName === 'free' && (
+                    <p className="text-sm text-slate-500 mt-0.5">
+                      Basic access — upgrade to unlock more
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Date cards — paid plans only */}
+              {planName !== 'free' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                  <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
+                    <p className="text-xs text-slate-500 mb-0.5 uppercase tracking-wide">Started</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {subscription?.current_period_start
+                        ? format(new Date(subscription.current_period_start), 'MMM d, yyyy')
+                        : '—'}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
+                    <p className="text-xs text-slate-500 mb-0.5 uppercase tracking-wide">
+                      {subscription?.cancel_at_period_end === true ? 'Ends' : 'Renews'}
+                    </p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {subscription?.current_period_end
+                        ? format(new Date(subscription.current_period_end), 'MMM d, yyyy')
+                        : '—'}
+                    </p>
                   </div>
                 </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex flex-col sm:flex-row gap-2">
                 {planName === 'free' ? (
-                  <Link to="/upgrade">
-                    <Button className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
+                  <Link to="/upgrade" className="w-full sm:w-auto">
+                    <Button className="w-full sm:w-auto gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
                       <Sparkles className="w-4 h-4" /> Upgrade
                     </Button>
                   </Link>
                 ) : (
-                  <Link to="/upgrade">
-                    <Button variant="outline" size="sm">
-                      Manage
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleManageSubscription}
+                      disabled={portalLoading}
+                      className="w-full sm:w-auto"
+                    >
+                      {portalLoading ? 'Loading...' : 'Manage Subscription'}
                     </Button>
-                  </Link>
+                    {subscription?.cancel_at_period_end !== true && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleManageSubscription}
+                        disabled={portalLoading}
+                        className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
+                      >
+                        Cancel Plan
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             </div>

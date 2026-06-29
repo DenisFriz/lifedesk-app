@@ -123,7 +123,8 @@ export const backend = {
     changeSubscription: (subscription: 'free' | 'plus' | 'pro') =>
       apiFetch<DeleteRequestResponse>('POST', '/user/change-subscription', {
         subscription
-      })
+      }),
+    subscription: () => apiFetch('GET', '/user/subscription')
   },
   email: {
     sendEmailVerificationCode: () =>

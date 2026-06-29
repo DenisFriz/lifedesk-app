@@ -127,9 +127,9 @@ export async function createCheckoutSession(
             proration_behavior: 'always_invoice',
             billing_cycle_anchor: 'unchanged',
             metadata: {
-              user_email: req.user.email,
-              user_id: 1,
-              plan_name,
+              user_email: String(req.user.email),
+              user_id: String(req.user._id),
+              plan_name: String(plan_name),
             },
           });
 
@@ -140,7 +140,7 @@ export async function createCheckoutSession(
 
           const redirectUrl =
             success_url ||
-            `${process.env.FRONTEND_URL}/Profile?checkout=success`;
+            `${process.env.FRONTEND_URL}/profile?checkout=success`;
           return res.json({ url: redirectUrl });
         }
       } catch (err: any) {
@@ -152,15 +152,15 @@ export async function createCheckoutSession(
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       success_url:
-        success_url || `${process.env.FRONTEND_URL}/Profile?checkout=success`,
+        success_url || `${process.env.FRONTEND_URL}/profile?checkout=success`,
       cancel_url:
-        cancel_url || `${process.env.FRONTEND_URL}/Profile?checkout=cancel`,
+        cancel_url || `${process.env.FRONTEND_URL}/profile?checkout=cancel`,
       customer_email: stripeCustomerId ? undefined : req.user.email,
       customer: stripeCustomerId || undefined,
       metadata: {
-        user_email: req.user.email,
-        user_id: req.user._id,
-        plan_name,
+        user_email: String(req.user.email),
+        user_id: String(req.user._id),
+        plan_name: String(plan_name),
       },
     };
 

@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from 'express';
 
 import { asyncHandler } from '@utils/asyncHandler.js';
 import { AppError } from '@errors/AppError.js';
-import { User } from '@models/index.js';
+import { User, Subscription } from '@models/index.js';
 import { cloudinary } from '@lib/cloudinary.js';
 import { comparePassword } from '@lib/bcrypt.js';
 import { sanitizeUser } from '@utils/sanitizeUser.js';
@@ -41,6 +41,16 @@ router.get(
       email_verified: userResponse.email_verified,
       is_deleted: userResponse.is_deleted,
     });
+  }),
+);
+
+// SUBSCRIPTION
+router.get(
+  '/subscription',
+  requireAuth,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const sub = await Subscription.findOne({ user_email: req.user.email }).lean();
+    res.json(sub || null);
   }),
 );
 
@@ -183,17 +193,9 @@ router.get(
       push_notifications: currentPlanLimits.push_notifications ?? false,
     };
 
-    const isUnlimited = currentPlanLimits.unlimited === true;
-
     const limits = Object.fromEntries(
       (Object.keys(usage) as (keyof typeof usage)[]).map((key) => {
         const limit = currentPlanLimits[key as keyof typeof currentPlanLimits];
-        if (
-          isUnlimited &&
-          !HARD_CAPPED_KEYS.includes(key as keyof SubscriptionLimits)
-        ) {
-          return [key, null];
-        }
         return [key, typeof limit === 'number' ? limit : null];
       }),
     );
@@ -201,12 +203,6 @@ router.get(
     const remaining = Object.fromEntries(
       (Object.keys(usage) as (keyof typeof usage)[]).map((key) => {
         const limit = currentPlanLimits[key as keyof typeof currentPlanLimits];
-        if (
-          isUnlimited &&
-          !HARD_CAPPED_KEYS.includes(key as keyof SubscriptionLimits)
-        ) {
-          return [key, null];
-        }
         const used = usage[key] ?? 0;
         return [
           key,

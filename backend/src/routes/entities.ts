@@ -176,26 +176,6 @@ router.post('/:entity', async (req: Request, res: Response) => {
     const limitKey = entityToLimitKey[modelKey] as UsageKey;
     const isHardCapped = limitKey && HARD_CAPPED_KEYS.includes(limitKey as any);
 
-    // unlimited plan (unless resource is hard-capped)
-    if (limits.unlimited && !isHardCapped) {
-      const [record] = await Promise.all([
-        Model.create({
-          ...sanitizeInput(req.body),
-          created_by: userId,
-        }),
-        ...(limitKey
-          ? [
-              UserUsage.updateOne(
-                { user_id: userId },
-                { $inc: { [limitKey]: 1 } },
-              ),
-            ]
-          : []),
-      ]);
-
-      return res.status(201).json(record);
-    }
-
     if (modelKey === 'note') {
       const wordLimit = limits.notes_words_limit;
       if (typeof wordLimit === 'number') {

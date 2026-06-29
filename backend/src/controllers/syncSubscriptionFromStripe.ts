@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import Stripe from 'stripe';
-import { Subscription } from '@/models/index.js';
+import { Subscription, User } from '@/models/index.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -82,6 +82,19 @@ export async function syncSubscriptionFromStripe(req: Request, res: Response) {
           });
         }
       }
+    }
+
+    const activeSynced = results.find(r => r.data.status === 'active');
+    if (activeSynced) {
+      await User.findOneAndUpdate(
+        { _id: req.user._id },
+        { $set: { subscription_tier: activeSynced.data.plan_name } },
+      );
+    } else if (results.length > 0) {
+      await User.findOneAndUpdate(
+        { _id: req.user._id },
+        { $set: { subscription_tier: 'free' } },
+      );
     }
 
     res.json({
