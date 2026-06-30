@@ -14,7 +14,11 @@ import {
   Repeat,
   Search,
   ArrowLeftRight,
-  Building2
+  Building2,
+  Loader2,
+  TrendingUp,
+  TrendingDown,
+  Landmark
 } from 'lucide-react'
 import AddToBudgetModal from '@/components/finances/AddToBudgetModal'
 import { Input } from '@/components/ui/input'
@@ -27,7 +31,6 @@ import { cn } from '@/lib/utils'
 import IncomeForm from '@/components/finances/IncomeForm'
 import ExpenseForm from '@/components/finances/ExpenseForm'
 import ImportTransactions from '@/components/finances/ImportTransactions'
-import BankConnectionManager from '@/components/finances/BankConnectionManager'
 import {
   Select,
   SelectContent,
@@ -93,7 +96,6 @@ export default function Transactions() {
   })
 
   const [showImport, setShowImport] = useState(false)
-  const [showBankConnect, setShowBankConnect] = useState(false)
   const [addToBudgetTransaction, setAddToBudgetTransaction] = useState(null)
   const [showIncomeForm, setShowIncomeForm] = useState(false)
   const [showExpenseForm, setShowExpenseForm] = useState(false)
@@ -121,6 +123,62 @@ export default function Transactions() {
   const { data: incomes = [] } = useIncomesQuery()
 
   const { data: expenses = [] } = useExpensesQuery()
+
+  const { data: plaidConnections = [] } = useQuery({
+    queryKey: ['plaid-connections'],
+    queryFn: async () => {
+      const res = await backend.functions.invoke<any>('plaid', { action: 'get_connections' })
+      return res.connections || []
+    }
+  })
+  const hasConnections = plaidConnections.length > 0
+
+  const timePeriodToDays = () => {
+    if (timePeriod === 'custom' && customStartDate && customEndDate) {
+      return Math.ceil((customEndDate.getTime() - customStartDate.getTime()) / 86400000)
+    }
+    switch (timePeriod) {
+      case '30days':
+        return 30
+      case '90days':
+        return 90
+      case '6months':
+        return 180
+      case '1year':
+        return 365
+      default:
+        return 3650
+    }
+  }
+
+  const { data: plaidTransactions = [], isLoading: loadingPlaid } = useQuery({
+    queryKey: ['plaid-transactions', timePeriod, customStartDate, customEndDate],
+    queryFn: async () => {
+      const res = await backend.functions.invoke<any>('plaid', {
+        action: 'get_transactions',
+        days: timePeriodToDays()
+      })
+      return res.transactions || []
+    },
+    enabled: hasConnections
+  })
+
+  const { data: plaidBalances = [] } = useQuery({
+    queryKey: ['plaid-balances'],
+    queryFn: async () => {
+      const res = await backend.functions.invoke<any>('plaid', { action: 'get_balances' })
+      return res.accounts || []
+    },
+    enabled: hasConnections
+  })
+
+  const totalBankBalance = plaidBalances.reduce((s, a) => s + (a.balance || 0), 0)
+  const plaidIncome = plaidTransactions
+    .filter(tx => !tx.pending && tx.amount > 0)
+    .reduce((s, tx) => s + tx.amount, 0)
+  const plaidExpenses = plaidTransactions
+    .filter(tx => !tx.pending && tx.amount < 0)
+    .reduce((s, tx) => s + Math.abs(tx.amount), 0)
 
   const {
     deleteMutation: deleteIncomeMutation,
@@ -229,6 +287,23 @@ export default function Transactions() {
       ...expenses.map(e => ({ ...e, type: 'expense', isRecurring: false }))
     ]
 
+    // Add live Plaid transactions
+    const plaidMapped = (hasConnections ? plaidTransactions : [])
+      .filter(tx => !tx.pending)
+      .map(tx => ({
+        id: tx.plaid_transaction_id,
+        type: tx.amount > 0 ? 'income' : 'expense',
+        title: tx.title,
+        amount: Math.abs(tx.amount),
+        date: tx.date,
+        category: tx.category || '',
+        notes: tx.subcategory || '',
+        bank_account_name: tx.institution_name,
+        _isPlaid: true as const
+      }))
+
+    transactions = [...transactions, ...plaidMapped]
+
     // Filter by business ID if present
     if (businessId) {
       transactions = transactions.filter(t => String(t.business_id) === String(businessId))
@@ -273,6 +348,8 @@ export default function Transactions() {
   }, [
     incomes,
     expenses,
+    plaidTransactions,
+    hasConnections,
     sortBy,
     sortOrder,
     searchQuery,
@@ -486,6 +563,58 @@ export default function Transactions() {
             customEndDate={customEndDate}
           />
 
+          {hasConnections && (
+            <div>
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 px-1">
+                Live Bank Data
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-white rounded-lg border border-slate-200 p-4 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Income</p>
+                    <p className="text-lg font-bold text-emerald-600">
+                      +{formatCurrency(plaidIncome).replace(/^[€$£]/, '')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg border border-slate-200 p-4 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-rose-50 flex items-center justify-center flex-shrink-0">
+                    <TrendingDown className="w-4 h-4 text-rose-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Expenses</p>
+                    <p className="text-lg font-bold text-rose-600">
+                      -{formatCurrency(plaidExpenses).replace(/^[€$£]/, '')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg border border-slate-200 p-4 flex items-center gap-3">
+                  <div
+                    className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${totalBankBalance >= 0 ? 'bg-indigo-50' : 'bg-orange-50'}`}
+                  >
+                    <Landmark
+                      className={`w-4 h-4 ${totalBankBalance >= 0 ? 'text-indigo-600' : 'text-orange-600'}`}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Current Balance</p>
+                    <p
+                      className={`text-lg font-bold ${totalBankBalance >= 0 ? 'text-indigo-600' : 'text-orange-600'}`}
+                    >
+                      {totalBankBalance >= 0 ? '+' : '-'}
+                      {formatCurrency(Math.abs(totalBankBalance)).replace(/^[€$£]/, '')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-6">
             <div className="bg-white rounded-lg border border-slate-200 p-4 mb-4">
               <div className="flex flex-col min-[640px]:flex-row items-center gap-3">
@@ -499,6 +628,9 @@ export default function Transactions() {
                     onChange={e => setSearchQuery(e.target.value)}
                     className="pl-10"
                   />
+                  {loadingPlaid && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500 animate-spin" />
+                  )}
                 </div>
                 <Button
                   onClick={() => setShowIncomeForm(true)}
@@ -973,14 +1105,6 @@ export default function Transactions() {
         />
 
         <ImportTransactions open={showImport} onClose={() => setShowImport(false)} />
-        <BankConnectionManager
-          open={showBankConnect}
-          onClose={() => setShowBankConnect(false)}
-          onTransactionsImported={() => {
-            queryClient.invalidateQueries({ queryKey: ['income'] })
-            queryClient.invalidateQueries({ queryKey: ['expenses'] })
-          }}
-        />
       </div>
     </>
   )

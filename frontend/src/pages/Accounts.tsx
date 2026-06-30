@@ -315,6 +315,10 @@ export default function Accounts() {
 
   const atLimit = !canCreate('offlineBankAccount')
 
+  const { user } = useAuth()
+
+  const canConnectBank = ['plus', 'pro'].includes(user?.subscription_tier)
+
   const { data: offlineAccounts = [] } = useOfflineAccountsQuery()
 
   const { data: allSnapshots = [] } = useOfflineAccountSnapshotsQuery()
@@ -633,10 +637,10 @@ export default function Accounts() {
         <BankConnectionManager
           open={showBankConnect}
           onClose={() => setShowBankConnect(false)}
-          canConnectBank={atLimit}
+          canConnectBank={canConnectBank}
           realBankAccountsLimit={UserLimitData?.limits?.offlineBankAccount}
           onTransactionsImported={() => {
-            queryClient.invalidateQueries({ queryKey: ['income'] })
+            queryClient.invalidateQueries({ queryKey: ['incomes'] })
             queryClient.invalidateQueries({ queryKey: ['expenses'] })
           }}
         />

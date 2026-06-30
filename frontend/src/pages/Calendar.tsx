@@ -1138,7 +1138,7 @@ export default function Calendar() {
                         Filters
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-80 max-h-[80vh] overflow-y-auto" align="end">
+                    <PopoverContent className="w-80 max-h-[50vh] overflow-y-auto" align="end">
                       <div className="space-y-6">
                         <div>
                           <h3 className="calendar-filter-title text-lg font-semibold text-slate-900 mb-3">

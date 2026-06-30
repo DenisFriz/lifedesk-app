@@ -64,7 +64,7 @@ export default function OfflineSyncManager() {
     }
   }, [queryClient])
 
-  if (isOnline && pendingCount === 0) return null
+  if (isOnline && !syncing) return null
 
   return (
     <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 items-end">
@@ -78,14 +78,6 @@ export default function OfflineSyncManager() {
         <div className="flex items-center gap-2 bg-indigo-600 text-white text-sm px-4 py-2 rounded-full shadow-lg">
           <RefreshCw className="w-4 h-4 animate-spin" />
           <span>Syncing changes…</span>
-        </div>
-      )}
-      {isOnline && !syncing && pendingCount > 0 && (
-        <div className="flex items-center gap-2 bg-amber-600 text-white text-sm px-4 py-2 rounded-full shadow-lg">
-          <RefreshCw className="w-4 h-4" />
-          <span>
-            {pendingCount} change{pendingCount !== 1 ? 's' : ''} pending sync
-          </span>
         </div>
       )}
     </div>

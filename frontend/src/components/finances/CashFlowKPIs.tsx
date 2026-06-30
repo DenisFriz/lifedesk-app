@@ -76,7 +76,7 @@ export default function CashFlowKPIs({
   ]
 
   return (
-    <div className="grid grid-cols-3 max-[320px]:grid-cols-1 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       {cards.map(card => (
         <div
           key={card.label}

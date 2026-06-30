@@ -23,6 +23,8 @@ import {
 } from 'lucide-react'
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from './categories'
 import { Link } from 'react-router-dom'
+import { incomeRepository } from '@/repositories/income.repository'
+import { expenseRepository } from '@/repositories/expense.repository'
 
 function PlaidLinkButton({
   onSuccess,
@@ -48,7 +50,7 @@ function PlaidLinkButton({
 
     backend.functions
       .invoke('plaid', { action: 'create_link_token' })
-      .then((res: { data: { link_token: string } }) => setLinkToken(res.data.link_token))
+      .then((res: { link_token: string }) => setLinkToken(res.link_token))
       .finally(() => setLoading(false))
   }, [])
 
@@ -205,29 +207,31 @@ export default function BankConnectionManager({
         const amount = Math.abs(tx.amount)
         const bankAccountName = tx.institution_name || ''
         if (tx.amount > 0) {
-          await backend.entities.Income.create({
+          await incomeRepository.create({
             title: tx.title,
             amount,
             date: tx.date,
             notes: tx.subcategory || '',
             category: tx.category || '',
-            bank_account_name: bankAccountName
+            bank_account_name: bankAccountName,
+            is_recurring: false
           })
         } else {
-          await backend.entities.Expense.create({
+          await expenseRepository.create({
             title: tx.title,
             amount,
             date: tx.date,
             notes: tx.subcategory || '',
             category: tx.category || '',
-            bank_account_name: bankAccountName
+            bank_account_name: bankAccountName,
+            is_recurring: false
           })
         }
       }
       return toImport.length
     },
     onSuccess: imported => {
-      queryClient.invalidateQueries({ queryKey: ['income'] })
+      queryClient.invalidateQueries({ queryKey: ['incomes'] })
       queryClient.invalidateQueries({ queryKey: ['expenses'] })
       setReviewTransactions(null)
       if (onTransactionsImported) onTransactionsImported(imported)
