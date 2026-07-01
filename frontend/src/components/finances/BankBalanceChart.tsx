@@ -12,8 +12,10 @@ import {
   endOfMonth
 } from 'date-fns'
 import {
+  ComposedChart,
   LineChart,
   Line,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -42,6 +44,7 @@ type ChartRow = {
   connectedBank?: number
   offlineBalance?: number
   total?: number
+  bankSpending?: number
 }
 
 function buildChartData({
@@ -85,33 +88,19 @@ function buildChartData({
     offlineSnapshotMap[s.date][key] = s.balance
   })
 
-  // Manual transactions (no bank_account_name) cumulative net
-  const manualTx = [
-    ...income
-      .filter(i => !i.bank_account_name)
-      .map(i => ({ date: i.date?.slice(0, 10), amount: i.amount || 0 })),
-    ...expenses
-      .filter(e => !e.bank_account_name)
-      .map(e => ({ date: e.date?.slice(0, 10), amount: -(e.amount || 0) }))
-  ]
-  const dailyNetMap = {}
-  manualTx.forEach(t => {
-    if (!t.date) return
-    dailyNetMap[t.date] = (dailyNetMap[t.date] || 0) + t.amount
-  })
-
-  // Baseline cumulative before range
-  let baselineNet = 0
-  Object.keys(dailyNetMap)
-    .sort()
-    .forEach(d => {
-      if (d < rangeStartStr) baselineNet += dailyNetMap[d]
+  // Bank spending by day (Plaid-imported expenses only)
+  const bankExpensesByDay: Record<string, number> = {}
+  expenses
+    .filter(e => e.bank_account_name)
+    .forEach(e => {
+      const d = e.date?.slice(0, 10)
+      if (!d) return
+      bankExpensesByDay[d] = (bankExpensesByDay[d] || 0) + (e.amount || 0)
     })
 
   const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd })
   const lastKnownBank = {}
   const lastKnownOffline = {}
-  let runningNet = baselineNet
 
   return days.map(day => {
     const key = format(day, 'yyyy-MM-dd')
@@ -127,10 +116,10 @@ function buildChartData({
         lastKnownOffline[id] = offlineSnapshotMap[key][id]
     })
 
-    // Running net for manual transactions
-    runningNet += dailyNetMap[key] || 0
-
     const row: ChartRow = { date: format(day, 'MMM dd') }
+
+    // Add bank spending for this day
+    if (bankExpensesByDay[key]) row.bankSpending = bankExpensesByDay[key]
 
     if (selectedAccount === 'all') {
       // All accounts combined
@@ -301,6 +290,7 @@ export default function BankBalanceChart({
   const showBank = chartData.some(d => d.connectedBank !== undefined)
   const showOffline = chartData.some(d => d.offlineBalance !== undefined)
   const showTotal = chartData.some(d => d.total !== undefined)
+  const showBankSpending = expenses.some(e => e.bank_account_name)
 
   const maxLabelCount = 12
   const interval =
@@ -387,7 +377,7 @@ export default function BankBalanceChart({
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={340}>
-          <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
+          <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis
               dataKey="date"
@@ -402,6 +392,15 @@ export default function BankBalanceChart({
               tickFormatter={v => formatCurrency(v)}
               width={80}
             />
+            {showBankSpending && (
+              <YAxis
+                yAxisId="spending"
+                orientation="right"
+                tick={{ fontSize: 11, fill: '#64748b' }}
+                tickFormatter={v => formatCurrency(v)}
+                width={80}
+              />
+            )}
             <Tooltip content={<CustomTooltip />} />
             <Legend verticalAlign="top" height={28} />
 
@@ -441,7 +440,17 @@ export default function BankBalanceChart({
                 connectNulls
               />
             )}
-          </LineChart>
+            {showBankSpending && (
+              <Bar
+                yAxisId="spending"
+                dataKey="bankSpending"
+                name="Bank Spending"
+                fill="#f87171"
+                opacity={0.6}
+                radius={[2, 2, 0, 0]}
+              />
+            )}
+          </ComposedChart>
         </ResponsiveContainer>
       )}
     </div>

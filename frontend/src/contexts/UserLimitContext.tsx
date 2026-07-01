@@ -24,7 +24,7 @@ export function UserLimitProvider({ children }: Props) {
     queryKey: ['usage'],
     queryFn: backend.user.usage
   })
-
+  console.log('UserLimitProvider data:', data)
   const canCreate = useCallback(
     (key: UsageKey) => {
       if (!data) return false

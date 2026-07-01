@@ -71,7 +71,7 @@ function OfflineAccountForm({
   onSubmit,
   onClose
 }: {
-  account?: OfflineAccount
+  account?: OfflineAccountRecord
   onSubmit: (data: CreateOfflineAccountInput) => void
   onClose: () => void
 }) {
@@ -135,12 +135,13 @@ function OfflineAccountForm({
   )
 }
 
-function OnlineBankAccountCard({ account }) {
+function OnlineBankAccountCard({ account }: { account: BankAccount }) {
   const storageKey = `account-expanded-online-${account.account_id}`
   const [expanded, setExpanded] = useState(() => {
     const saved = localStorage.getItem(storageKey)
     return saved === null ? true : saved === 'true'
   })
+
   const toggle = () =>
     setExpanded(e => {
       const next = !e
@@ -186,7 +187,19 @@ function OnlineBankAccountCard({ account }) {
   )
 }
 
-function OfflineAccountCard({ account, latestBalance, onEdit, onDelete, isOverLimit }) {
+function OfflineAccountCard({
+  account,
+  latestBalance,
+  onEdit,
+  onDelete,
+  isOverLimit
+}: {
+  account: OfflineAccountRecord
+  latestBalance: number | null
+  onEdit: (account: OfflineAccountRecord) => void
+  onDelete: (id: string) => void
+  isOverLimit: boolean
+}) {
   const storageKey = `account-expanded-offline-${account.id}`
   const [expanded, setExpanded] = useState(() => {
     const saved = localStorage.getItem(storageKey)
@@ -198,7 +211,6 @@ function OfflineAccountCard({ account, latestBalance, onEdit, onDelete, isOverLi
       localStorage.setItem(storageKey, String(next))
       return next
     })
-
   return (
     <div
       className={`bg-white rounded-xl border flex flex-col ${isOverLimit ? 'border-amber-300 opacity-75' : 'border-slate-200'}`}
@@ -273,7 +285,7 @@ function OfflineAccountCard({ account, latestBalance, onEdit, onDelete, isOverLi
       {/* Monthly table */}
       {expanded && (
         <div className="border-t border-slate-100">
-          <OfflineAccountMonthlyTable account={account} readOnly={isOverLimit} />
+          <OfflineAccountMonthlyTable account={account} />
         </div>
       )}
     </div>
@@ -289,19 +301,7 @@ type BankAccount = {
 }
 
 type PlaidBalancesResponse = {
-  data: {
-    accounts: BankAccount[]
-  }
-}
-
-type OfflineAccount = {
-  id: string
-  name: string
-  balance: number
-  currency: string
-  notes?: string
-  is_deleted: boolean
-  created_date: string
+  accounts: BankAccount[]
 }
 
 export default function Accounts() {
@@ -341,7 +341,7 @@ export default function Accounts() {
         action: 'get_balances'
       })) as PlaidBalancesResponse
 
-      return res.data.accounts || []
+      return res?.accounts || []
     }
   })
 
@@ -493,12 +493,12 @@ export default function Accounts() {
           </div>
 
           {/* Balance Summary */}
-          {offlineAccounts.length > 0 && (
+          {(offlineAccounts.length > 0 || bankAccounts.length > 0) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="bg-white rounded-xl border border-indigo-200 p-5">
                 <p className="text-sm text-slate-600 mb-1">Total Balance</p>
                 <p className="text-2xl font-bold text-slate-900">
-                  {formatCurrency(totalOfflineBalance)}
+                  {formatCurrency(totalBankBalance + totalOfflineBalance)}
                 </p>
                 <p className="text-xs text-slate-400 mt-1">All accounts combined</p>
               </div>
@@ -517,7 +517,8 @@ export default function Accounts() {
                   {formatCurrency(totalOfflineBalance)}
                 </p>
                 <p className="text-xs text-slate-400 mt-1">
-                  {offlineAccounts.length} offline account{offlineAccounts.length !== 1 ? 's' : ''}
+                  {offlineAccounts.length} offline account
+                  {offlineAccounts.length !== 1 ? 's' : ''}
                 </p>
               </div>
               <div className="bg-white rounded-xl border border-slate-200 p-5">
@@ -596,7 +597,7 @@ export default function Accounts() {
                     latestBalance={latestBalanceByAccount[account.id]?.balance ?? null}
                     onEdit={setEditingAccount}
                     onDelete={id => handleDeleteOfflineAccount(id)}
-                    isOverLimit={!atLimit}
+                    isOverLimit={atLimit}
                   />
                 ))}
               </div>

@@ -64,6 +64,7 @@ export default function Profile() {
 
   const [searchParams] = useSearchParams()
   const checkoutStatus = searchParams.get('checkout')
+  const portalStatus = searchParams.get('portal')
 
   const { subscription } = useSubscription()
 
@@ -90,6 +91,19 @@ export default function Profile() {
     }
   }, [checkoutStatus, queryClient])
 
+  // On portal return, sync subscription from Stripe then invalidate cached user + subscription data
+  useEffect(() => {
+    if (portalStatus === 'return') {
+      backend.functions
+        .invoke('syncSubscriptionFromStripe')
+        .catch(() => {})
+        .finally(() => {
+          queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+          queryClient.invalidateQueries({ queryKey: ['subscription'] })
+        })
+    }
+  }, [portalStatus, queryClient])
+
   const updateMutation = useMutation({
     mutationFn: (data: Record<string, any>) => backend.user.updateMe(data),
     onSuccess: () => {
@@ -111,7 +125,7 @@ export default function Profile() {
     setPortalLoading(true)
     try {
       const result = await backend.functions.invoke<{ url: string }>('createBillingPortalSession', {
-        return_url: window.location.href
+        return_url: `${window.location.origin}${window.location.pathname}?portal=return`
       })
       if (result?.url) {
         window.location.href = result.url
@@ -432,6 +446,13 @@ export default function Profile() {
                 <div className="mb-4 flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-green-800 text-sm">
                   <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
                   Payment successful! Your plan has been updated.
+                </div>
+              )}
+
+              {portalStatus === 'return' && (
+                <div className="mb-4 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-blue-800 text-sm">
+                  <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  Your subscription changes have been applied.
                 </div>
               )}
 

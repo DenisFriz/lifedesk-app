@@ -10,11 +10,7 @@ import { requireAuth } from '@middleware/auth.js';
 import { AuthenticatedRequest } from '@/@types/auth.js';
 
 import { UserUsage } from '@/models/UserUsage.js';
-import {
-  SUBSCRIPTION_LIMITS,
-  HARD_CAPPED_KEYS,
-  type SubscriptionLimits,
-} from '@/config/subscriptionLimits.js';
+import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits.js';
 import { Types } from 'mongoose';
 import { validate } from '@/utils/validate.js';
 import { googleLoginSchema } from '@/schemas/auth.schema.js';
@@ -49,7 +45,9 @@ router.get(
   '/subscription',
   requireAuth,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const sub = await Subscription.findOne({ user_email: req.user.email }).lean();
+    const sub = await Subscription.findOne({
+      user_email: req.user.email,
+    }).lean();
     res.json(sub || null);
   }),
 );
@@ -187,8 +185,8 @@ router.get(
       relationships: userUsed.relationships ?? 0,
       progressPhotos: userUsed.progressPhotos ?? 0,
       notes_words_limit: userUsed.notes_words_limit ?? 0,
-      community_comment: userUsed.community_comment ?? false,
-      community_like: userUsed.community_like ?? false,
+      community_comment: currentPlanLimits.community_comment ?? false,
+      community_like: currentPlanLimits.community_like ?? false,
       ai_assistant: currentPlanLimits.ai_assistant ?? false,
       push_notifications: currentPlanLimits.push_notifications ?? false,
     };

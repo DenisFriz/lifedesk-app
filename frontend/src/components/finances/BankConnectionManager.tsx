@@ -178,7 +178,10 @@ export default function BankConnectionManager({
       })
       return res.data
     },
-    onSuccess: () => refetchConnections()
+    onSuccess: () => {
+      refetchConnections()
+      queryClient.invalidateQueries({ queryKey: ['plaid-balances'] })
+    }
   })
 
   const fetchForReviewMutation = useMutation({

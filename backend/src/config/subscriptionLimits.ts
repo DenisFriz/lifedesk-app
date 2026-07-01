@@ -29,7 +29,7 @@ export type SubscriptionLimits = {
   problems?: number;
   estate?: number;
   otherAsset?: number;
-  offlineBankAccount?: number;
+  offlineBankAccount: number;
   offlineAccountSnapshot?: number;
   medicalDocuments?: number;
   workouts: number;
@@ -56,7 +56,7 @@ export type SubscriptionLimits = {
   community_read: boolean;
   community_submit: boolean;
   community_like: boolean;
-  communityComment: boolean;
+  community_comment: boolean;
   communityIdeas?: number;
   notes_words_limit: number;
   push_notifications: boolean;
@@ -101,7 +101,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       community_read: true,
       community_submit: false,
       community_like: false,
-      communityComment: false,
+      community_comment: false,
       communityIdeas: 5,
       notes_words_limit: 1000,
       ai_assistant: false,
@@ -145,7 +145,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       community_read: true,
       community_submit: true,
       community_like: true,
-      communityComment: true,
+      community_comment: true,
       communityIdeas: 10,
       notes_words_limit: 25000,
       push_notifications: true,
@@ -184,7 +184,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       community_read: true,
       community_submit: true,
       community_like: true,
-      communityComment: true,
+      community_comment: true,
       notes_words_limit: 100000,
       push_notifications: true,
     },

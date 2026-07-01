@@ -48,14 +48,14 @@ function applyFilter(filter) {
   }
   if (filter === 'last_12') {
     const months = []
-    for (let i = 11; i >= -1; i--) {
+    for (let i = 11; i >= -2; i--) {
       months.push(format(subMonths(now, i), 'yyyy-MM'))
     }
     return months
   }
   if (filter === 'last_24') {
     const months = []
-    for (let i = 23; i >= -1; i--) {
+    for (let i = 23; i >= -2; i--) {
       months.push(format(subMonths(now, i), 'yyyy-MM'))
     }
     return months
@@ -126,7 +126,6 @@ function MonthCell({
   }
 
   const change = snapshot && prevSnapshot ? snapshot.balance - prevSnapshot.balance : null
-  const isNextMonth = monthKey > format(new Date(), 'yyyy-MM')
 
   const monthLabel = (() => {
     const [y, m] = monthKey.split('-')
@@ -163,7 +162,7 @@ function MonthCell({
             >
               {snapshot
                 ? formatAmt(snapshot.balance, account.currency)
-                : isNextMonth || readOnly
+                : readOnly
                   ? ''
                   : 'click to add'}
             </span>

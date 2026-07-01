@@ -1,7 +1,4 @@
-import {
-  SUBSCRIPTION_LIMITS,
-  HARD_CAPPED_KEYS,
-} from '@/config/subscriptionLimits.js';
+import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits.js';
 import { modelMap } from '@/models/index.js';
 import { UsageKey, UserUsage } from '@/models/UserUsage.js';
 import {
@@ -174,7 +171,6 @@ router.post('/:entity', async (req: Request, res: Response) => {
     const limits = SUBSCRIPTION_LIMITS[tier];
 
     const limitKey = entityToLimitKey[modelKey] as UsageKey;
-    const isHardCapped = limitKey && HARD_CAPPED_KEYS.includes(limitKey as any);
 
     if (modelKey === 'note') {
       const wordLimit = limits.notes_words_limit;
@@ -253,7 +249,7 @@ router.post('/:entity', async (req: Request, res: Response) => {
     }
 
     if (modelKey === 'communitycomment') {
-      if (!limits.communityComment) {
+      if (!limits.community_comment) {
         return res.status(403).json({
           error: 'Commenting requires Plus or Pro.',
         });
