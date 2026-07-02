@@ -82,23 +82,29 @@ export default function OnlineAccountMonthlyTable({ account }: { account: any })
     return map
   }, [snapshots])
 
-  const prevMonthOfFirst =
-    months.length > 0 ? format(subMonths(new Date(months[0] + '-01'), 1), 'yyyy-MM') : null
+  const getLastKnownSnapshot = useMemo(() => {
+    const sortedKeys = Object.keys(snapshotMap).sort()
+    return beforeMonthKey => {
+      const candidates = sortedKeys.filter(k => k < beforeMonthKey)
+      if (candidates.length === 0) return null
+      return snapshotMap[candidates[candidates.length - 1]]
+    }
+  }, [snapshotMap])
 
   const changeSum = useMemo(() => {
     let total = 0
     let hasAny = false
-    months.forEach((monthKey, i) => {
+    months.forEach(monthKey => {
       const snap = snapshotMap[monthKey]
-      const prevKey = i === 0 ? prevMonthOfFirst : months[i - 1]
-      const prevSnap = prevKey ? snapshotMap[prevKey] : null
-      if (snap && prevSnap) {
+      if (!snap) return
+      const prevSnap = getLastKnownSnapshot(monthKey)
+      if (prevSnap) {
         total += snap.balance - prevSnap.balance
         hasAny = true
       }
     })
     return hasAny ? total : null
-  }, [months, snapshotMap, prevMonthOfFirst])
+  }, [months, snapshotMap, getLastKnownSnapshot])
 
   const currency = account.currency || 'EUR'
 
@@ -134,12 +140,10 @@ export default function OnlineAccountMonthlyTable({ account }: { account: any })
           </tr>
         </thead>
         <tbody>
-          {months.map((monthKey, i) => {
+          {months.map(monthKey => {
             const snap = snapshotMap[monthKey] || null
-            const prevKey = i === 0 ? prevMonthOfFirst : months[i - 1]
-            const prevSnap = prevKey ? snapshotMap[prevKey] || null : null
+            const prevSnap = snap ? getLastKnownSnapshot(monthKey) : null
             const change = snap && prevSnap ? snap.balance - prevSnap.balance : null
-            const isNextMonth = monthKey > format(new Date(), 'yyyy-MM')
 
             const [y, m] = monthKey.split('-')
             const monthLabel = format(new Date(parseInt(y), parseInt(m) - 1, 1), 'MMM yy')
@@ -155,7 +159,7 @@ export default function OnlineAccountMonthlyTable({ account }: { account: any })
                   <span
                     className={`text-sm ${snap ? 'text-slate-900 font-medium' : 'text-slate-300 italic text-xs'}`}
                   >
-                    {snap ? formatAmt(snap.balance, currency) : isNextMonth ? '' : '—'}
+                    {snap ? formatAmt(snap.balance, currency) : '—'}
                   </span>
                 </td>
                 <td className="py-2 px-3 text-right w-36">

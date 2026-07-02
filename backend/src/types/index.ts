@@ -136,18 +136,3 @@ export interface IEvent {
   created_at: string;
   updated_at: string;
 }
-
-export interface IBankBalanceSnapshot {
-  _id?: Types.ObjectId;
-  id: string;
-  created_by: string;
-  date: string | null;
-  account_id: string | null;
-  account_name: string | null;
-  institution_name: string | null;
-  balance: number | null;
-  available: number | null;
-  currency: string;
-  created_at: string;
-  updated_at: string;
-}

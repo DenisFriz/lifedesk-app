@@ -128,6 +128,16 @@ function buildChartData({
       const hasBankData = bankAccountIds.some(id => lastKnownBank[id] !== undefined)
       const hasOfflineData = offlineAccountIds.some(id => lastKnownOffline[id] !== undefined)
 
+      console.log(
+        'bankTotal',
+        bankTotal,
+        'offlineTotal',
+        offlineTotal,
+        'hasBankData',
+        hasBankData,
+        'hasOfflineData',
+        hasOfflineData
+      )
       row.connectedBank = hasBankData ? parseFloat(bankTotal.toFixed(2)) : undefined
       row.offlineBalance = hasOfflineData ? parseFloat(offlineTotal.toFixed(2)) : undefined
       row.total = parseFloat(

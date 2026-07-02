@@ -178,9 +178,15 @@ export default function BankConnectionManager({
       })
       return res.data
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       refetchConnections()
       queryClient.invalidateQueries({ queryKey: ['plaid-balances'] })
+      try {
+        await backend.functions.invoke('plaid', { action: 'snapshot_balances' })
+      } catch (e) {
+        console.error(e)
+      }
+      queryClient.invalidateQueries({ queryKey: ['bankBalanceSnapshots'] })
     }
   })
 

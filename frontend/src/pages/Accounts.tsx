@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { backend } from '@/api/backend'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
@@ -310,6 +310,7 @@ export default function Accounts() {
   const [showOfflineForm, setShowOfflineForm] = useState(false)
   const [editingAccount, setEditingAccount] = useState(null)
   const [changePeriod, setChangePeriod] = useState('this_month')
+  const snapshotTriggeredRef = useRef(false)
 
   const { canCreate, data: UserLimitData } = useUserLimit()
 
@@ -344,6 +345,15 @@ export default function Accounts() {
       return res?.accounts || []
     }
   })
+
+  useEffect(() => {
+    if (bankAccounts.length === 0 || snapshotTriggeredRef.current) return
+    snapshotTriggeredRef.current = true
+    backend.functions
+      .invoke('plaid', { action: 'snapshot_balances' })
+      .then(() => queryClient.invalidateQueries({ queryKey: ['bankBalanceSnapshots'] }))
+      .catch(() => {})
+  }, [bankAccounts.length, queryClient])
 
   const totalBankBalance = bankAccounts.reduce((sum, a) => sum + (a.balance || 0), 0)
 
