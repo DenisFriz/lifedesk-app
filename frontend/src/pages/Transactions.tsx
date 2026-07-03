@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, Fragment } from 'react'
 import { useLocation } from 'react-router-dom'
 import { backend } from '@/api/backend'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import {
   ArrowUpDown,
@@ -118,7 +118,6 @@ export default function Transactions() {
   }, [timePeriod])
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(20)
-  const queryClient = useQueryClient()
 
   const { data: incomes = [] } = useIncomesQuery()
 

@@ -84,7 +84,7 @@ export async function syncSubscriptionFromStripe(req: Request, res: Response) {
       }
     }
 
-    const activeSynced = results.find(r => r.data.status === 'active');
+    const activeSynced = results.find((r) => r.data.status === 'active');
     if (activeSynced) {
       await User.findOneAndUpdate(
         { _id: req.user._id },
@@ -102,7 +102,9 @@ export async function syncSubscriptionFromStripe(req: Request, res: Response) {
       synced_subscriptions: results,
       total: results.length,
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    res.status(500).json({ error: message });
   }
 }

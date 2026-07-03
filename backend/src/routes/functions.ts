@@ -23,18 +23,17 @@ import { getExchangeRates } from '@controllers/getExchangeRates.js';
 import { validateStorageUpload } from '@controllers/validateStorageUpload.js';
 import { syncSubscriptionFromStripe } from '@controllers/syncSubscriptionFromStripe.js';
 import { summarizeMedicalDocument } from '@controllers/summarizeMedicalDocument.js';
-import { testDeleteAccountScenarios } from '@controllers/testDeleteAccountScenarios.js';
 import { debugServiceRole } from '@controllers/debugServiceRole.js';
 
 const router = Router();
 
 // --- No-auth ---
-router.get('/getExchangeRates', getExchangeRates);
-router.get('/debugServiceRole', debugServiceRole);
 router.post('/stripeWebhook', stripeWebhook);
-router.post('/weeklyRevenueReport', weeklyRevenueReport);
 
 // --- requireAuth ---
+router.get('/getExchangeRates', requireAuth, getExchangeRates);
+router.get('/debugServiceRole', requireAuth, debugServiceRole);
+router.post('/weeklyRevenueReport', requireAuth, weeklyRevenueReport);
 router.post('/aiHealthChat', requireAuth, aiHealthChat);
 router.post('/createCheckoutSession', requireAuth, createCheckoutSession);
 router.post(
@@ -81,12 +80,6 @@ router.post(
   requireAuth,
   requireAdmin,
   adminClearDeletedFields,
-);
-router.post(
-  '/testDeleteAccountScenarios',
-  requireAuth,
-  requireAdmin,
-  testDeleteAccountScenarios,
 );
 
 export default router;

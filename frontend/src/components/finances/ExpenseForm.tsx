@@ -228,16 +228,17 @@ export default function ExpenseForm({
           <div className="space-y-2">
             <Label htmlFor="business">Life Area (optional)</Label>
             <Select
-              value={formData.business_id}
-              onValueChange={value =>
-                setFormData({ ...formData, business_id: value, category: '' })
-              }
+              value={formData.business_id || '__private__'}
+              onValueChange={value => {
+                const newBusinessId = value === '__private__' ? '' : value
+                setFormData({ ...formData, business_id: newBusinessId, category: '' })
+              }}
             >
               <SelectTrigger id="business">
                 <SelectValue placeholder="Personal expense" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="personal">Personal</SelectItem>
+                <SelectItem value="__private__">Personal</SelectItem>
                 {businesses.map(business => (
                   <SelectItem key={business.id} value={String(business.id)}>
                     {business.name}

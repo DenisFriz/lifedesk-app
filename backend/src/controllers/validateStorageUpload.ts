@@ -53,7 +53,9 @@ export function validateStorageUpload(
       currentStorage: currentStorage + fileSize,
       currentImages: currentImages + 1,
     });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    res.status(500).json({ error: message });
   }
 }

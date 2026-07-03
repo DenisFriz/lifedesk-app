@@ -295,11 +295,8 @@ export async function deleteAccount(req: Request, res: Response) {
       message: 'Account deletion completed',
     });
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : 'Unknown error occurred';
+    const message = error instanceof Error ? error.message : 'Unknown error';
 
-    return res.status(500).json({
-      error: message,
-    });
+    res.status(500).json({ error: message });
   }
 }

@@ -4,6 +4,49 @@ let cachedRates: any = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
+const topCurrencies = [
+  'USD',
+  'EUR',
+  'GBP',
+  'JPY',
+  'AUD',
+  'CAD',
+  'CHF',
+  'CNY',
+  'HKD',
+  'NZD',
+  'SEK',
+  'KRW',
+  'SGD',
+  'NOK',
+  'MXN',
+  'INR',
+  'RUB',
+  'ZAR',
+  'TRY',
+  'BRL',
+  'TWD',
+  'DKK',
+  'PLN',
+  'THB',
+  'IDR',
+  'HUF',
+  'CZK',
+  'ILS',
+  'CLP',
+  'PHP',
+  'AED',
+  'COP',
+  'SAR',
+  'MYR',
+  'RON',
+  'ARS',
+  'VND',
+  'BGN',
+  'UAH',
+  'EGP',
+];
+
 export async function getExchangeRates(req: Request, res: Response) {
   try {
     if (cachedRates && Date.now() - cacheTimestamp < CACHE_TTL) {
@@ -25,49 +68,6 @@ export async function getExchangeRates(req: Request, res: Response) {
     if (fiatData.result === 'error') {
       return res.status(500).json({ error: 'Exchange rate API error' });
     }
-
-    const topCurrencies = [
-      'USD',
-      'EUR',
-      'GBP',
-      'JPY',
-      'AUD',
-      'CAD',
-      'CHF',
-      'CNY',
-      'HKD',
-      'NZD',
-      'SEK',
-      'KRW',
-      'SGD',
-      'NOK',
-      'MXN',
-      'INR',
-      'RUB',
-      'ZAR',
-      'TRY',
-      'BRL',
-      'TWD',
-      'DKK',
-      'PLN',
-      'THB',
-      'IDR',
-      'HUF',
-      'CZK',
-      'ILS',
-      'CLP',
-      'PHP',
-      'AED',
-      'COP',
-      'SAR',
-      'MYR',
-      'RON',
-      'ARS',
-      'VND',
-      'BGN',
-      'UAH',
-      'EGP',
-    ];
 
     const filteredRates: Record<string, number> = {};
     topCurrencies.forEach((currency) => {
@@ -109,7 +109,9 @@ export async function getExchangeRates(req: Request, res: Response) {
     cacheTimestamp = Date.now();
 
     res.json(cachedRates);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    res.status(500).json({ error: message });
   }
 }

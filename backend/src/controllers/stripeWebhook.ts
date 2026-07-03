@@ -254,7 +254,9 @@ export async function stripeWebhook(req: Request, res: Response) {
     }
 
     res.json({ received: true });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    res.status(500).json({ error: message });
   }
 }

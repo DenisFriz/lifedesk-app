@@ -44,8 +44,10 @@ router.post('/signature', async (req: Request, res: Response) => {
       cloud_name: cloudName,
       folder,
     });
-  } catch (err: any) {
-    return res.status(500).json({ message: err.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    res.status(500).json({ error: message });
   }
 });
 
@@ -102,8 +104,10 @@ router.delete('/image', async (req: Request, res: Response) => {
     }
 
     return res.json({ message: 'Image deleted successfully' });
-  } catch (err: any) {
-    return res.status(500).json({ message: err.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    res.status(500).json({ error: message });
   }
 });
 
@@ -161,8 +165,10 @@ router.post('/move', async (req: Request, res: Response) => {
     }
 
     return res.json({ moved });
-  } catch (err: any) {
-    return res.status(500).json({ message: err.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    res.status(500).json({ error: message });
   }
 });
 

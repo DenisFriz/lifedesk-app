@@ -114,8 +114,10 @@ router.get('/:entity', async (req: Request, res: Response) => {
     const records = await Model.find({ created_by: req.user._id }).lean();
 
     res.json(records);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    res.status(500).json({ error: message });
   }
 });
 
@@ -131,8 +133,10 @@ router.post('/:entity/filter', async (req: Request, res: Response) => {
     const records = await Model.find(conditions).lean();
 
     res.json(records);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    res.status(500).json({ error: message });
   }
 });
 
@@ -152,8 +156,10 @@ router.get('/:entity/:id', async (req: Request, res: Response) => {
     }
 
     res.json(record);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    res.status(500).json({ error: message });
   }
 });
 
@@ -327,8 +333,10 @@ router.post('/:entity', async (req: Request, res: Response) => {
     ]);
 
     return res.status(201).json(record);
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    res.status(500).json({ error: message });
   }
 });
 
@@ -424,8 +432,10 @@ router.put('/:entity/:id', async (req: Request, res: Response) => {
     }
 
     res.json(updated);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    res.status(500).json({ error: message });
   }
 });
 
@@ -500,8 +510,10 @@ router.delete('/:entity/:id', async (req: Request, res: Response) => {
     }
 
     return res.json({ success: true });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    res.status(500).json({ error: message });
   }
 });
 
@@ -517,8 +529,10 @@ router.post('/:entity/bulk', async (req: Request, res: Response) => {
     const created = await Model.insertMany(records);
 
     res.status(201).json(created);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    res.status(500).json({ error: message });
   }
 });
 

@@ -147,42 +147,6 @@ Infrastructure:
 
 ## Test Coverage
 
-### Test Function: testDeleteAccountScenarios.js
-
-**File:** `functions/testDeleteAccountScenarios.js`
-
-Tests implemented:
-
-#### ✅ Test 1: Free User Deletion
-
-- No Stripe subscription exists
-- Expected: Soft-delete user, hard-delete personal data
-- Status: PASSED
-
-#### ✅ Test 2: Active Paid Subscription Deletion
-
-- Active Stripe subscription exists
-- Expected: Stripe cancellation → data deletion
-- Status: PASSED (verified active subscriptions exist)
-
-#### ✅ Test 3: Already-Cancelled Subscription Deletion
-
-- Subscription already cancelled in Stripe
-- Expected: Safe handling (Stripe call may fail but deletion continues)
-- Status: PASSED (verified cancelled subscriptions handled)
-
-#### ✅ Test 4: Stripe Failure Handling
-
-- Invalid Stripe subscription ID provided
-- Expected: StripeInvalidRequestError caught, deletion stops
-- Status: PASSED (error type: StripeInvalidRequestError)
-
-#### ✅ Test 5: Logout & Re-login Blocking
-
-- User deleted, attempts to re-login
-- Expected: AuthContext detects is_deleted=true, shows error
-- Status: PASSED (flow verified)
-
 ## Security Considerations
 
 1. **Password Validation**
@@ -265,7 +229,6 @@ Data Deletion Verification:
 - ✅ AuthContext.jsx: is_deleted flag check
 - ✅ UserNotRegisteredError.jsx: account_deleted message
 - ✅ App.jsx: account_deleted error handling
-- ✅ testDeleteAccountScenarios.js: comprehensive test coverage
 
 ## Known Limitations
 

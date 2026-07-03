@@ -54,7 +54,9 @@ export async function debugSubscriptionByEmail(
     }
 
     res.json({ email, subscriptions: results });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    res.status(500).json({ error: message });
   }
 }
