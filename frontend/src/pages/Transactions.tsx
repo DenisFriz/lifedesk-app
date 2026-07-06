@@ -1009,7 +1009,7 @@ export default function Transactions() {
               {filteredTransactions.length === 0 && (
                 <div className="p-12 text-center">
                   <p className="text-slate-500 mb-4">No transactions yet</p>
-                  <div className="flex gap-2 justify-center">
+                  <div className="flex flex-col min-[480px]:flex-row gap-2 justify-center">
                     <Button onClick={() => setShowIncomeForm(true)} variant="outline">
                       <Plus className="w-4 h-4 mr-2" />
                       Add Income

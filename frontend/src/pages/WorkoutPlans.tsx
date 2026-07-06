@@ -167,7 +167,7 @@ export default function WorkoutPlans() {
             ) : (
               plans.map(plan => (
                 <Card key={plan.id}>
-                  <CardHeader className="flex flex-row items-start justify-between">
+                  <CardHeader className="flex flex-col min-[480px]:flex-row items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <CardTitle>{plan.name}</CardTitle>

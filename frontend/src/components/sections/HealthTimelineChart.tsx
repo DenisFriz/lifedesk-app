@@ -155,6 +155,22 @@ export default function HealthTimelineChart({ category }) {
     return [startDate, endDate]
   }, [selectedPeriod])
 
+  const chartMinWidth = useMemo(() => {
+    const period = timePeriods.find(p => p.value === selectedPeriod)
+    const daysToShow = period?.getDays()
+
+    if (!daysToShow) {
+      // For "all" periods, derive width from actual data span
+      if (chartData.length < 2) return 700
+      const firstDate = chartData[0].date
+      const lastDate = chartData[chartData.length - 1].date
+      const daySpan = (lastDate - firstDate) / (1000 * 60 * 60 * 24)
+      return Math.max(700, Math.ceil(daySpan * 6))
+    }
+
+    return Math.max(700, daysToShow * 6)
+  }, [selectedPeriod, chartData])
+
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
     if (active && payload && payload.length) {
       const hoveredProblems = payload
@@ -257,46 +273,50 @@ export default function HealthTimelineChart({ category }) {
           No entries marked for timeline in selected period
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={chartData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis
-              dataKey="date"
-              type="number"
-              domain={xAxisDomain}
-              tickFormatter={timestamp => format(new Date(timestamp), 'MMM d, yyyy')}
-              stroke="#64748b"
-              style={{ fontSize: '12px' }}
-            />
-            <YAxis
-              domain={[-0.5, 6]}
-              ticks={[0, 1, 2, 3, 4, 5, 6]}
-              tickFormatter={value => problemTypes.find(t => t.yPos === value)?.label || ''}
-              stroke="#64748b"
-              style={{ fontSize: '11px' }}
-              width={110}
-            />
-            <Tooltip
-              content={<CustomTooltip />}
-              cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '5 5' }}
-              isAnimationActive={false}
-            />
-            {timelineProblems.map(problem => {
-              const typeInfo = problemTypes.find(t => t.value === problem.problem_type)
-              return (
-                <Line
-                  key={problem.id}
-                  type="stepAfter"
-                  dataKey={problem.id}
-                  stroke={typeInfo?.color || '#64748b'}
-                  strokeWidth={3}
-                  dot={false}
-                  connectNulls={true}
+        <div className="overflow-x-auto">
+          <div style={{ minWidth: `${chartMinWidth}px` }}>
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={chartData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis
+                  dataKey="date"
+                  type="number"
+                  domain={xAxisDomain}
+                  tickFormatter={timestamp => format(new Date(timestamp), 'MMM d, yyyy')}
+                  stroke="#64748b"
+                  style={{ fontSize: '12px' }}
                 />
-              )
-            })}
-          </LineChart>
-        </ResponsiveContainer>
+                <YAxis
+                  domain={[-0.5, 6]}
+                  ticks={[0, 1, 2, 3, 4, 5, 6]}
+                  tickFormatter={value => problemTypes.find(t => t.yPos === value)?.label || ''}
+                  stroke="#64748b"
+                  style={{ fontSize: '11px' }}
+                  width={110}
+                />
+                <Tooltip
+                  content={<CustomTooltip />}
+                  cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '5 5' }}
+                  isAnimationActive={false}
+                />
+                {timelineProblems.map(problem => {
+                  const typeInfo = problemTypes.find(t => t.value === problem.problem_type)
+                  return (
+                    <Line
+                      key={problem.id}
+                      type="stepAfter"
+                      dataKey={problem.id}
+                      stroke={typeInfo?.color || '#64748b'}
+                      strokeWidth={3}
+                      dot={false}
+                      connectNulls={true}
+                    />
+                  )
+                })}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       )}
     </div>
   )
