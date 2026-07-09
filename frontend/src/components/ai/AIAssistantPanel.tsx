@@ -80,8 +80,6 @@ export default function AIAssistantPanel({
 
     onSuccess: response => {
       setMessages(prev => [...prev, { role: 'assistant', content: response.data.answer }])
-      setInput('')
-      setUploadedImages([])
     },
 
     onError: error => {
@@ -135,6 +133,9 @@ export default function AIAssistantPanel({
       question: input || 'Analyze the uploaded images',
       file_urls: uploadedImages.length > 0 ? uploadedImages : undefined
     })
+
+    setInput('')
+    setUploadedImages([])
   }
 
   // Mobile path for upgrade state

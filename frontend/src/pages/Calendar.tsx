@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { backend } from '@/api/backend'
+import { backend, apiFetch } from '@/api/backend'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLayout } from '@/Layout'
 import { Button } from '@/components/ui/button'
@@ -858,20 +858,34 @@ export default function Calendar() {
       return
     }
 
-    const currentPermission = Notification.permission
+    if (!('serviceWorker' in navigator)) {
+      toast.error('Service Workers are not supported')
+      return
+    }
 
+    const currentPermission = Notification.permission
+    console.log(Notification.permission)
     if (notificationsEnabled) {
-      // Disable notifications (can't revoke browser permission, just set flag)
-      localStorage.setItem('browserNotificationsEnabled', 'false')
-      setNotificationsEnabled(false)
-      toast.success('Push notifications disabled')
+      // Disable push notifications
+      try {
+        const reg = await navigator.serviceWorker.getRegistration()
+        const sub = await reg?.pushManager.getSubscription()
+        if (sub) {
+          await apiFetch('POST', '/push/unsubscribe', { endpoint: sub.endpoint })
+          await sub.unsubscribe()
+        }
+        localStorage.setItem('browserNotificationsEnabled', 'false')
+        setNotificationsEnabled(false)
+        toast.success('Push notifications disabled')
+      } catch (error) {
+        console.error('Failed to disable push notifications:', error)
+        toast.error('Failed to disable push notifications')
+      }
     } else {
       // Check current permission status
       if (currentPermission === 'granted') {
-        // Already granted, just enable
-        localStorage.setItem('browserNotificationsEnabled', 'true')
-        setNotificationsEnabled(true)
-        toast.success('Push notifications enabled')
+        // Already granted, enable push
+        await subscribeToPush()
       } else if (currentPermission === 'denied') {
         toast.error(
           'Notification permission was denied. Please enable it in your browser settings.'
@@ -880,14 +894,37 @@ export default function Calendar() {
         // Request permission
         const permission = await Notification.requestPermission()
         if (permission === 'granted') {
-          localStorage.setItem('browserNotificationsEnabled', 'true')
-          setNotificationsEnabled(true)
-          toast.success('Push notifications enabled')
+          await subscribeToPush()
         } else {
           localStorage.setItem('browserNotificationsEnabled', 'false')
           toast.error('Notification permission denied')
         }
       }
+    }
+  }
+
+  const subscribeToPush = async () => {
+    try {
+      const { urlBase64ToUint8Array } = await import('@/lib/pushUtils')
+
+      const reg = await navigator.serviceWorker.ready
+      const { publicKey } = await apiFetch<{ publicKey: string }>('GET', '/push/vapid-public-key')
+
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey)
+      })
+
+      console.log(sub)
+
+      await apiFetch('POST', '/push/subscribe', sub.toJSON())
+
+      localStorage.setItem('browserNotificationsEnabled', 'true')
+      setNotificationsEnabled(true)
+      toast.success('Push notifications enabled')
+    } catch (error) {
+      console.error('Failed to enable push notifications:', error)
+      toast.error('Failed to enable push notifications')
     }
   }
 

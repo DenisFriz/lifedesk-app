@@ -1,8 +1,9 @@
 import 'dotenv/config';
 import express from 'express';
-import { Worker } from 'bullmq';
 import { Redis as IORedis } from 'ioredis';
-import { Resend } from 'resend';
+import { connectDB } from '@/db/connection.js';
+import { createSendEmailWorker } from './sendEmailWorker.js';
+import { createSendReminderWorker } from './sendReminderWorker.js';
 
 const app = express();
 const PORT = 8000;
@@ -19,8 +20,6 @@ app.listen(PORT, () => {
   console.log(`[express] server listening on port ${PORT}`);
 });
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const connection = new IORedis(
   process.env.REDIS_URL ?? 'redis://localhost:6379',
   {
@@ -28,23 +27,33 @@ const connection = new IORedis(
   },
 );
 
-const worker = new Worker(
-  'send-email',
-  async (job) => {
-    const { to, from, subject, html } = job.data;
-    await resend.emails.send({
-      from: from ?? 'onboarding@resend.dev',
-      to,
-      subject,
-      html,
-    });
-  },
-  { connection },
-);
+async function startWorkers() {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error('❌ Failed to connect to database:', err);
+    process.exit(1);
+  }
 
-worker.on('completed', (job) =>
-  console.log(`[worker] job ${job.id} completed`),
-);
-worker.on('failed', (job, err) =>
-  console.error(`[worker] job ${job?.id} failed:`, err),
-);
+  const emailWorker = createSendEmailWorker(connection);
+  const reminderWorker = createSendReminderWorker(connection);
+
+  emailWorker.on('completed', (job) =>
+    console.log(`[worker] send-email job ${job.id} completed`),
+  );
+  emailWorker.on('failed', (job, err) =>
+    console.error(`[worker] send-email job ${job?.id} failed:`, err),
+  );
+
+  reminderWorker.on('completed', (job) =>
+    console.log(`[worker] send-reminder job ${job.id} completed`),
+  );
+  reminderWorker.on('failed', (job, err) =>
+    console.error(`[worker] send-reminder job ${job?.id} failed:`, err),
+  );
+}
+
+startWorkers().catch((err) => {
+  console.error('Failed to start workers:', err);
+  process.exit(1);
+});

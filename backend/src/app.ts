@@ -9,6 +9,7 @@ import emailRouter from '@routes/email/index.js';
 import entitiesRouter from '@routes/entities.js';
 import functionsRouter from '@routes/functions.js';
 import cloudinaryRouter from '@routes/cloudinary.js';
+import pushRouter from '@routes/push.js';
 import { AppError } from '@errors/AppError.js';
 import { requireAuth } from '@middleware/auth.js';
 import cookieParser from 'cookie-parser';
@@ -35,6 +36,7 @@ app.use('/user', userRouter);
 app.use('/email', emailRouter);
 app.use('/entities', requireAuth, entitiesRouter);
 app.use('/cloudinary', requireAuth, cloudinaryRouter);
+app.use('/push', requireAuth, pushRouter);
 app.use('/functions', functionsRouter);
 
 app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {

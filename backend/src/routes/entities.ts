@@ -9,6 +9,7 @@ import {
 } from 'express';
 import { Types } from 'mongoose';
 import { cloudinary } from '@/lib/cloudinary.js';
+import { scheduleReminders, cancelReminders } from '@/queues/scheduleReminders.js';
 
 const router = Router();
 
@@ -24,6 +25,12 @@ const cloudinaryCleanup: Record<string, (record: any) => string[]> = {
     (record.images ?? []).map((img: any) => img.public_id).filter(Boolean),
   user: (record) => [record.profile_image_public_id].filter(Boolean),
   medicaldocument: (record) => [record.public_id].filter(Boolean),
+};
+
+const reminderCancellation: Record<string, (record: any) => Promise<void>> = {
+  goal: (r) => cancelReminders('goal', r),
+  task: (r) => cancelReminders('task', r),
+  event: (r) => cancelReminders('event', r),
 };
 
 const entityToLimitKey: Record<string, string> = {
@@ -303,6 +310,12 @@ router.post('/:entity', async (req: Request, res: Response) => {
         created_by: userId,
       });
 
+      if (modelKey === 'goal' || modelKey === 'task' || modelKey === 'event') {
+        scheduleReminders(modelKey, record, userId).catch((err) =>
+          console.error('⏰ Failed to schedule reminders:', err),
+        );
+      }
+
       return res.status(201).json(record);
     }
 
@@ -331,6 +344,12 @@ router.post('/:entity', async (req: Request, res: Response) => {
       }),
       UserUsage.updateOne({ user_id: userId }, { $inc: { [limitKey]: 1 } }),
     ]);
+
+    if (modelKey === 'goal' || modelKey === 'task' || modelKey === 'event') {
+      scheduleReminders(modelKey, record, userId).catch((err) =>
+        console.error('⏰ Failed to schedule reminders:', err),
+      );
+    }
 
     return res.status(201).json(record);
   } catch (error: unknown) {
@@ -478,6 +497,12 @@ router.delete('/:entity/:id', async (req: Request, res: Response) => {
           cloudinaryErr.message,
         );
       }
+    }
+
+    try {
+      await reminderCancellation[modelKey]?.(record);
+    } catch (err) {
+      console.error(`Failed to cancel reminders for ${modelKey}:`, err);
     }
 
     await Model.deleteOne({ _id: id });

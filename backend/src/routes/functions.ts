@@ -4,6 +4,7 @@ import { requireAuth } from '@middleware/auth.js';
 import { requireAdmin } from '@middleware/adminAuth.js';
 
 import { aiHealthChat } from '@controllers/aiHealthChat.js';
+import { aiOllamaChat } from '@controllers/aiOllamaChat.js';
 import { adminSetUserTier } from '@controllers/adminSetUserTier.js';
 import { adminClearDeletedFields } from '@controllers/adminClearDeletedFields.js';
 import { analyzeSubscriptionDuplicates } from '@controllers/analyzeSubscriptionDuplicates.js';
@@ -34,7 +35,8 @@ router.post('/stripeWebhook', stripeWebhook);
 router.get('/getExchangeRates', requireAuth, getExchangeRates);
 router.get('/debugServiceRole', requireAuth, debugServiceRole);
 router.post('/weeklyRevenueReport', requireAuth, weeklyRevenueReport);
-router.post('/aiHealthChat', requireAuth, aiHealthChat);
+router.post('/aiHealthChat', requireAuth, aiOllamaChat);
+router.post('/aiOllamaChat', requireAuth, aiOllamaChat);
 router.post('/createCheckoutSession', requireAuth, createCheckoutSession);
 router.post(
   '/createBillingPortalSession',

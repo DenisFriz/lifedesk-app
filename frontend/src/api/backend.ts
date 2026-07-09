@@ -1,6 +1,8 @@
 import { apiFetch, apiUpload, getToken, clearToken } from './apiClient'
 import type { EntityApi, User } from '@/types'
 
+export { apiFetch }
+
 const GET_FUNCTIONS = new Set([
   'getExchangeRates',
   'debugServiceRole',

@@ -33,6 +33,7 @@ export { Subscription } from './Subscription.js';
 export { RelationShip } from './RelationShip.js';
 export { CommunityVote } from './CommunityVote.js';
 export { CalculationHistory } from './CalculationHistory.js';
+export { PushSubscription } from './PushSubscription.js';
 
 import mongoose from 'mongoose';
 import { User } from './User.js';
