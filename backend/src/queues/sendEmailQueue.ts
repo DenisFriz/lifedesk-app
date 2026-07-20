@@ -17,4 +17,11 @@ const connection = new IORedis(
 
 export const sendEmailQueue = new Queue<SendEmailJobData>('send-email', {
   connection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 5000,
+    },
+  },
 });

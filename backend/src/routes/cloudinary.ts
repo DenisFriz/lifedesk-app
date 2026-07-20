@@ -7,12 +7,12 @@ const router = Router();
 
 const ALLOWED_FOLDERS = ['uploads', 'temp'] as const;
 
+const apiSecret = process.env.CLOUDINARY_API_SECRET;
+const apiKey = process.env.CLOUDINARY_API_KEY;
+const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+
 router.post('/signature', async (req: Request, res: Response) => {
   try {
-    const apiSecret = process.env.CLOUDINARY_API_SECRET;
-    const apiKey = process.env.CLOUDINARY_API_KEY;
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-
     if (!apiSecret || !apiKey || !cloudName) {
       return res
         .status(500)
@@ -53,10 +53,6 @@ router.post('/signature', async (req: Request, res: Response) => {
 
 router.delete('/image', async (req: Request, res: Response) => {
   try {
-    const apiSecret = process.env.CLOUDINARY_API_SECRET;
-    const apiKey = process.env.CLOUDINARY_API_KEY;
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-
     if (!apiSecret || !apiKey || !cloudName) {
       return res
         .status(500)
@@ -113,10 +109,6 @@ router.delete('/image', async (req: Request, res: Response) => {
 
 router.post('/move', async (req: Request, res: Response) => {
   try {
-    const apiSecret = process.env.CLOUDINARY_API_SECRET;
-    const apiKey = process.env.CLOUDINARY_API_KEY;
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-
     if (!apiSecret || !apiKey || !cloudName) {
       return res
         .status(500)

@@ -4,12 +4,10 @@ import { requireAuth } from '@middleware/auth.js';
 import { requireAdmin } from '@middleware/adminAuth.js';
 
 import { aiHealthChat } from '@controllers/aiHealthChat.js';
-import { aiOllamaChat } from '@controllers/aiOllamaChat.js';
 import { adminSetUserTier } from '@controllers/adminSetUserTier.js';
 import { adminClearDeletedFields } from '@controllers/adminClearDeletedFields.js';
 import { analyzeSubscriptionDuplicates } from '@controllers/analyzeSubscriptionDuplicates.js';
 import { backfillSubscriptions } from '@controllers/backfillSubscriptions.js';
-import { backupNow } from '@controllers/backupNow.js';
 import { cleanupSubscriptions } from '@controllers/cleanupSubscriptions.js';
 import { createBillingPortalSession } from '@controllers/createBillingPortalSession.js';
 import { createCheckoutSession } from '@controllers/createCheckoutSession.js';
@@ -33,10 +31,9 @@ router.post('/stripeWebhook', stripeWebhook);
 
 // --- requireAuth ---
 router.get('/getExchangeRates', requireAuth, getExchangeRates);
-router.get('/debugServiceRole', requireAuth, debugServiceRole);
-router.post('/weeklyRevenueReport', requireAuth, weeklyRevenueReport);
-router.post('/aiHealthChat', requireAuth, aiOllamaChat);
-router.post('/aiOllamaChat', requireAuth, aiOllamaChat);
+/* router.get('/debugServiceRole', requireAuth, debugServiceRole);
+router.post('/weeklyRevenueReport', requireAuth, weeklyRevenueReport); */
+router.post('/aiHealthChat', requireAuth, aiHealthChat);
 router.post('/createCheckoutSession', requireAuth, createCheckoutSession);
 router.post(
   '/createBillingPortalSession',
@@ -48,35 +45,34 @@ router.post(
   requireAuth,
   syncSubscriptionFromStripe,
 );
-router.post('/validateStorageUpload', requireAuth, validateStorageUpload);
-router.post('/summarizeMedicalDocument', requireAuth, summarizeMedicalDocument);
+/* router.post('/validateStorageUpload', requireAuth, validateStorageUpload); */
+/* router.post('/summarizeMedicalDocument', requireAuth, summarizeMedicalDocument); */
 router.post('/deleteAccount', requireAuth, deleteAccount);
 router.post('/downgradeToPlan', requireAuth, downgradeToPlan);
-router.post('/debugSubscriptionByEmail', requireAuth, debugSubscriptionByEmail);
-router.get('/debugSubscriptionStatus', requireAuth, debugSubscriptionStatus);
+/* router.post('/debugSubscriptionByEmail', requireAuth, debugSubscriptionByEmail); */
+/* router.get('/debugSubscriptionStatus', requireAuth, debugSubscriptionStatus); */
 router.post('/plaid', requireAuth, plaid);
 
 // --- requireAuth + requireAdmin ---
-router.post(
+/* router.post(
   '/backfillSubscriptions',
   requireAuth,
   requireAdmin,
   backfillSubscriptions,
-);
-router.post('/backupNow', requireAuth, requireAdmin, backupNow);
-router.post(
+); */
+/* router.post(
   '/cleanupSubscriptions',
   requireAuth,
   requireAdmin,
   cleanupSubscriptions,
-);
-router.get(
+); */
+/* router.get(
   '/analyzeSubscriptionDuplicates',
   requireAuth,
   requireAdmin,
   analyzeSubscriptionDuplicates,
-);
-router.post('/adminSetUserTier', requireAuth, requireAdmin, adminSetUserTier);
+); */
+/* router.post('/adminSetUserTier', requireAuth, requireAdmin, adminSetUserTier); */
 router.post(
   '/adminClearDeletedFields',
   requireAuth,

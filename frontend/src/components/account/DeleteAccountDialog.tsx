@@ -333,7 +333,7 @@ export default function DeleteAccountDialog({
               </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 max-[480px]:flex-col">
               <Button variant="outline" className="flex-1" onClick={handleClose}>
                 Cancel
               </Button>

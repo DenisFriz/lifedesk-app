@@ -60,6 +60,11 @@ services:
       MONGODB_URI: 'mongodb://mongodb:27017/lifedesk'
       REDIS_URL: 'redis://redis:6379'
       NODE_ENV: 'development'
+    deploy:
+      resources:
+        limits:
+          memory: 512M # Max 512 Megabytes of RAM
+    stop_grace_period: 30s
     depends_on:
       mongodb:
         condition: service_healthy
