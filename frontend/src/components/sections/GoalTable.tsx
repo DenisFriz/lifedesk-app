@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '@/lib/AuthContext'
 import UsageLimitGate from '@/components/subscription/UsageLimitGate'
+import UpgradeLimitModal from '@/components/subscription/UpgradeLimitModal'
 import { useTaskMutations } from '@/hooks/tasks/useTaskMutations'
 import { taskRepository } from '@/repositories/task.repository'
 import { goalRepository } from '@/repositories/goal.repository'
@@ -146,12 +148,14 @@ type GoalTableProps = {
 }
 
 export default function GoalTable({ category, businessId, filterType }: GoalTableProps) {
+  const { user } = useAuth()
   const queryClient = useQueryClient()
 
   const { table } = useTableState('goalTableCompactView')
 
   const [animatingGoal, setAnimatingGoal] = useState(null)
   const [showCategoryDialog, setShowCategoryDialog] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showReminders, setShowReminders] = useState({})
   const [reminderValues, setReminderValues] = useState({})
   const [selectOpen, setSelectOpen] = useState(false)
@@ -163,6 +167,8 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
   const { playSound } = useSound()
 
   const { canCreate } = useUserLimit()
+
+  const isFreePlan = user?.subscription_tier === 'free'
 
   const {
     updateMutation,
@@ -245,7 +251,10 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
   }
 
   const handleDuplicateGoal = async (data: Record<string, any>) => {
-    if (!canCreate('goals')) return
+    if (!canCreate('goals')) {
+      if (isFreePlan) setShowUpgradeModal(true)
+      return
+    }
     try {
       await duplicateMutation.mutateAsync(data)
     } catch (e) {
@@ -635,6 +644,8 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
 
   return (
     <>
+      <UpgradeLimitModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} />
+
       <CategorySelectDialog
         open={showCategoryDialog}
         onOpenChange={setShowCategoryDialog}
@@ -673,7 +684,13 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                   className="pl-8 h-9 w-48 text-sm"
                 />
               </div>
-              <UsageLimitGate allowed={canCreate('goals')} label="goals">
+              <UsageLimitGate
+                allowed={canCreate('goals')}
+                label="goals"
+                onBlockedClick={() => {
+                  if (isFreePlan) setShowUpgradeModal(true)
+                }}
+              >
                 <Button
                   onClick={handleAddNew}
                   size="sm"
@@ -730,12 +747,19 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                 {!canCreate('goals') ? (
                   <>
                     <p className="text-slate-500 mb-4">You've reached your goals limit</p>
-                    <Link to="/upgrade">
-                      <Button variant="outline">
+                    {isFreePlan ? (
+                      <Button variant="outline" onClick={() => setShowUpgradeModal(true)}>
                         <Lock className="w-4 h-4 mr-2" />
                         Upgrade to add more
                       </Button>
-                    </Link>
+                    ) : (
+                      <Link to="/upgrade">
+                        <Button variant="outline">
+                          <Lock className="w-4 h-4 mr-2" />
+                          Upgrade to add more
+                        </Button>
+                      </Link>
+                    )}
                   </>
                 ) : (
                   <>
@@ -804,7 +828,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                           <th className="goal-table-th-progress px-4 py-3 text-left w-32">
                             <span className="text-xs font-medium text-slate-700">Progress</span>
                           </th>
-                          <th className="goal-table-th-targetdate px-4 py-3 text-left w-40">
+                          <th className="goal-table-th-targetdate px-4 py-3 text-left w-52">
                             <button
                               onClick={() => handleSort('target_date')}
                               className="flex items-center gap-1 text-xs font-medium text-slate-700 hover:text-slate-900"
@@ -942,7 +966,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                         </td>
                                         <td
                                           className={cn(
-                                            'goal-table-td-description px-4 align-middle',
+                                            'px-4 align-middle',
                                             table.compactView ? 'py-1' : 'py-3'
                                           )}
                                         >
@@ -1107,7 +1131,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                         </td>
                                         <td
                                           className={cn(
-                                            'goal-table-td-targetdate px-4 w-40 align-middle',
+                                            'goal-table-td-targetdate px-4 w-52 align-middle',
                                             table.compactView ? 'py-1' : 'py-3'
                                           )}
                                         >

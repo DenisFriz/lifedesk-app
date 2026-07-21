@@ -90,6 +90,7 @@ export function useGoalMutations() {
     mutationFn: goalRepository.duplicate,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
       queryClient.invalidateQueries({ queryKey: ['usage'] })
     }
   })

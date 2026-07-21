@@ -151,7 +151,7 @@ export default function GoalTaskRow({
             <td className="px-4 py-3 w-32 align-middle"></td>
           )}
           <td className="px-4 py-3 w-32 align-middle"></td>
-          <td className="px-4 py-3 w-40 align-middle">
+          <td className="px-4 py-3 w-52 align-middle">
             {editingField === `${task.id}-due_date` ? (
               <div
                 className="space-y-1"

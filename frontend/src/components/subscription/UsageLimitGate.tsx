@@ -8,9 +8,17 @@ interface Props {
   message?: string
   children: React.ReactNode
   className?: string
+  onBlockedClick?: () => void
 }
 
-export default function UsageLimitGate({ allowed, label, message, children, className }: Props) {
+export default function UsageLimitGate({
+  allowed,
+  label,
+  message,
+  children,
+  className,
+  onBlockedClick
+}: Props) {
   const isBlocked = !allowed
 
   if (!isBlocked) return <>{children}</>
@@ -20,7 +28,7 @@ export default function UsageLimitGate({ allowed, label, message, children, clas
     `You've reached your ${label ? `${label} ` : ''}limit on your current plan. Upgrade to continue.`
 
   return (
-    <div className={cn('relative group inline-block', className)}>
+    <div className={cn('relative group inline-block', className)} onClick={onBlockedClick}>
       {/* Disabled child */}
       <div className="pointer-events-none select-none opacity-40 grayscale">{children}</div>
 

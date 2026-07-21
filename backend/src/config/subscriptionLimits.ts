@@ -66,7 +66,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
   {
     free: {
       goals: 10,
-      tasks: 20,
+      tasks: 50,
       calendarEntries: 40,
       events: 10,
       vehicle: 1,

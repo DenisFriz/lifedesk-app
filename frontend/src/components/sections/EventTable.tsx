@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '@/lib/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -42,6 +43,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { cn } from '@/lib/utils'
 import { formatDateMedium } from '@/components/utils/formatters'
 import UsageLimitGate from '@/components/subscription/UsageLimitGate'
+import UpgradeLimitModal from '@/components/subscription/UpgradeLimitModal'
 import { TablePagination } from '../TablePagination'
 import { CategorySelectDialog } from '../CategorySelectDialog'
 import { useSound } from '@/contexts/SoundContext'
@@ -59,9 +61,11 @@ type EventTableProps = {
 }
 
 export default function EventTable({ category, businessId, filterType }: EventTableProps) {
+  const { user } = useAuth()
   const { table } = useTableState('eventTableCompactView')
 
   const [showCategoryDialog, setShowCategoryDialog] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showReminders, setShowReminders] = useState({})
   const [reminderValues, setReminderValues] = useState({})
   const [selectOpen, setSelectOpen] = useState(false)
@@ -75,6 +79,8 @@ export default function EventTable({ category, businessId, filterType }: EventTa
   const { playSound } = useSound()
 
   const { canCreate } = useUserLimit()
+
+  const isFreePlan = user?.subscription_tier === 'free'
 
   const {
     updateMutation,
@@ -154,7 +160,10 @@ export default function EventTable({ category, businessId, filterType }: EventTa
   }
 
   const handleDuplicateEvent = async (data: Record<string, any>) => {
-    if (!canCreate('events')) return
+    if (!canCreate('events')) {
+      if (isFreePlan) setShowUpgradeModal(true)
+      return
+    }
     try {
       await duplicateMutation.mutateAsync(data)
     } catch (e) {
@@ -382,6 +391,8 @@ export default function EventTable({ category, businessId, filterType }: EventTa
 
   return (
     <>
+      <UpgradeLimitModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} />
+
       <CategorySelectDialog
         open={showCategoryDialog}
         onOpenChange={setShowCategoryDialog}
@@ -423,7 +434,13 @@ export default function EventTable({ category, businessId, filterType }: EventTa
                   className="pl-8 h-9 w-48 text-sm"
                 />
               </div>
-              <UsageLimitGate allowed={canCreate('events')} label="goals">
+              <UsageLimitGate
+                allowed={canCreate('events')}
+                label="events"
+                onBlockedClick={() => {
+                  if (isFreePlan) setShowUpgradeModal(true)
+                }}
+              >
                 <Button
                   onClick={handleAddNew}
                   size="sm"
@@ -480,12 +497,19 @@ export default function EventTable({ category, businessId, filterType }: EventTa
                 {!canCreate('events') ? (
                   <>
                     <p className="text-slate-500 mb-4">You've reached your events limit</p>
-                    <Link to="/upgrade">
-                      <Button variant="outline">
+                    {isFreePlan ? (
+                      <Button variant="outline" onClick={() => setShowUpgradeModal(true)}>
                         <Lock className="w-4 h-4 mr-2" />
                         Upgrade to add more
                       </Button>
-                    </Link>
+                    ) : (
+                      <Link to="/upgrade">
+                        <Button variant="outline">
+                          <Lock className="w-4 h-4 mr-2" />
+                          Upgrade to add more
+                        </Button>
+                      </Link>
+                    )}
                   </>
                 ) : (
                   <>
@@ -549,7 +573,7 @@ export default function EventTable({ category, businessId, filterType }: EventTa
                               <span className="text-xs font-medium text-slate-700">Category</span>
                             </th>
                           )}
-                          <th className="px-4 py-3 text-left w-40">
+                          <th className="px-4 py-3 text-left w-52">
                             <button
                               onClick={() => handleSort('start_date')}
                               className="flex items-center gap-1 text-xs font-medium text-slate-700 hover:text-slate-900"
@@ -558,7 +582,7 @@ export default function EventTable({ category, businessId, filterType }: EventTa
                               <ArrowUpDown className="w-3 h-3" />
                             </button>
                           </th>
-                          <th className="px-4 py-3 text-left w-40">
+                          <th className="px-4 py-3 text-left w-52">
                             <span className="text-xs font-medium text-slate-700">End Date</span>
                           </th>
                           <th className="px-4 py-3 text-center w-20">
@@ -821,7 +845,7 @@ export default function EventTable({ category, businessId, filterType }: EventTa
                                         )}
                                         <td
                                           className={cn(
-                                            'px-4 w-40 align-middle',
+                                            'px-4 w-52 align-middle',
                                             table.compactView ? 'py-1' : 'py-3'
                                           )}
                                         >
@@ -1125,7 +1149,7 @@ export default function EventTable({ category, businessId, filterType }: EventTa
                                         </td>
                                         <td
                                           className={cn(
-                                            'px-4 w-40 align-middle',
+                                            'px-4 w-52 align-middle',
                                             table.compactView ? 'py-1' : 'py-3'
                                           )}
                                         >

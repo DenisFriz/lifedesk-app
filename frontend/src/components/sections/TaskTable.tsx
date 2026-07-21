@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '@/lib/AuthContext'
 import UsageLimitGate from '@/components/subscription/UsageLimitGate'
+import UpgradeLimitModal from '@/components/subscription/UpgradeLimitModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -76,12 +78,14 @@ export default function TaskTable({
   businessId,
   isActive = true
 }: TaskTableProps) {
+  const { user } = useAuth()
   const { table } = useTableState('taskTableCompactView')
 
   const [taskValues, setTaskValues] = useState<TaskValues>({})
   const [statusFilter, setStatusFilter] = useState<'active' | 'done' | 'archived'>('active')
   const [animatingTask, setAnimatingTask] = useState<string | null>(null)
   const [showCategoryDialog, setShowCategoryDialog] = useState<boolean>(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false)
   const [showReminders, setShowReminders] = useState<Record<string, boolean>>({})
   const [reminderValues, setReminderValues] = useState<ReminderValues>({})
   const [selectOpen, setSelectOpen] = useState<boolean>(false)
@@ -94,6 +98,8 @@ export default function TaskTable({
   const { playSound } = useSound()
 
   const { canCreate } = useUserLimit()
+
+  const isFreePlan = user?.subscription_tier === 'free'
 
   const {
     updateMutation,
@@ -137,7 +143,10 @@ export default function TaskTable({
   }
 
   const handleDuplicateTask = async (data: Record<string, any>) => {
-    if (!canCreate('tasks')) return
+    if (!canCreate('tasks')) {
+      if (isFreePlan) setShowUpgradeModal(true)
+      return
+    }
     try {
       await duplicateMutation.mutateAsync(data)
     } catch (e) {
@@ -400,6 +409,8 @@ export default function TaskTable({
 
   return (
     <>
+      <UpgradeLimitModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} />
+
       <CategorySelectDialog
         open={showCategoryDialog}
         onOpenChange={setShowCategoryDialog}
@@ -449,7 +460,13 @@ export default function TaskTable({
                   className="pl-8 h-9 w-48 text-sm"
                 />
               </div>
-              <UsageLimitGate allowed={canCreate('tasks')} label="goals">
+              <UsageLimitGate
+                allowed={canCreate('tasks')}
+                label="tasks"
+                onBlockedClick={() => {
+                  if (isFreePlan) setShowUpgradeModal(true)
+                }}
+              >
                 <Button
                   onClick={handleAddNew}
                   size="sm"
@@ -506,12 +523,19 @@ export default function TaskTable({
                 {!canCreate('tasks') ? (
                   <>
                     <p className="text-slate-500 mb-4">You've reached your tasks limit</p>
-                    <Link to="/upgrade">
-                      <Button variant="outline">
+                    {isFreePlan ? (
+                      <Button variant="outline" onClick={() => setShowUpgradeModal(true)}>
                         <Lock className="w-4 h-4 mr-2" />
                         Upgrade to add more
                       </Button>
-                    </Link>
+                    ) : (
+                      <Link to="/upgrade">
+                        <Button variant="outline">
+                          <Lock className="w-4 h-4 mr-2" />
+                          Upgrade to add more
+                        </Button>
+                      </Link>
+                    )}
                   </>
                 ) : (
                   <>
@@ -581,7 +605,7 @@ export default function TaskTable({
                           <th className="task-table-th-goal px-2 py-3 text-left w-40">
                             <span className="text-xs font-medium text-slate-700">Goal</span>
                           </th>
-                          <th className="task-table-th-duedate px-2 py-3 text-left w-36">
+                          <th className="task-table-th-duedate px-2 py-3 text-left w-40">
                             <button
                               onClick={() => handleSort('due_date')}
                               className="flex items-center gap-1 text-xs font-medium text-slate-700 hover:text-slate-900"
@@ -848,7 +872,7 @@ export default function TaskTable({
                                       </td>
                                       <td
                                         className={cn(
-                                          'task-table-td-duedate w-36 align-middle',
+                                          'task-table-td-duedate w-40 align-middle',
                                           table.compactView ? 'py-1' : 'py-3'
                                         )}
                                       >

@@ -1,4 +1,4 @@
-import { db, GoalRecord } from '@/db'
+import { db, GoalRecord, TaskRecord } from '@/db'
 import { generateOptimisticId, enqueueMutation } from '@/db/syncQueue'
 
 export type GoalCreateInput = Pick<
@@ -193,11 +193,44 @@ export const goalRepository = {
       is_deleted: false
     }
 
-    await db.goals.put(duplicatedGoal)
+    const relatedTasks = await db.tasks
+      .filter(t => !t.is_deleted && (t.goal_id === id || (!!serverId && t.goal_id === serverId)))
+      .toArray()
 
-    await enqueueMutation('goals', 'create', {
-      ...duplicatedGoal,
-      optimisticId
+    await db.transaction('rw', db.goals, db.tasks, db.syncQueue, async () => {
+      await db.goals.put(duplicatedGoal)
+
+      await enqueueMutation('goals', 'create', {
+        ...duplicatedGoal,
+        optimisticId
+      })
+
+      for (const task of relatedTasks) {
+        const {
+          id: taskId,
+          serverId: taskServerId,
+          createdAt: tCreatedAt,
+          updatedAt: tUpdatedAt,
+          ...taskRest
+        } = task
+        const taskOptimisticId = generateOptimisticId()
+
+        const duplicatedTask: TaskRecord = {
+          ...taskRest,
+          id: taskOptimisticId,
+          goal_id: optimisticId,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          is_deleted: false
+        }
+
+        await db.tasks.put(duplicatedTask)
+        await enqueueMutation('tasks', 'create', {
+          ...duplicatedTask,
+          optimisticId: taskOptimisticId
+        })
+      }
     })
 
     return duplicatedGoal

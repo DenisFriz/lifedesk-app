@@ -90,6 +90,14 @@ interface NavItemProps {
   onNavigate?: () => void
   isFirst?: boolean
   isLast?: boolean
+  expandedSections: Record<string, boolean>
+  hiddenSections: string[]
+  collapsed: boolean
+  editMode: boolean
+  location: ReturnType<typeof useLocation>
+  toggleSection: (section: string, event?: MouseEvent<HTMLButtonElement>) => void
+  toggleVisibility: (itemName: string) => void
+  getOrderedSubsections: (parentItem: NavItemType) => NavItemType[]
 }
 
 interface LayoutContentProps {
@@ -162,6 +170,384 @@ const iconMap: Record<string, LucideIcon> = {
   HelpCircle
 }
 
+const isHiddenItem = (itemName: string, hiddenSections: string[]): boolean => {
+  if (hiddenSections.includes(itemName)) return true
+  const parts = itemName.split(' > ')
+  for (let i = 1; i < parts.length; i++) {
+    const parentPath = parts.slice(0, i).join(' > ')
+    if (hiddenSections.includes(parentPath)) return true
+  }
+  return false
+}
+
+const NavItem = ({
+  item,
+  level = 0,
+  parentName = null,
+  isDragging = false,
+  dragHandleProps = null,
+  onNavigate = null,
+  isFirst = false,
+  isLast = false,
+  expandedSections,
+  hiddenSections,
+  collapsed,
+  editMode,
+  location,
+  toggleSection,
+  toggleVisibility,
+  getOrderedSubsections
+}: NavItemProps) => {
+  const isExpanded = expandedSections[item.section]
+  const urlParams = new URLSearchParams(location.search)
+  const currentBusinessId = urlParams.get('businessId')
+  const itemPath = createPageUrl(item.page)
+
+  const isActive =
+    location.pathname === itemPath &&
+    String(item.businessId ?? '') === String(currentBusinessId ?? '')
+
+  const hasChildren = item.children && item.children.length > 0
+  const uniqueName = parentName ? `${parentName} > ${item.name}` : item.name
+  const hidden = isHiddenItem(uniqueName, hiddenSections)
+  const IconComponent = iconMap[item.iconName] || CircleHelp
+  const canRearrange = (level === 0 || level === 1) && editMode && !collapsed
+
+  if (hidden && !editMode) return null
+  if (!IconComponent) return null
+
+  if (collapsed) {
+    if (item.expandable && hasChildren) {
+      const children = getOrderedSubsections(item)
+
+      if (level === 0) {
+        const roundedHeader = isExpanded && children.length > 0 ? 'rounded-t-lg' : 'rounded-lg'
+        return (
+          <div className="mb-1">
+            <Tooltip delayDuration={800}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={e => toggleSection(item.section, e)}
+                  className={cn(
+                    'flex items-center justify-center w-full h-10 transition-all nav-level-0 text-slate-700',
+                    roundedHeader
+                  )}
+                >
+                  <IconComponent className="w-5 h-5 flex-shrink-0" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="z-[99999]">
+                {item.name}
+              </TooltipContent>
+            </Tooltip>
+            {isExpanded && (
+              <div>
+                {children.map((child, idx) => (
+                  <NavItem
+                    key={child.name}
+                    item={child}
+                    level={level + 1}
+                    parentName={uniqueName}
+                    onNavigate={onNavigate}
+                    isFirst={false}
+                    isLast={idx === children.length - 1}
+                    expandedSections={expandedSections}
+                    hiddenSections={hiddenSections}
+                    collapsed={collapsed}
+                    editMode={editMode}
+                    location={location}
+                    toggleSection={toggleSection}
+                    toggleVisibility={toggleVisibility}
+                    getOrderedSubsections={getOrderedSubsections}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      }
+
+      return (
+        <div>
+          <Tooltip delayDuration={800}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={e => toggleSection(item.section, e)}
+                className={cn(
+                  'flex items-center justify-center w-full h-10 transition-all nav-level-1 text-slate-600',
+                  isLast && !isExpanded ? 'rounded-b-lg' : 'rounded-none'
+                )}
+              >
+                <IconComponent className="w-4 h-4 flex-shrink-0" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="z-[99999]">
+              {item.name}
+            </TooltipContent>
+          </Tooltip>
+          {isExpanded && (
+            <div>
+              {children.map((child, idx) => (
+                <NavItem
+                  key={child.name}
+                  item={child}
+                  level={level + 1}
+                  parentName={uniqueName}
+                  onNavigate={onNavigate}
+                  isFirst={false}
+                  isLast={idx === children.length - 1 && isLast}
+                  expandedSections={expandedSections}
+                  hiddenSections={hiddenSections}
+                  collapsed={collapsed}
+                  editMode={editMode}
+                  location={location}
+                  toggleSection={toggleSection}
+                  toggleVisibility={toggleVisibility}
+                  getOrderedSubsections={getOrderedSubsections}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    const linkUrl =
+      item.url ||
+      (item.businessId
+        ? `${createPageUrl(item.page)}?businessId=${item.businessId}`
+        : createPageUrl(item.page))
+    const handleLinkClick = () => {
+      if (onNavigate) onNavigate()
+    }
+
+    const roundedClass = isLast ? 'rounded-b-lg' : 'rounded-none'
+
+    return (
+      <Tooltip delayDuration={800}>
+        <TooltipTrigger asChild>
+          <Link
+            to={linkUrl}
+            onClick={handleLinkClick}
+            className={cn(
+              'flex items-center justify-center w-full h-9 transition-all nav-level-2',
+              roundedClass,
+              isActive ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600'
+            )}
+          >
+            <IconComponent className="w-4 h-4 flex-shrink-0" />
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="right" className="z-[99999]">
+          {item.name}
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  if (item.expandable) {
+    return (
+      <div
+        className={cn(
+          editMode && hidden && 'opacity-40',
+          isDragging && 'opacity-50',
+          level === 0 && 'mb-3 rounded-lg overflow-hidden'
+        )}
+      >
+        <div className="flex items-center">
+          {editMode && !collapsed && (
+            <>
+              <div className="w-6 flex items-center justify-center flex-shrink-0">
+                {canRearrange && dragHandleProps && (
+                  <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                    <GripVertical className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+                  </div>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 hover:bg-slate-200 flex-shrink-0"
+                onClick={e => {
+                  e.stopPropagation()
+                  toggleVisibility(uniqueName)
+                }}
+              >
+                {hidden ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+              </Button>
+            </>
+          )}
+          <button
+            onClick={e => toggleSection(item.section, e)}
+            className={cn(
+              'flex-1 flex items-center gap-3 px-3 py-2.5 transition-all group',
+              level === 0
+                ? 'text-slate-900 font-semibold nav-level-0'
+                : level === 1
+                  ? 'text-slate-700 nav-level-1'
+                  : 'text-slate-700 nav-level-2'
+            )}
+            style={{ paddingLeft: `${12 + level * 16}px` }}
+          >
+            <IconComponent className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1 text-left text-sm font-medium">{item.name}</span>
+            {isExpanded ? (
+              <ChevronUp className="w-4 h-4 text-slate-400" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-slate-400" />
+            )}
+          </button>
+        </div>
+        {isExpanded && hasChildren && (
+          <div>
+            {editMode && level === 0 ? (
+              <Droppable droppableId={`subsection-${item.name}`} type={`subsection-${item.name}`}>
+                {provided => (
+                  <div {...provided.droppableProps} ref={provided.innerRef}>
+                    {getOrderedSubsections(item).map((child, index) => (
+                      <Draggable
+                        key={child.name}
+                        draggableId={`${item.name}-${child.name}`}
+                        index={index}
+                      >
+                        {(provided, snapshot) => (
+                          <div ref={provided.innerRef} {...provided.draggableProps}>
+                            <NavItem
+                              item={child}
+                              level={level + 1}
+                              parentName={uniqueName}
+                              isDragging={snapshot.isDragging}
+                              dragHandleProps={provided.dragHandleProps}
+                              onNavigate={onNavigate}
+                              expandedSections={expandedSections}
+                              hiddenSections={hiddenSections}
+                              collapsed={collapsed}
+                              editMode={editMode}
+                              location={location}
+                              toggleSection={toggleSection}
+                              toggleVisibility={toggleVisibility}
+                              getOrderedSubsections={getOrderedSubsections}
+                            />
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            ) : (
+              <>
+                {getOrderedSubsections(item).map(child => (
+                  <NavItem
+                    key={child.name}
+                    item={child}
+                    level={level + 1}
+                    parentName={uniqueName}
+                    onNavigate={onNavigate}
+                    expandedSections={expandedSections}
+                    hiddenSections={hiddenSections}
+                    collapsed={collapsed}
+                    editMode={editMode}
+                    location={location}
+                    toggleSection={toggleSection}
+                    toggleVisibility={toggleVisibility}
+                    getOrderedSubsections={getOrderedSubsections}
+                  />
+                ))}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const linkUrl =
+    item.url ||
+    (item.businessId
+      ? `${createPageUrl(item.page)}?businessId=${item.businessId}`
+      : createPageUrl(item.page))
+  const handleLinkClick = () => {
+    if (onNavigate) onNavigate()
+  }
+
+  return (
+    <div
+      className={cn(
+        'flex items-center',
+        editMode && hidden && 'opacity-40',
+        level === 0 && 'mb-3 rounded-lg overflow-hidden'
+      )}
+    >
+      {editMode && !collapsed && (
+        <>
+          <div className="w-6 flex items-center justify-center flex-shrink-0">
+            {canRearrange && dragHandleProps && (
+              <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                <GripVertical className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+              </div>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 hover:bg-slate-200 flex-shrink-0"
+            onClick={e => {
+              e.stopPropagation()
+              toggleVisibility(uniqueName)
+            }}
+          >
+            {hidden ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+          </Button>
+        </>
+      )}
+      {item.comingSoon ? (
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <div
+              className={cn(
+                'flex-1 flex items-center gap-3 px-3 py-2.5 transition-all group opacity-50 cursor-not-allowed',
+                level === 0
+                  ? 'text-slate-900 nav-level-0'
+                  : level === 1
+                    ? 'text-slate-700 nav-level-1'
+                    : 'nav-level-2 text-slate-700'
+              )}
+              style={{ paddingLeft: `${12 + level * 16}px` }}
+            >
+              <IconComponent className="w-4 h-4 flex-shrink-0" />
+              <span className="text-sm font-medium">{item.name}</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="z-[99999]">
+            Coming soon
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <Link
+          to={linkUrl}
+          onClick={handleLinkClick}
+          className={cn(
+            'flex-1 flex items-center gap-3 px-3 py-2.5 transition-all group',
+            isActive
+              ? 'bg-indigo-50 text-indigo-600 font-semibold'
+              : level === 0
+                ? 'text-slate-900 nav-level-0'
+                : level === 1
+                  ? 'text-slate-700 nav-level-1'
+                  : 'nav-level-2 text-slate-700'
+          )}
+          style={{ paddingLeft: `${12 + level * 16}px` }}
+        >
+          <IconComponent className="w-4 h-4 flex-shrink-0" />
+          <span className="text-sm font-medium">{item.name}</span>
+        </Link>
+      )}
+    </div>
+  )
+}
+
 const LayoutContent = memo(
   ({
     children,
@@ -226,347 +612,6 @@ const LayoutContent = memo(
       window.addEventListener('beforeunload', handleBeforeUnload)
       return () => window.removeEventListener('beforeunload', handleBeforeUnload)
     }, [])
-
-    const isHidden = (itemName: string): boolean => {
-      if (hiddenSections.includes(itemName)) return true
-      const parts = itemName.split(' > ')
-      for (let i = 1; i < parts.length; i++) {
-        const parentPath = parts.slice(0, i).join(' > ')
-        if (hiddenSections.includes(parentPath)) return true
-      }
-      return false
-    }
-
-    const NavItem = ({
-      item,
-      level = 0,
-      parentName = null,
-      isDragging = false,
-      dragHandleProps = null,
-      onNavigate = null,
-      isFirst = false,
-      isLast = false
-    }: NavItemProps) => {
-      const isExpanded = expandedSections[item.section]
-      const urlParams = new URLSearchParams(location.search)
-      const currentBusinessId = urlParams.get('businessId')
-      const itemPath = createPageUrl(item.page)
-
-      const isActive =
-        location.pathname === itemPath &&
-        String(item.businessId ?? '') === String(currentBusinessId ?? '')
-
-      const hasChildren = item.children && item.children.length > 0
-      const uniqueName = parentName ? `${parentName} > ${item.name}` : item.name
-      const hidden = isHidden(uniqueName)
-      const IconComponent = iconMap[item.iconName] || CircleHelp
-      const canRearrange = (level === 0 || level === 1) && editMode && !collapsed
-
-      if (hidden && !editMode) return null
-      if (!IconComponent) return null
-
-      if (collapsed) {
-        if (item.expandable && hasChildren) {
-          const children = getOrderedSubsections(item)
-
-          if (level === 0) {
-            const roundedHeader = isExpanded && children.length > 0 ? 'rounded-t-lg' : 'rounded-lg'
-            return (
-              <div className="mb-1">
-                <Tooltip delayDuration={800}>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={e => toggleSection(item.section, e)}
-                      className={cn(
-                        'flex items-center justify-center w-full h-10 transition-all nav-level-0 text-slate-700',
-                        roundedHeader
-                      )}
-                    >
-                      <IconComponent className="w-5 h-5 flex-shrink-0" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="z-[99999]">
-                    {item.name}
-                  </TooltipContent>
-                </Tooltip>
-                {isExpanded && (
-                  <div>
-                    {children.map((child, idx) => (
-                      <NavItem
-                        key={child.name}
-                        item={child}
-                        level={level + 1}
-                        parentName={uniqueName}
-                        onNavigate={onNavigate}
-                        isFirst={false}
-                        isLast={idx === children.length - 1}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )
-          }
-
-          return (
-            <div>
-              <Tooltip delayDuration={800}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={e => toggleSection(item.section, e)}
-                    className={cn(
-                      'flex items-center justify-center w-full h-10 transition-all nav-level-1 text-slate-600',
-                      isLast && !isExpanded ? 'rounded-b-lg' : 'rounded-none'
-                    )}
-                  >
-                    <IconComponent className="w-4 h-4 flex-shrink-0" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="z-[99999]">
-                  {item.name}
-                </TooltipContent>
-              </Tooltip>
-              {isExpanded && (
-                <div>
-                  {children.map((child, idx) => (
-                    <NavItem
-                      key={child.name}
-                      item={child}
-                      level={level + 1}
-                      parentName={uniqueName}
-                      onNavigate={onNavigate}
-                      isFirst={false}
-                      isLast={idx === children.length - 1 && isLast}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )
-        }
-
-        const linkUrl =
-          item.url ||
-          (item.businessId
-            ? `${createPageUrl(item.page)}?businessId=${item.businessId}`
-            : createPageUrl(item.page))
-        const handleLinkClick = () => {
-          if (onNavigate) onNavigate()
-        }
-
-        const roundedClass = isLast ? 'rounded-b-lg' : 'rounded-none'
-
-        return (
-          <Tooltip delayDuration={800}>
-            <TooltipTrigger asChild>
-              <Link
-                to={linkUrl}
-                onClick={handleLinkClick}
-                className={cn(
-                  'flex items-center justify-center w-full h-9 transition-all nav-level-2',
-                  roundedClass,
-                  isActive ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600'
-                )}
-              >
-                <IconComponent className="w-4 h-4 flex-shrink-0" />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="z-[99999]">
-              {item.name}
-            </TooltipContent>
-          </Tooltip>
-        )
-      }
-
-      if (item.expandable) {
-        return (
-          <div
-            className={cn(
-              editMode && hidden && 'opacity-40',
-              isDragging && 'opacity-50',
-              level === 0 && 'mb-3 rounded-lg overflow-hidden'
-            )}
-          >
-            <div className="flex items-center">
-              {editMode && !collapsed && (
-                <>
-                  <div className="w-6 flex items-center justify-center flex-shrink-0">
-                    {canRearrange && dragHandleProps && (
-                      <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing">
-                        <GripVertical className="w-4 h-4 text-slate-400 hover:text-slate-600" />
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 hover:bg-slate-200 flex-shrink-0"
-                    onClick={e => {
-                      e.stopPropagation()
-                      toggleVisibility(uniqueName)
-                    }}
-                  >
-                    {hidden ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                  </Button>
-                </>
-              )}
-              <button
-                onClick={e => toggleSection(item.section, e)}
-                className={cn(
-                  'flex-1 flex items-center gap-3 px-3 py-2.5 transition-all group',
-                  level === 0
-                    ? 'text-slate-900 font-semibold nav-level-0'
-                    : level === 1
-                      ? 'text-slate-700 nav-level-1'
-                      : 'text-slate-700 nav-level-2'
-                )}
-                style={{ paddingLeft: `${12 + level * 16}px` }}
-              >
-                <IconComponent className="w-4 h-4 flex-shrink-0" />
-                <span className="flex-1 text-left text-sm font-medium">{item.name}</span>
-                {isExpanded ? (
-                  <ChevronUp className="w-4 h-4 text-slate-400" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-slate-400" />
-                )}
-              </button>
-            </div>
-            {isExpanded && hasChildren && (
-              <div>
-                {editMode && level === 0 ? (
-                  <Droppable
-                    droppableId={`subsection-${item.name}`}
-                    type={`subsection-${item.name}`}
-                  >
-                    {provided => (
-                      <div {...provided.droppableProps} ref={provided.innerRef}>
-                        {getOrderedSubsections(item).map((child, index) => (
-                          <Draggable
-                            key={child.name}
-                            draggableId={`${item.name}-${child.name}`}
-                            index={index}
-                          >
-                            {(provided, snapshot) => (
-                              <div ref={provided.innerRef} {...provided.draggableProps}>
-                                <NavItem
-                                  item={child}
-                                  level={level + 1}
-                                  parentName={uniqueName}
-                                  isDragging={snapshot.isDragging}
-                                  dragHandleProps={provided.dragHandleProps}
-                                  onNavigate={onNavigate}
-                                />
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-                ) : (
-                  <>
-                    {getOrderedSubsections(item).map(child => (
-                      <NavItem
-                        key={child.name}
-                        item={child}
-                        level={level + 1}
-                        parentName={uniqueName}
-                        onNavigate={onNavigate}
-                      />
-                    ))}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        )
-      }
-
-      const linkUrl =
-        item.url ||
-        (item.businessId
-          ? `${createPageUrl(item.page)}?businessId=${item.businessId}`
-          : createPageUrl(item.page))
-      const handleLinkClick = () => {
-        if (onNavigate) onNavigate()
-      }
-
-      return (
-        <div
-          className={cn(
-            'flex items-center',
-            editMode && hidden && 'opacity-40',
-            level === 0 && 'mb-3 rounded-lg overflow-hidden'
-          )}
-        >
-          {editMode && !collapsed && (
-            <>
-              <div className="w-6 flex items-center justify-center flex-shrink-0">
-                {canRearrange && dragHandleProps && (
-                  <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing">
-                    <GripVertical className="w-4 h-4 text-slate-400 hover:text-slate-600" />
-                  </div>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 hover:bg-slate-200 flex-shrink-0"
-                onClick={e => {
-                  e.stopPropagation()
-                  toggleVisibility(uniqueName)
-                }}
-              >
-                {hidden ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-              </Button>
-            </>
-          )}
-          {item.comingSoon ? (
-            <Tooltip delayDuration={0}>
-              <TooltipTrigger asChild>
-                <div
-                  className={cn(
-                    'flex-1 flex items-center gap-3 px-3 py-2.5 transition-all group opacity-50 cursor-not-allowed',
-                    level === 0
-                      ? 'text-slate-900 nav-level-0'
-                      : level === 1
-                        ? 'text-slate-700 nav-level-1'
-                        : 'nav-level-2 text-slate-700'
-                  )}
-                  style={{ paddingLeft: `${12 + level * 16}px` }}
-                >
-                  <IconComponent className="w-4 h-4 flex-shrink-0" />
-                  <span className="text-sm font-medium">{item.name}</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="z-[99999]">
-                Coming soon
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <Link
-              to={linkUrl}
-              onClick={handleLinkClick}
-              className={cn(
-                'flex-1 flex items-center gap-3 px-3 py-2.5 transition-all group',
-                isActive
-                  ? 'bg-indigo-50 text-indigo-600 font-semibold'
-                  : level === 0
-                    ? 'text-slate-900 nav-level-0'
-                    : level === 1
-                      ? 'text-slate-700 nav-level-1'
-                      : 'nav-level-2 text-slate-700'
-              )}
-              style={{ paddingLeft: `${12 + level * 16}px` }}
-            >
-              <IconComponent className="w-4 h-4 flex-shrink-0" />
-              <span className="text-sm font-medium">{item.name}</span>
-            </Link>
-          )}
-        </div>
-      )
-    }
 
     const isMac = navigator.platform.toUpperCase().includes('MAC')
     const modKey = isMac ? 'Ctrl' : 'Alt'
@@ -822,6 +867,14 @@ const LayoutContent = memo(
                         key={item.name}
                         item={item}
                         onNavigate={() => setMobileMenuOpen(false)}
+                        expandedSections={expandedSections}
+                        hiddenSections={hiddenSections}
+                        collapsed={collapsed}
+                        editMode={editMode}
+                        location={location}
+                        toggleSection={toggleSection}
+                        toggleVisibility={toggleVisibility}
+                        getOrderedSubsections={getOrderedSubsections}
                       />
                     ))}
                   </div>
@@ -851,6 +904,14 @@ const LayoutContent = memo(
                                         isDragging={snapshot.isDragging}
                                         dragHandleProps={provided.dragHandleProps}
                                         onNavigate={() => setMobileMenuOpen(false)}
+                                        expandedSections={expandedSections}
+                                        hiddenSections={hiddenSections}
+                                        collapsed={collapsed}
+                                        editMode={editMode}
+                                        location={location}
+                                        toggleSection={toggleSection}
+                                        toggleVisibility={toggleVisibility}
+                                        getOrderedSubsections={getOrderedSubsections}
                                       />
                                     </div>
                                   )}
@@ -867,6 +928,14 @@ const LayoutContent = memo(
                               key={item.name}
                               item={item}
                               onNavigate={() => setMobileMenuOpen(false)}
+                              expandedSections={expandedSections}
+                              hiddenSections={hiddenSections}
+                              collapsed={collapsed}
+                              editMode={editMode}
+                              location={location}
+                              toggleSection={toggleSection}
+                              toggleVisibility={toggleVisibility}
+                              getOrderedSubsections={getOrderedSubsections}
                             />
                           ))}
                         </div>
