@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { Subscription, User } from '@/models/index.js';
+import { getValidStripeCustomerId } from '@/utils/stripeCustomer.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -49,6 +50,16 @@ export async function createCheckoutSession(
     let stripeSubscriptionId =
       existingSubscription?.stripe_subscription_id || null;
     let stripeCustomerId = existingSubscription?.stripe_customer_id || null;
+
+    // Validate cached customer ID against Stripe; if it's stale, clear it
+    const cachedCustomerId = stripeCustomerId;
+    stripeCustomerId = await getValidStripeCustomerId(stripe, stripeCustomerId);
+    if (cachedCustomerId && !stripeCustomerId && existingSubscription) {
+      await Subscription.findOneAndUpdate(
+        { _id: existingSubscription._id },
+        { $unset: { stripe_customer_id: '' } },
+      );
+    }
 
     if (!stripeSubscriptionId) {
       try {

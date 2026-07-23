@@ -1,6 +1,7 @@
 import Stripe from 'stripe';
 import type { Request, Response } from 'express';
 import { Subscription } from '@/models/index.js';
+import { getValidStripeCustomerId } from '@/utils/stripeCustomer.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -30,6 +31,16 @@ export async function createBillingPortalSession(
       .select('stripe_customer_id');
 
     let customerId = subscription?.stripe_customer_id;
+
+    // Validate cached customer ID against Stripe; if it's stale, clear it
+    const cachedCustomerId = customerId;
+    customerId = await getValidStripeCustomerId(stripe, customerId);
+    if (cachedCustomerId && !customerId && subscription) {
+      await Subscription.findOneAndUpdate(
+        { _id: subscription._id },
+        { $unset: { stripe_customer_id: '' } },
+      );
+    }
 
     if (!customerId) {
       try {
