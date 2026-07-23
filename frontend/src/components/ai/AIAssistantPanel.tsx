@@ -22,9 +22,7 @@ type ChatMutationInput = {
 }
 
 type ChatResponse = {
-  data: {
-    answer: string
-  }
+  answer: string
 }
 
 type ApiError = {
@@ -79,7 +77,7 @@ export default function AIAssistantPanel({
       backend.functions.invoke('aiHealthChat', { question, file_urls }),
 
     onSuccess: response => {
-      setMessages(prev => [...prev, { role: 'assistant', content: response.data.answer }])
+      setMessages(prev => [...prev, { role: 'assistant', content: response.answer }])
     },
 
     onError: error => {

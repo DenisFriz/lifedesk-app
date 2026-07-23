@@ -50,7 +50,7 @@ export async function plaid(
         user: { client_user_id: req.user._id.toString() },
         client_name: 'LifeDesk',
         products: ['transactions'] as any,
-        country_codes: ['DE'] as any,
+        country_codes: ['US'] as any,
         language: 'en',
       });
       return res.json({ link_token: response.data.link_token });
