@@ -100,7 +100,11 @@ export async function processSyncQueue(queryClient?: QueryClient): Promise<void>
           // CREATE
           // =========================
           if (item.operation === 'create') {
-            const { optimisticId, id: _localId, ...data } = item.payload as Record<string, unknown> & { optimisticId: string }
+            const {
+              optimisticId,
+              id: _localId,
+              ...data
+            } = item.payload as Record<string, unknown> & { optimisticId: string }
 
             for (const key of Object.keys(data)) {
               const value = (data as any)[key]
