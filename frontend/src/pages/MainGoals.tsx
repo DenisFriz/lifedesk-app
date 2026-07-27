@@ -10,6 +10,7 @@ import {
 import { ChevronDown, Target } from 'lucide-react'
 import { Helmet } from 'react-helmet-async'
 import { useEntityTabs } from '@/hooks/useEntityTabs'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
 
 type FilterType = 'all' | 'important' | 'category' | 'business'
 
@@ -91,6 +92,8 @@ export default function MainGoals() {
       storageKey: 'mainGoalsActiveTab'
     })
 
+  const { data: businesses = [] } = useBusinessesQuery()
+
   return (
     <>
       <Helmet>
@@ -146,6 +149,22 @@ export default function MainGoals() {
                     {tab.label}
                   </button>
                 ))}
+                {businesses.map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id)
+                      localStorage.setItem('mainGoalsActiveTab', tab.id)
+                    }}
+                    className={`all-goals-tab-button px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      activeTab === tab.id
+                        ? 'bg-white text-slate-900 shadow-sm all-goals-tab-active'
+                        : 'bg-transparent text-[#475569] hover:bg-white/50'
+                    }`}
+                  >
+                    {tab.name}
+                  </button>
+                ))}
                 {overflowTabs.length > 0 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -187,6 +206,13 @@ export default function MainGoals() {
               tab =>
                 activeTab === tab.value && (
                   <GoalTable key={tab.value} filterType={tab.filterType} category={tab.category} />
+                )
+            )}
+
+            {businesses.map(
+              business =>
+                activeTab === business.id && (
+                  <GoalTable key={business.id} filterType="business" businessId={business.id} />
                 )
             )}
           </Tabs>

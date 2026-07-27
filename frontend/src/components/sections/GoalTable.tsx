@@ -63,6 +63,8 @@ import { useTableState } from '@/hooks/useTableState'
 import { GoalRecord } from '@/db'
 import { GoalCreateInput } from '@/repositories/goal.repository'
 
+const TASKS_PER_PAGE = 10
+
 function TasksToggleButton({
   goal,
   goalId,
@@ -163,6 +165,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
   const [expandedGoals, setExpandedGoals] = useState({})
   const [expandedRelatedTasks, setExpandedRelatedTasks] = useState({})
   const [hoveredTargetDate, setHoveredTargetDate] = useState(null)
+  const [taskPages, setTaskPages] = useState<Record<string, number>>({})
 
   const { playSound } = useSound()
 
@@ -327,9 +330,10 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
     if (result.type === 'task') {
       const goalId = result.source.droppableId.replace('tasks-', '')
       const tasks = getGoalTasks(goalId)
+      const pageOffset = (getTaskPage(goalId) - 1) * TASKS_PER_PAGE
       const newItems = Array.from(tasks)
-      const [reorderedItem] = newItems.splice(result.source.index, 1)
-      newItems.splice(result.destination.index, 0, reorderedItem)
+      const [reorderedItem] = newItems.splice(result.source.index + pageOffset, 1)
+      newItems.splice(result.destination.index + pageOffset, 0, reorderedItem)
 
       const updatedOrderForBackend = newItems.map((task, index) => ({
         id: task.id,
@@ -596,7 +600,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
     }))
   }
 
-  const getGoalTasks = goalId => {
+  const getGoalTasks = (goalId: string) => {
     return allTasks
       .filter(t => t.goal_id === goalId && t.status !== 'archived')
       .sort((a, b) => {
@@ -604,6 +608,20 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
         const orderB = b.order ?? 999999
         return orderA - orderB
       })
+  }
+
+  const getTaskPage = (goalId: string) => taskPages[goalId] || 1
+
+  const getTaskTotalPages = (goalId: string) =>
+    Math.max(1, Math.ceil(getGoalTasks(goalId).length / TASKS_PER_PAGE))
+
+  const getPaginatedGoalTasks = (goalId: string) => {
+    const allGoalTasks = getGoalTasks(goalId)
+    const totalPages = getTaskTotalPages(goalId)
+    const rawPage = getTaskPage(goalId)
+    const page = Math.min(rawPage, totalPages)
+    const startIndex = (page - 1) * TASKS_PER_PAGE
+    return allGoalTasks.slice(startIndex, startIndex + TASKS_PER_PAGE)
   }
 
   const updateTaskOrderMutation = useMutation<any, any, { id: string; order: number }[]>({
@@ -1579,9 +1597,8 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                                       {...provided.droppableProps}
                                                       ref={provided.innerRef}
                                                     >
-                                                      {getGoalTasks(goalId)
-                                                        .slice(0, 10)
-                                                        .map((task, taskIndex) => (
+                                                      {getPaginatedGoalTasks(goalId).map(
+                                                        (task, taskIndex) => (
                                                           <GoalTaskRow
                                                             key={task.id}
                                                             task={task}
@@ -1612,7 +1629,8 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                                             deleteTaskMutation={deleteTaskMutation}
                                                             getGoalTasks={getGoalTasks}
                                                           />
-                                                        ))}
+                                                        )
+                                                      )}
                                                       {provided.placeholder}
                                                     </tbody>
                                                   )}
@@ -1620,7 +1638,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                               </table>
                                             </td>
                                           </tr>
-                                          {getGoalTasks(goalId).length > 10 && (
+                                          {getGoalTasks(goalId).length > TASKS_PER_PAGE && (
                                             <tr className="bg-slate-50">
                                               <td
                                                 colSpan={
@@ -1644,9 +1662,49 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                                         ? 8
                                                         : 7
                                                 }
-                                                className="px-4 py-2 text-xs text-slate-500 text-center"
+                                                className="px-4 py-2 text-center"
                                               >
-                                                Showing 10 of {getGoalTasks(goalId).length} tasks
+                                                <div className="flex items-center justify-center gap-2">
+                                                  <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                      setTaskPages(prev => ({
+                                                        ...prev,
+                                                        [goalId]: Math.max(
+                                                          1,
+                                                          getTaskPage(goalId) - 1
+                                                        )
+                                                      }))
+                                                    }
+                                                    disabled={getTaskPage(goalId) === 1}
+                                                  >
+                                                    Previous
+                                                  </Button>
+                                                  <span className="text-xs text-slate-600">
+                                                    Page {getTaskPage(goalId)} of{' '}
+                                                    {getTaskTotalPages(goalId)}
+                                                  </span>
+                                                  <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                      setTaskPages(prev => ({
+                                                        ...prev,
+                                                        [goalId]: Math.min(
+                                                          getTaskTotalPages(goalId),
+                                                          getTaskPage(goalId) + 1
+                                                        )
+                                                      }))
+                                                    }
+                                                    disabled={
+                                                      getTaskPage(goalId) ===
+                                                      getTaskTotalPages(goalId)
+                                                    }
+                                                  >
+                                                    Next
+                                                  </Button>
+                                                </div>
                                               </td>
                                             </tr>
                                           )}
@@ -2086,285 +2144,318 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                             </button>
                                           )}
                                           {expandedRelatedTasks[goalId] && (
-                                            <div className="max-h-[300px] overflow-y-auto space-y-2">
-                                              {getGoalTasks(goalId)
-                                                .slice(0, 10)
-                                                .map(task => (
-                                                  <div
-                                                    key={task.id}
-                                                    className="bg-slate-50 p-3 rounded border border-slate-200 space-y-2"
-                                                  >
-                                                    <div className="flex items-start gap-2">
-                                                      <button
-                                                        onClick={() => {
-                                                          updateTaskMutation.mutate({
-                                                            id: task.id,
-                                                            data: { important: !task.important }
-                                                          })
+                                            <div className="space-y-2">
+                                              {getPaginatedGoalTasks(goalId).map(task => (
+                                                <div
+                                                  key={task.id}
+                                                  className="bg-slate-50 p-3 rounded border border-slate-200 space-y-2"
+                                                >
+                                                  <div className="flex items-start gap-2">
+                                                    <button
+                                                      onClick={() => {
+                                                        updateTaskMutation.mutate({
+                                                          id: task.id,
+                                                          data: { important: !task.important }
+                                                        })
+                                                      }}
+                                                      className="flex-shrink-0 mt-0.5"
+                                                    >
+                                                      <Star
+                                                        className={cn(
+                                                          'w-5 h-5',
+                                                          task.important
+                                                            ? 'fill-amber-400 text-amber-400'
+                                                            : 'text-slate-300'
+                                                        )}
+                                                      />
+                                                    </button>
+                                                    <div className="flex-1 min-w-0">
+                                                      <Input
+                                                        value={
+                                                          table.editingField === `${task.id}-title`
+                                                            ? table.editValue
+                                                            : task.title
+                                                        }
+                                                        onChange={e => {
+                                                          table.setEditValue(e.target.value)
+                                                          table.setEditingField(`${task.id}-title`)
                                                         }}
-                                                        className="flex-shrink-0 mt-0.5"
-                                                      >
-                                                        <Star
-                                                          className={cn(
-                                                            'w-5 h-5',
-                                                            task.important
-                                                              ? 'fill-amber-400 text-amber-400'
-                                                              : 'text-slate-300'
-                                                          )}
-                                                        />
-                                                      </button>
-                                                      <div className="flex-1 min-w-0">
-                                                        <Input
-                                                          value={
+                                                        onBlur={() => {
+                                                          if (
                                                             table.editingField ===
                                                             `${task.id}-title`
-                                                              ? table.editValue
-                                                              : task.title
+                                                          ) {
+                                                            handleTaskBlur(task.id, 'title')
                                                           }
-                                                          onChange={e => {
-                                                            table.setEditValue(e.target.value)
-                                                            table.setEditingField(
-                                                              `${task.id}-title`
-                                                            )
-                                                          }}
-                                                          onBlur={() => {
-                                                            if (
-                                                              table.editingField ===
-                                                              `${task.id}-title`
-                                                            ) {
-                                                              handleTaskBlur(task.id, 'title')
-                                                            }
-                                                          }}
-                                                          onFocus={() =>
-                                                            startEdit(task.id, 'title', task.title)
-                                                          }
-                                                          onKeyDown={e => {
-                                                            if (e.key === 'Enter') {
-                                                              saveTaskEdit(task.id, 'title')
-                                                            } else if (e.key === 'Escape') {
-                                                              table.setEditingField(null)
-                                                            }
-                                                          }}
-                                                          maxLength={200}
-                                                          className={cn(
-                                                            'w-full border-0 shadow-none px-0 py-0 h-auto text-sm font-medium focus-visible:ring-0 bg-transparent',
-                                                            task.status === 'completed'
-                                                              ? 'line-through text-slate-500'
-                                                              : 'text-slate-900'
-                                                          )}
-                                                        />
-                                                      </div>
-                                                      <Checkbox
-                                                        checked={task.status === 'completed'}
-                                                        onCheckedChange={checked => {
-                                                          updateTaskMutation.mutate({
-                                                            id: task.id,
-                                                            data: {
-                                                              status: checked
-                                                                ? 'completed'
-                                                                : 'pending'
-                                                            }
-                                                          })
-                                                          if (checked) playSound('task-done')
                                                         }}
+                                                        onFocus={() =>
+                                                          startEdit(task.id, 'title', task.title)
+                                                        }
+                                                        onKeyDown={e => {
+                                                          if (e.key === 'Enter') {
+                                                            saveTaskEdit(task.id, 'title')
+                                                          } else if (e.key === 'Escape') {
+                                                            table.setEditingField(null)
+                                                          }
+                                                        }}
+                                                        maxLength={200}
                                                         className={cn(
-                                                          'flex-shrink-0 mt-0.5',
-                                                          task.status === 'completed' &&
-                                                            'border-green-500 data-[state=checked]:bg-green-500'
+                                                          'w-full border-0 shadow-none px-0 py-0 h-auto text-sm font-medium focus-visible:ring-0 bg-transparent',
+                                                          task.status === 'completed'
+                                                            ? 'line-through text-slate-500'
+                                                            : 'text-slate-900'
                                                         )}
                                                       />
                                                     </div>
+                                                    <Checkbox
+                                                      checked={task.status === 'completed'}
+                                                      onCheckedChange={checked => {
+                                                        updateTaskMutation.mutate({
+                                                          id: task.id,
+                                                          data: {
+                                                            status: checked
+                                                              ? 'completed'
+                                                              : 'pending'
+                                                          }
+                                                        })
+                                                        if (checked) playSound('task-done')
+                                                      }}
+                                                      className={cn(
+                                                        'flex-shrink-0 mt-0.5',
+                                                        task.status === 'completed' &&
+                                                          'border-green-500 data-[state=checked]:bg-green-500'
+                                                      )}
+                                                    />
+                                                  </div>
 
-                                                    <Textarea
-                                                      value={
+                                                  <Textarea
+                                                    value={
+                                                      table.editingField ===
+                                                      `${task.id}-description`
+                                                        ? table.editValue
+                                                        : task.description || ''
+                                                    }
+                                                    onChange={e => {
+                                                      table.setEditValue(e.target.value)
+                                                      table.setEditingField(
+                                                        `${task.id}-description`
+                                                      )
+                                                    }}
+                                                    onBlur={() => {
+                                                      if (
                                                         table.editingField ===
                                                         `${task.id}-description`
-                                                          ? table.editValue
-                                                          : task.description || ''
+                                                      ) {
+                                                        handleTaskBlur(task.id, 'description')
                                                       }
-                                                      onChange={e => {
-                                                        table.setEditValue(e.target.value)
-                                                        table.setEditingField(
-                                                          `${task.id}-description`
-                                                        )
-                                                      }}
-                                                      onBlur={() => {
-                                                        if (
-                                                          table.editingField ===
-                                                          `${task.id}-description`
-                                                        ) {
-                                                          handleTaskBlur(task.id, 'description')
-                                                        }
-                                                      }}
-                                                      onFocus={() =>
-                                                        startEdit(
-                                                          task.id,
-                                                          'description',
-                                                          task.description
-                                                        )
+                                                    }}
+                                                    onFocus={() =>
+                                                      startEdit(
+                                                        task.id,
+                                                        'description',
+                                                        task.description
+                                                      )
+                                                    }
+                                                    onKeyDown={e => {
+                                                      if (e.key === 'Enter' && !e.shiftKey) {
+                                                        e.preventDefault()
+                                                        saveTaskEdit(task.id, 'description')
+                                                      } else if (e.key === 'Escape') {
+                                                        table.setEditingField(null)
                                                       }
-                                                      onKeyDown={e => {
-                                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                                          e.preventDefault()
-                                                          saveTaskEdit(task.id, 'description')
-                                                        } else if (e.key === 'Escape') {
-                                                          table.setEditingField(null)
-                                                        }
-                                                      }}
-                                                      placeholder="Add description..."
-                                                      maxLength={5000}
-                                                      className="w-full border-0 shadow-none px-0 py-0 min-h-[60px] resize-none text-sm text-slate-600 focus-visible:ring-0 bg-transparent"
-                                                    />
+                                                    }}
+                                                    placeholder="Add description..."
+                                                    maxLength={5000}
+                                                    className="w-full border-0 shadow-none px-0 py-0 min-h-[60px] resize-none text-sm text-slate-600 focus-visible:ring-0 bg-transparent"
+                                                  />
 
-                                                    <div className="flex items-center justify-between gap-3">
-                                                      <div className="flex-1">
-                                                        <label className="text-xs text-slate-500 block mb-1">
-                                                          Due Date
-                                                        </label>
-                                                        {table.editingField ===
-                                                        `${task.id}-due_date` ? (
-                                                          <div className="space-y-1">
-                                                            <Input
-                                                              type="date"
-                                                              value={table.editValue}
-                                                              onChange={e =>
-                                                                table.setEditValue(e.target.value)
-                                                              }
-                                                              onBlur={e => {
-                                                                if (
-                                                                  !e.currentTarget.parentElement?.contains(
-                                                                    e.relatedTarget
-                                                                  )
-                                                                ) {
-                                                                  const timeInput =
-                                                                    document.querySelector(
-                                                                      `input[data-mobile-task-time-for="${task.id}"]`
-                                                                    ) as HTMLInputElement | null
-                                                                  saveTaskEdit(task.id, 'due_date')
-                                                                  updateTaskMutation.mutate({
-                                                                    id: task.id,
-                                                                    data: {
-                                                                      due_time:
-                                                                        timeInput?.value || null
-                                                                    }
-                                                                  })
-                                                                }
-                                                              }}
-                                                              onKeyDown={e => {
-                                                                if (e.key === 'Enter') {
-                                                                  const timeInput =
-                                                                    document.querySelector(
-                                                                      `input[data-mobile-task-time-for="${task.id}"]`
-                                                                    ) as HTMLInputElement | null
-                                                                  saveTaskEdit(task.id, 'due_date')
-                                                                  updateTaskMutation.mutate({
-                                                                    id: task.id,
-                                                                    data: {
-                                                                      due_time:
-                                                                        timeInput?.value || null
-                                                                    }
-                                                                  })
-                                                                } else if (e.key === 'Escape') {
-                                                                  table.setEditingField(null)
-                                                                }
-                                                              }}
-                                                              autoFocus
-                                                              className="h-9 text-sm"
-                                                            />
-                                                            <Input
-                                                              type="time"
-                                                              defaultValue={task.due_time || ''}
-                                                              data-mobile-task-time-for={task.id}
-                                                              className="h-9 text-sm"
-                                                              placeholder="Time"
-                                                              onKeyDown={e => {
-                                                                if (e.key === 'Enter') {
-                                                                  const timeInput =
-                                                                    document.querySelector(
-                                                                      `input[data-mobile-task-time-for="${task.id}"]`
-                                                                    ) as HTMLInputElement | null
-                                                                  saveTaskEdit(task.id, 'due_date')
-                                                                  updateTaskMutation.mutate({
-                                                                    id: task.id,
-                                                                    data: {
-                                                                      due_time:
-                                                                        timeInput?.value || null
-                                                                    }
-                                                                  })
-                                                                } else if (e.key === 'Escape') {
-                                                                  table.setEditingField(null)
-                                                                }
-                                                              }}
-                                                            />
-                                                          </div>
-                                                        ) : (
-                                                          <div
-                                                            onClick={() =>
-                                                              startEdit(
-                                                                task.id,
-                                                                'due_date',
-                                                                task.due_date
-                                                              )
+                                                  <div className="flex items-center justify-between gap-3">
+                                                    <div className="flex-1">
+                                                      <label className="text-xs text-slate-500 block mb-1">
+                                                        Due Date
+                                                      </label>
+                                                      {table.editingField ===
+                                                      `${task.id}-due_date` ? (
+                                                        <div className="space-y-1">
+                                                          <Input
+                                                            type="date"
+                                                            value={table.editValue}
+                                                            onChange={e =>
+                                                              table.setEditValue(e.target.value)
                                                             }
-                                                            className="cursor-text text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded"
-                                                          >
-                                                            {task.due_date ? (
-                                                              <>
-                                                                <div>
-                                                                  {formatDateMedium(task.due_date)}
+                                                            onBlur={e => {
+                                                              if (
+                                                                !e.currentTarget.parentElement?.contains(
+                                                                  e.relatedTarget
+                                                                )
+                                                              ) {
+                                                                const timeInput =
+                                                                  document.querySelector(
+                                                                    `input[data-mobile-task-time-for="${task.id}"]`
+                                                                  ) as HTMLInputElement | null
+                                                                saveTaskEdit(task.id, 'due_date')
+                                                                updateTaskMutation.mutate({
+                                                                  id: task.id,
+                                                                  data: {
+                                                                    due_time:
+                                                                      timeInput?.value || null
+                                                                  }
+                                                                })
+                                                              }
+                                                            }}
+                                                            onKeyDown={e => {
+                                                              if (e.key === 'Enter') {
+                                                                const timeInput =
+                                                                  document.querySelector(
+                                                                    `input[data-mobile-task-time-for="${task.id}"]`
+                                                                  ) as HTMLInputElement | null
+                                                                saveTaskEdit(task.id, 'due_date')
+                                                                updateTaskMutation.mutate({
+                                                                  id: task.id,
+                                                                  data: {
+                                                                    due_time:
+                                                                      timeInput?.value || null
+                                                                  }
+                                                                })
+                                                              } else if (e.key === 'Escape') {
+                                                                table.setEditingField(null)
+                                                              }
+                                                            }}
+                                                            autoFocus
+                                                            className="h-9 text-sm"
+                                                          />
+                                                          <Input
+                                                            type="time"
+                                                            defaultValue={task.due_time || ''}
+                                                            data-mobile-task-time-for={task.id}
+                                                            className="h-9 text-sm"
+                                                            placeholder="Time"
+                                                            onKeyDown={e => {
+                                                              if (e.key === 'Enter') {
+                                                                const timeInput =
+                                                                  document.querySelector(
+                                                                    `input[data-mobile-task-time-for="${task.id}"]`
+                                                                  ) as HTMLInputElement | null
+                                                                saveTaskEdit(task.id, 'due_date')
+                                                                updateTaskMutation.mutate({
+                                                                  id: task.id,
+                                                                  data: {
+                                                                    due_time:
+                                                                      timeInput?.value || null
+                                                                  }
+                                                                })
+                                                              } else if (e.key === 'Escape') {
+                                                                table.setEditingField(null)
+                                                              }
+                                                            }}
+                                                          />
+                                                        </div>
+                                                      ) : (
+                                                        <div
+                                                          onClick={() =>
+                                                            startEdit(
+                                                              task.id,
+                                                              'due_date',
+                                                              task.due_date
+                                                            )
+                                                          }
+                                                          className="cursor-text text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded"
+                                                        >
+                                                          {task.due_date ? (
+                                                            <>
+                                                              <div>
+                                                                {formatDateMedium(task.due_date)}
+                                                              </div>
+                                                              {task.due_time && (
+                                                                <div className="text-xs text-slate-500 mt-1">
+                                                                  {task.due_time}
                                                                 </div>
-                                                                {task.due_time && (
-                                                                  <div className="text-xs text-slate-500 mt-1">
-                                                                    {task.due_time}
-                                                                  </div>
-                                                                )}
-                                                              </>
-                                                            ) : (
-                                                              'Set date...'
-                                                            )}
-                                                          </div>
-                                                        )}
-                                                      </div>
-                                                      <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                          <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-9 w-9 flex-shrink-0 mt-5"
-                                                          >
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                          </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                          <DropdownMenuItem
-                                                            onClick={() => {
-                                                              playSound('archived')
-                                                              updateTaskMutation.mutate({
-                                                                id: task.id,
-                                                                data: { status: 'archived' }
-                                                              })
-                                                            }}
-                                                          >
-                                                            <Archive className="w-4 h-4 mr-2" />
-                                                            Archive
-                                                          </DropdownMenuItem>
-                                                          <DropdownMenuItem
-                                                            onClick={() => {
-                                                              deleteTaskMutation.mutate(task.id)
-                                                            }}
-                                                            className="text-rose-600"
-                                                          >
-                                                            <Trash2 className="w-4 mr-2" />
-                                                            Delete
-                                                          </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                      </DropdownMenu>
+                                                              )}
+                                                            </>
+                                                          ) : (
+                                                            'Set date...'
+                                                          )}
+                                                        </div>
+                                                      )}
                                                     </div>
+                                                    <DropdownMenu>
+                                                      <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                          variant="ghost"
+                                                          size="icon"
+                                                          className="h-9 w-9 flex-shrink-0 mt-5"
+                                                        >
+                                                          <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                      </DropdownMenuTrigger>
+                                                      <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem
+                                                          onClick={() => {
+                                                            playSound('archived')
+                                                            updateTaskMutation.mutate({
+                                                              id: task.id,
+                                                              data: { status: 'archived' }
+                                                            })
+                                                          }}
+                                                        >
+                                                          <Archive className="w-4 h-4 mr-2" />
+                                                          Archive
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                          onClick={() => {
+                                                            deleteTaskMutation.mutate(task.id)
+                                                          }}
+                                                          className="text-rose-600"
+                                                        >
+                                                          <Trash2 className="w-4 mr-2" />
+                                                          Delete
+                                                        </DropdownMenuItem>
+                                                      </DropdownMenuContent>
+                                                    </DropdownMenu>
                                                   </div>
-                                                ))}
-                                              {getGoalTasks(goalId).length > 10 && (
-                                                <div className="text-xs text-slate-500 text-center py-1">
-                                                  Showing 10 of {getGoalTasks(goalId).length}
+                                                </div>
+                                              ))}
+                                              {getGoalTasks(goalId).length > TASKS_PER_PAGE && (
+                                                <div className="flex items-center justify-center gap-2 py-2">
+                                                  <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                      setTaskPages(prev => ({
+                                                        ...prev,
+                                                        [goalId]: Math.max(
+                                                          1,
+                                                          getTaskPage(goalId) - 1
+                                                        )
+                                                      }))
+                                                    }
+                                                    disabled={getTaskPage(goalId) === 1}
+                                                  >
+                                                    Previous
+                                                  </Button>
+                                                  <span className="text-xs text-slate-600">
+                                                    Page {getTaskPage(goalId)} of{' '}
+                                                    {getTaskTotalPages(goalId)}
+                                                  </span>
+                                                  <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                      setTaskPages(prev => ({
+                                                        ...prev,
+                                                        [goalId]: Math.min(
+                                                          getTaskTotalPages(goalId),
+                                                          getTaskPage(goalId) + 1
+                                                        )
+                                                      }))
+                                                    }
+                                                    disabled={
+                                                      getTaskPage(goalId) ===
+                                                      getTaskTotalPages(goalId)
+                                                    }
+                                                  >
+                                                    Next
+                                                  </Button>
                                                 </div>
                                               )}
                                             </div>

@@ -706,6 +706,11 @@ export interface NoteRecord {
   updatedAt: string
 }
 
+export interface IdMapRecord {
+  optimisticId: string
+  realId: string
+}
+
 class AppDB extends Dexie {
   goals!: Table<GoalRecord, string>
   tasks!: Table<TaskRecord, string>
@@ -737,12 +742,13 @@ class AppDB extends Dexie {
   recurringexpenses!: Table<RecurringExpenseRecord, string>
   communityideas!: Table<CommunityIdeaRecord, string>
   notes!: Table<NoteRecord, string>
+  idMap!: Table<IdMapRecord, string>
   syncQueue!: Table<SyncQueueItem, number>
 
   constructor() {
     super('AppDB')
 
-    this.version(28).stores({
+    this.version(29).stores({
       goals: 'id, serverId, status, category, is_deleted',
       tasks: 'id, serverId, status, category, is_deleted',
       events: 'id, serverId, status, category, is_deleted',
@@ -776,6 +782,7 @@ class AppDB extends Dexie {
       communityideas:
         'id, serverId, created_by, category, likes_count, comments_count, is_deleted, createdAt, updatedAt',
       notes: 'id, serverId, category, is_deleted',
+      idMap: 'optimisticId',
       syncQueue: '++localId, entityName, operation, timestamp, status'
     })
   }

@@ -100,7 +100,17 @@ export async function processSyncQueue(queryClient?: QueryClient): Promise<void>
           // CREATE
           // =========================
           if (item.operation === 'create') {
-            const { optimisticId, id: _localId, ...data } = item.payload as Record<string, unknown>
+            const { optimisticId, id: _localId, ...data } = item.payload as Record<string, unknown> & { optimisticId: string }
+
+            for (const key of Object.keys(data)) {
+              const value = (data as any)[key]
+              if (isOptimisticId(value)) {
+                const resolved = resolvedIds.get(value) ?? (await db.idMap.get(value))?.realId
+                if (resolved) {
+                  ;(data as any)[key] = resolved
+                }
+              }
+            }
 
             const serverRecord = await entity.create(data)
 
@@ -109,6 +119,7 @@ export async function processSyncQueue(queryClient?: QueryClient): Promise<void>
             }
 
             resolvedIds.set(optimisticId, serverRecord._id)
+            await db.idMap.put({ optimisticId, realId: serverRecord._id })
 
             const store = (db as any)[item.entityName]
             const existing = await store.get(optimisticId)
@@ -122,19 +133,20 @@ export async function processSyncQueue(queryClient?: QueryClient): Promise<void>
               _optimistic: undefined
             })
 
-            const laterItems = await db.syncQueue
-              .where('status')
-              .equals('pending')
-              .filter(q => (q.payload as any).id === optimisticId)
-              .toArray()
+            const laterItems = await db.syncQueue.where('status').equals('pending').toArray()
 
             for (const later of laterItems) {
-              await db.syncQueue.update(later.localId!, {
-                payload: {
-                  ...later.payload,
-                  id: serverRecord._id
+              let updated = false
+              const updatedPayload = { ...later.payload }
+              for (const key of Object.keys(updatedPayload)) {
+                if ((updatedPayload as any)[key] === optimisticId) {
+                  ;(updatedPayload as any)[key] = serverRecord._id
+                  updated = true
                 }
-              })
+              }
+              if (updated) {
+                await db.syncQueue.update(later.localId!, { payload: updatedPayload })
+              }
             }
           }
 
@@ -145,7 +157,7 @@ export async function processSyncQueue(queryClient?: QueryClient): Promise<void>
             const { id, serverId, ...data } = item.payload as any
 
             const rawId = id || serverId
-            const realId = resolvedIds.get(rawId) ?? rawId
+            const realId = resolvedIds.get(rawId) ?? (await db.idMap.get(rawId))?.realId ?? rawId
 
             if (!isOptimisticId(realId)) {
               await entity.update(realId, data)
@@ -159,7 +171,7 @@ export async function processSyncQueue(queryClient?: QueryClient): Promise<void>
           else if (item.operation === 'delete') {
             const { id } = item.payload as any
 
-            const realId = resolvedIds.get(id) ?? id
+            const realId = resolvedIds.get(id) ?? (await db.idMap.get(id))?.realId ?? id
 
             if (!isOptimisticId(realId)) {
               await entity.delete(realId)
