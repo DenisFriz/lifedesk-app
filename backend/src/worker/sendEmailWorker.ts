@@ -9,12 +9,16 @@ export function createSendEmailWorker(connection: IORedis) {
     'send-email',
     async (job) => {
       const { to, from, subject, html } = job.data;
-      await resend.emails.send({
-        from: from ?? 'no-reply@lifedesk.me',
+      const { data, error } = await resend.emails.send({
+        from: from ?? 'no-reply@resend.dev',
         to,
         subject,
         html,
       });
+
+      if (error) {
+        throw new Error(`Resend send failed: ${error.name} - ${error.message}`);
+      }
     },
     { connection },
   );
