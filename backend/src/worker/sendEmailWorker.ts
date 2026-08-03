@@ -10,7 +10,7 @@ export function createSendEmailWorker(connection: IORedis) {
     async (job) => {
       const { to, from, subject, html } = job.data;
       await resend.emails.send({
-        from: from ?? 'onboarding@resend.dev',
+        from: from ?? 'no-reply@lifedesk.me',
         to,
         subject,
         html,
