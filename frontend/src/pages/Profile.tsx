@@ -488,32 +488,36 @@ export default function Profile() {
 
             {/* Subscription */}
             <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <p>For testing purpose only</p>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                {(['free', 'plus', 'pro'] as const).map(plan => (
-                  <button
-                    key={plan}
-                    onClick={() => setSelectedPlan(plan)}
-                    className={cn(
-                      'px-4 py-2 rounded-lg text-sm font-medium border transition',
-                      selectedPlan === plan
-                        ? 'bg-indigo-600 text-white border-indigo-600'
-                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-                    )}
-                  >
-                    {plan.charAt(0).toUpperCase() + plan.slice(1)}
-                  </button>
-                ))}
+              {import.meta.env.VITE_ENVIRONMENT !== 'production' && (
+                <>
+                  <p>For testing purpose only</p>
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    {(['free', 'plus', 'pro'] as const).map(plan => (
+                      <button
+                        key={plan}
+                        onClick={() => setSelectedPlan(plan)}
+                        className={cn(
+                          'px-4 py-2 rounded-lg text-sm font-medium border transition',
+                          selectedPlan === plan
+                            ? 'bg-indigo-600 text-white border-indigo-600'
+                            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                        )}
+                      >
+                        {plan.charAt(0).toUpperCase() + plan.slice(1)}
+                      </button>
+                    ))}
 
-                <button
-                  onClick={() => updateSubscription.mutate(selectedPlan)}
-                  disabled={updateSubscription.isPending || selectedPlan === planName}
-                  className="ml-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium disabled:opacity-50"
-                >
-                  {updateSubscription.isPending ? 'Updating...' : 'Update plan'}
-                </button>
-              </div>
-              <div className="w-full h-1 bg-red-600 mb-5 mt-2"></div>
+                    <button
+                      onClick={() => updateSubscription.mutate(selectedPlan)}
+                      disabled={updateSubscription.isPending || selectedPlan === planName}
+                      className="ml-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium disabled:opacity-50"
+                    >
+                      {updateSubscription.isPending ? 'Updating...' : 'Update plan'}
+                    </button>
+                  </div>
+                  <div className="w-full h-1 bg-red-600 mb-5 mt-2"></div>
+                </>
+              )}
               <h2 className="profile-subscription-title text-lg font-semibold text-slate-900 mb-4">
                 Subscription
               </h2>
