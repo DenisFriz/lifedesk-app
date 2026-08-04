@@ -126,7 +126,10 @@ export const backend = {
       apiFetch<DeleteRequestResponse>('POST', '/user/change-subscription', {
         subscription
       }),
-    subscription: () => apiFetch('GET', '/user/subscription')
+    subscription: () => apiFetch('GET', '/user/subscription'),
+    setup2fa: () => apiFetch<{ qrCode: string; secret: string }>('POST', '/user/2fa/setup'),
+    verify2fa: (token: string) =>
+      apiFetch<{ success: true; twoFactorEnabled: true }>('POST', '/user/2fa/verify', { token })
   },
   email: {
     sendEmailVerificationCode: () =>

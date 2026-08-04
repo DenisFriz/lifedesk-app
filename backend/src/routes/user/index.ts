@@ -15,8 +15,13 @@ import { Types } from 'mongoose';
 import { validate } from '@/utils/validate.js';
 import { googleLoginSchema } from '@/schemas/auth.schema.js';
 import jwt from 'jsonwebtoken';
+import { authenticator } from 'otplib';
+import QRCode from 'qrcode';
+import { twoFactorVerifySchema } from '@/schemas/user.schema.js';
 
 const router = Router();
+
+authenticator.options = { window: 1 };
 
 // ME
 router.get(
@@ -35,6 +40,7 @@ router.get(
       subscription_tier: userResponse.subscription_tier,
       role: userResponse.role,
       email_verified: userResponse.email_verified,
+      twoFactorEnabled: userResponse.twoFactorEnabled,
       is_deleted: userResponse.is_deleted,
     });
   }),
@@ -394,6 +400,63 @@ router.post(
       message: 'Subscription updated successfully',
       subscription: user.subscription_tier,
     });
+  }),
+);
+
+// 2FA SETUP
+router.post(
+  '/2fa/setup',
+  requireAuth,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    if (user.twoFactorEnabled) {
+      throw new AppError('2FA is already enabled', 400);
+    }
+
+    const secret = authenticator.generateSecret();
+    const otpauthUri = authenticator.keyuri(user.email, 'LifeDesk', secret);
+    const qrCode = await QRCode.toDataURL(otpauthUri);
+
+    user.twoFactorSecret = secret;
+    await user.save();
+
+    res.json({ qrCode, secret });
+  }),
+);
+
+// 2FA VERIFY
+router.post(
+  '/2fa/verify',
+  requireAuth,
+  validate(twoFactorVerifySchema),
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { token } = req.body;
+
+    const user = await User.findById(req.user._id).select('+twoFactorSecret');
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    if (!user.twoFactorSecret) {
+      throw new AppError('Run 2FA setup first', 400);
+    }
+
+    const isValid = authenticator.verify({ token, secret: user.twoFactorSecret });
+
+    if (!isValid) {
+      throw new AppError('Invalid verification code', 401);
+    }
+
+    user.twoFactorEnabled = true;
+    await user.save();
+
+    res.json({ success: true, twoFactorEnabled: true });
   }),
 );
 

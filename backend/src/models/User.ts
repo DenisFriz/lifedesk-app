@@ -71,6 +71,8 @@ const UserSchema = new Schema<IUserDocument>(
     deleted_at: { type: String, default: null },
     resetPasswordToken: { type: String, default: null },
     resetPasswordExpires: { type: Date, default: null },
+    twoFactorEnabled: { type: Boolean, default: false },
+    twoFactorSecret: { type: String, default: null, select: false },
   },
   { timestamps: true, versionKey: false },
 );
@@ -81,6 +83,10 @@ UserSchema.pre('save', async function (this: HydratedDocument<IUser>) {
       ...(conn.toObject?.() || conn),
       access_token: encryptNullable(conn.access_token) ?? conn.access_token,
     }));
+  }
+
+  if (this.isModified('twoFactorSecret')) {
+    this.twoFactorSecret = encryptNullable(this.twoFactorSecret);
   }
 });
 
@@ -93,6 +99,9 @@ UserSchema.post<IUserDocument>(['find', 'findOne'], function (result: any) {
         ...conn,
         access_token: decryptNullable(conn.access_token) ?? conn.access_token,
       }));
+    }
+    if (doc.twoFactorSecret) {
+      doc.twoFactorSecret = decryptNullable(doc.twoFactorSecret);
     }
   });
 });

@@ -20,7 +20,8 @@ import {
   Trash2,
   AlertTriangle,
   ShieldOff,
-  MailCheck
+  MailCheck,
+  KeyRound
 } from 'lucide-react'
 import DeleteAccountDialog from '@/components/account/DeleteAccountDialog'
 import { format } from 'date-fns'
@@ -30,6 +31,7 @@ import { Helmet } from 'react-helmet-async'
 import { useSound } from '@/contexts/SoundContext'
 import { Switch } from '@/components/ui/switch'
 import EmailVerificationModal from '@/components/EmailVerificationModal'
+import TwoFactorSetupModal from '@/components/TwoFactorSetupModal'
 import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload'
 import { useAuth } from '@/lib/AuthContext'
 import { useCommunityIdeasQuery } from '@/hooks/communityideas/useCommunityIdeasQuery'
@@ -61,6 +63,10 @@ export default function Profile() {
   const [verifyModalOpen, setVerifyModalOpen] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const [portalLoading, setPortalLoading] = useState(false)
+  const [twoFactorModalOpen, setTwoFactorModalOpen] = useState(false)
+  const [twoFactorQrCode, setTwoFactorQrCode] = useState<string | null>(null)
+  const [twoFactorSecret, setTwoFactorSecret] = useState<string | null>(null)
+  const [verifying2fa, setVerifying2fa] = useState(false)
 
   const [searchParams] = useSearchParams()
   const checkoutStatus = searchParams.get('checkout')
@@ -205,6 +211,31 @@ export default function Profile() {
     }
   }
 
+  const setup2faMutation = useMutation({
+    mutationFn: () => backend.user.setup2fa(),
+    onSuccess: data => {
+      setTwoFactorQrCode(data.qrCode)
+      setTwoFactorSecret(data.secret)
+      setTwoFactorModalOpen(true)
+    }
+  })
+
+  const handleVerify2fa = async (code: string) => {
+    try {
+      setVerifying2fa(true)
+
+      await backend.user.verify2fa(code)
+
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+
+      setTwoFactorModalOpen(false)
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setVerifying2fa(false)
+    }
+  }
+
   const currentTier = tierConfig[user?.subscription_tier || 'free'] ?? tierConfig.free
   const TierIcon = currentTier.icon
 
@@ -259,6 +290,14 @@ export default function Profile() {
         onClose={() => setVerifyModalOpen(false)}
         loading={verifying}
         onSubmit={handleVerifyCode}
+      />
+      <TwoFactorSetupModal
+        open={twoFactorModalOpen}
+        onClose={() => setTwoFactorModalOpen(false)}
+        loading={verifying2fa}
+        onSubmit={handleVerify2fa}
+        qrCode={twoFactorQrCode}
+        secret={twoFactorSecret}
       />
 
       <div className="min-h-screen" style={{ backgroundColor: '#f4f7fb' }}>
@@ -393,6 +432,43 @@ export default function Profile() {
                     {!user?.email_verified && (
                       <Button size="sm" onClick={handleSendVerificationCode}>
                         Verify Email
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label>Two-Factor Authentication</Label>
+                  <div className="mt-1 flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                          user?.twoFactorEnabled
+                            ? 'bg-green-100 text-green-600'
+                            : 'bg-amber-100 text-amber-600'
+                        }`}
+                      >
+                        <KeyRound className="w-4 h-4" />
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">
+                          {user?.twoFactorEnabled ? '2FA enabled' : '2FA not enabled'}
+                        </p>
+
+                        <p className="text-xs text-slate-500">
+                          {user?.twoFactorEnabled
+                            ? 'Your account is protected with an authenticator app'
+                            : 'Add an extra layer of security to your account'}
+                        </p>
+                      </div>
+                    </div>
+                    {!user?.twoFactorEnabled && (
+                      <Button
+                        size="sm"
+                        onClick={() => setup2faMutation.mutate()}
+                        disabled={setup2faMutation.isPending}
+                      >
+                        {setup2faMutation.isPending ? 'Loading...' : 'Enable 2FA'}
                       </Button>
                     )}
                   </div>

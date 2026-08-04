@@ -457,14 +457,14 @@ export default function Accounts() {
               </p>
             </div>
             <div className="flex flex-row items-center max-[320px]:flex-col gap-2">
-              <Button
+              {/*  <Button
                 variant="outline"
                 className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
                 onClick={() => setShowBankConnect(true)}
               >
                 <Building2 className="w-4 h-4 mr-2" />
                 Connect Bank
-              </Button>
+              </Button> */}
               {(() => {
                 const offlineLimit = UserLimitData?.limits?.offlineBankAccount || 0
                 return (

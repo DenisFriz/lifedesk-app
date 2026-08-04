@@ -10,6 +10,7 @@ export interface User {
   subscription_tier: 'free' | 'plus' | 'pro'
   role: string
   email_verified: boolean
+  twoFactorEnabled: boolean
   is_deleted?: boolean
 }
 

@@ -30,6 +30,8 @@ export interface IUser {
   deleted_at: string | null;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+  twoFactorEnabled: boolean;
+  twoFactorSecret: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
