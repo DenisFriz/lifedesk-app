@@ -427,7 +427,7 @@ router.post(
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.json({ message: 'If user exists, email was sent' });
+      throw new AppError('No account found with this email', 404);
     }
 
     const token = crypto.randomUUID();

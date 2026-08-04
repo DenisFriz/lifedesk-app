@@ -104,9 +104,30 @@ export default function ForgotPassword() {
       })
 
       setIsSent(true)
-    } catch (err) {
-      console.error(err)
-      setError('Something went wrong. Please try again.')
+    } catch (err: any) {
+      const data = err.data
+
+      if (data) {
+        const messages: string[] = []
+
+        Object.values(data).forEach((field: any) => {
+          if (field?._errors) {
+            messages.push(...field._errors)
+          }
+        })
+
+        if (messages.length > 0) {
+          setError(messages.join(', '))
+        } else {
+          setError(err.message || 'Something went wrong. Please try again.')
+        }
+
+        if (data?.message) {
+          setError(data.message)
+        }
+      } else {
+        setError(err.message || 'Something went wrong. Please try again.')
+      }
     }
   }
 
