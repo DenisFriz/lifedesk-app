@@ -59,10 +59,14 @@ export default function Login() {
     setIsLoading(true)
 
     try {
-      const data = await apiFetch<LoginResponse | RequiresTwoFactorResponse>('POST', '/auth/login', {
-        email,
-        password
-      })
+      const data = await apiFetch<LoginResponse | RequiresTwoFactorResponse>(
+        'POST',
+        '/auth/login',
+        {
+          email,
+          password
+        }
+      )
 
       if ('requiresTwoFactor' in data) {
         setStage('totp')
@@ -201,7 +205,9 @@ export default function Login() {
                             <div className="w-full border-t border-slate-200" />
                           </div>
                           <div className="relative flex justify-center text-[11px] sm:text-xs uppercase">
-                            <span className="bg-white px-3 text-slate-400">Or continue with email</span>
+                            <span className="bg-white px-3 text-slate-400">
+                              Or continue with email
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -249,7 +255,10 @@ export default function Login() {
 
                           {/* Password */}
                           <div className="space-y-1.5">
-                            <label htmlFor="password" className="text-sm font-medium text-slate-700">
+                            <label
+                              htmlFor="password"
+                              className="text-sm font-medium text-slate-700"
+                            >
                               Password
                             </label>
 
@@ -345,9 +354,15 @@ export default function Login() {
 
                       {/* TOTP Input */}
                       <div className="flex justify-center">
-                        <InputOTP maxLength={6} value={totpCode} onChange={setTotpCode} disabled={isLoading} pattern={REGEXP_ONLY_DIGITS}>
+                        <InputOTP
+                          maxLength={6}
+                          value={totpCode}
+                          onChange={setTotpCode}
+                          disabled={isLoading}
+                          pattern={REGEXP_ONLY_DIGITS}
+                        >
                           <InputOTPGroup>
-                            {[0, 1, 2, 3, 4, 5].map((index) => (
+                            {[0, 1, 2, 3, 4, 5].map(index => (
                               <InputOTPSlot key={index} index={index} />
                             ))}
                           </InputOTPGroup>
