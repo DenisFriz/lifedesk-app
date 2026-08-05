@@ -16,6 +16,7 @@ import {
   createRefreshToken,
   verifyRefreshToken,
 } from '@/utils/token.utils.js';
+import { authenticator } from 'otplib';
 import { RefreshToken } from '@/models/RefreshToken.js';
 import crypto from 'crypto';
 import {
@@ -28,6 +29,7 @@ import {
   googleCallbackSchema,
   googleLoginSchema,
   loginUserSchema,
+  loginTwoFactorSchema,
   registerUserSchema,
   resetPasswordSchema,
 } from '@/schemas/auth.schema.js';
@@ -40,6 +42,8 @@ const googleClient = new OAuth2Client(
 );
 
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+authenticator.options = { window: 1 };
 
 type GoogleLoginDTO = z.infer<typeof googleLoginSchema>;
 
@@ -170,6 +174,66 @@ router.post(
 
     if (!valid) {
       throw new AppError('Incorrect email or password', 404);
+    }
+
+    if (user.twoFactorEnabled) {
+      res.json({ requiresTwoFactor: true });
+      return;
+    }
+
+    const [{ accessToken }] = await Promise.all([
+      issueAuthSession(user._id.toString(), res),
+      ensureUserUsage(user._id.toString()),
+    ]);
+
+    const userResponse = sanitizeUser(user);
+
+    res.json({
+      accessToken,
+      user: userResponse,
+    });
+  }),
+);
+
+// LOGIN WITH 2FA
+router.post(
+  '/login/2fa',
+  validate(loginTwoFactorSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { email, password, token } = req.body;
+
+    const user = await User.findOne({ email }).select(
+      '+passwordHash +twoFactorSecret',
+    );
+
+    if (!user) {
+      throw new AppError('Incorrect email or password', 404);
+    }
+
+    if (!user.passwordHash) {
+      throw new AppError(
+        'Password login is not available for this account',
+        400,
+      );
+    }
+
+    const valid = await comparePassword(password, user.passwordHash);
+
+    if (!valid) {
+      throw new AppError('Incorrect email or password', 404);
+    }
+
+    if (!user.twoFactorEnabled || !user.twoFactorSecret) {
+      throw new AppError('2FA is not enabled for this account', 400);
+    }
+
+    const isValid = authenticator.verify({
+      token,
+      secret: user.twoFactorSecret,
+    });
+
+    if (!isValid) {
+      throw new AppError('Invalid verification code', 401);
     }
 
     const [{ accessToken }] = await Promise.all([

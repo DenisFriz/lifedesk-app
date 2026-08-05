@@ -106,8 +106,8 @@ export default function ContactCard({ contact, onEdit, onDelete, onCheckedIn }: 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <h3 className="font-semibold text-slate-900">{contact.name}</h3>
-                <Badge className={`text-xs ${REL_COLORS[contact.id] || REL_COLORS.other}`}>
-                  {REL_LABELS[contact.id] || 'Other'}
+                <Badge className={`text-xs ${REL_COLORS[contact.relationship] || REL_COLORS.other}`}>
+                  {REL_LABELS[contact.relationship] || 'Other'}
                 </Badge>
               </div>
 

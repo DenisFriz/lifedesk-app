@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { format } from 'date-fns'
 import { backend } from '@/api/backend'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
 import {
   Select,
   SelectContent,
@@ -106,19 +107,15 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
     queryFn: () => backend.entities.Project.list('-updated_date')
   })
 
-  const { data: businesses = [] } = useQuery({
-    queryKey: ['businesses'],
-    queryFn: () => backend.entities.Business.list('order')
-  })
+  const { data: businesses = [] } = useBusinessesQuery()
 
   const { data: timeEntries = [] } = useTimeEntriesQuery()
 
-  // Refresh clients, projects, and businesses when panel opens
+  // Refresh clients and projects when panel opens
   useEffect(() => {
     if (isOpen) {
       queryClient.invalidateQueries({ queryKey: ['clients'] })
       queryClient.invalidateQueries({ queryKey: ['projects'] })
-      queryClient.invalidateQueries({ queryKey: ['businesses'] })
     }
   }, [isOpen, queryClient])
 
@@ -597,7 +594,6 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
             }}
             className="text-xs resize-none h-16"
           />
-
           <Select
             value={selectedSection}
             onValueChange={value => {
@@ -618,7 +614,6 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
               ))}
             </SelectContent>
           </Select>
-
           {isBusinessSelected && (
             <>
               <Select
@@ -661,7 +656,6 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
               </Select>
             </>
           )}
-
           {!runningEntry &&
             (() => {
               return isOverLimit ? (
