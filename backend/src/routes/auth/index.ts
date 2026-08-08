@@ -11,6 +11,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { OAuth2Client } from 'google-auth-library';
+import { UAParser } from 'ua-parser-js';
 import {
   createAccessToken,
   createRefreshToken,
@@ -35,6 +36,11 @@ import {
 } from '@/schemas/auth.schema.js';
 import z from 'zod';
 import { sendEmailQueue } from '@/queues/sendEmailQueue.js';
+import { getRegistrationCompletedTemplate } from '@/utils/emailTemplates.js';
+import {
+  verificationReminderQueue,
+  verificationReminderJobId,
+} from '@/queues/verificationReminderQueue.js';
 
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
@@ -83,6 +89,77 @@ function getRegistrationSuccessTemplate(loginLink: string, name: string) {
   return html;
 }
 
+let passwordChangedTemplate: string | null = null;
+
+function getPasswordChangedTemplate(changedAt: string, name: string) {
+  if (!passwordChangedTemplate) {
+    const filePath = path.join(
+      process.cwd(),
+      'src/templates/password-changed.html',
+    );
+    passwordChangedTemplate = fs.readFileSync(filePath, 'utf-8');
+  }
+
+  let html = passwordChangedTemplate;
+  html = html.replaceAll('{{CHANGED_AT}}', changedAt);
+  html = html.replaceAll('{{NAME}}', name);
+  html = html.replaceAll('{{FRONTEND_URL}}', process.env.FRONTEND_URL || '');
+
+  return html;
+}
+
+let newLoginTemplate: string | null = null;
+
+function getNewLoginTemplate(
+  device: string,
+  ip: string,
+  loginAt: string,
+  name: string,
+) {
+  if (!newLoginTemplate) {
+    const filePath = path.join(process.cwd(), 'src/templates/new-login.html');
+    newLoginTemplate = fs.readFileSync(filePath, 'utf-8');
+  }
+
+  let html = newLoginTemplate;
+  html = html.replaceAll('{{DEVICE}}', device);
+  html = html.replaceAll('{{IP_ADDRESS}}', ip);
+  html = html.replaceAll('{{LOGIN_AT}}', loginAt);
+  html = html.replaceAll('{{NAME}}', name);
+  html = html.replaceAll('{{FRONTEND_URL}}', process.env.FRONTEND_URL || '');
+
+  return html;
+}
+
+async function notifyIfNewDevice(user: any, req: Request) {
+  const userAgent = req.headers['user-agent'] || 'Unknown device';
+
+  const knownDevice = await RefreshToken.findOne({
+    user_id: user._id,
+    user_agent: userAgent,
+  });
+
+  if (knownDevice) return;
+
+  const ip = req.ip || 'Unknown';
+  const parser = new UAParser(userAgent);
+  const { browser, os } = parser.getResult();
+  const device =
+    [browser.name, os.name].filter(Boolean).join(' on ') || 'Unknown device';
+
+  const loginAt = new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+    timeZone: 'UTC',
+  }).format(new Date()) + ' UTC';
+
+  await sendEmailQueue.add('send-email', {
+    to: user.email,
+    subject: 'New login to your account',
+    html: getNewLoginTemplate(device, ip, loginAt, user.full_name || 'there'),
+  });
+}
+
 async function ensureUserUsage(userId: string) {
   const { UserUsage } = await import('@/models/UserUsage.js');
   await UserUsage.updateOne(
@@ -128,18 +205,30 @@ router.post(
 
     await Promise.all([user.save(), ensureUserUsage(user._id.toString())]);
 
-    const { accessToken } = await issueAuthSession(user._id.toString(), res);
+    const { accessToken } = await issueAuthSession(user._id.toString(), res, req);
 
     const loginLink = `${process.env.FRONTEND_URL}/login`;
 
-    await sendEmailQueue.add('send-email', {
-      to: user.email,
-      subject: 'Welcome — registration successful!',
-      html: getRegistrationSuccessTemplate(
-        loginLink,
-        user.full_name || 'there',
+    await Promise.all([
+      sendEmailQueue.add('send-email', {
+        to: user.email,
+        subject: 'Welcome — registration successful!',
+        html: getRegistrationSuccessTemplate(
+          loginLink,
+          user.full_name || 'there',
+        ),
+      }),
+      verificationReminderQueue.add(
+        'verification-reminder',
+        { userId: user._id.toString() },
+        {
+          jobId: verificationReminderJobId(user._id.toString()),
+          delay: 24 * 60 * 60 * 1000,
+          removeOnComplete: true,
+          removeOnFail: false,
+        },
       ),
-    });
+    ]);
 
     const userResponse = sanitizeUser(user);
 
@@ -181,8 +270,10 @@ router.post(
       return;
     }
 
+    await notifyIfNewDevice(user, req);
+
     const [{ accessToken }] = await Promise.all([
-      issueAuthSession(user._id.toString(), res),
+      issueAuthSession(user._id.toString(), res, req),
       ensureUserUsage(user._id.toString()),
     ]);
 
@@ -200,10 +291,10 @@ router.post(
   '/login/2fa',
   validate(loginTwoFactorSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const { email, password, token } = req.body;
+    const { email, password, token, recoveryCode } = req.body;
 
     const user = await User.findOne({ email }).select(
-      '+passwordHash +twoFactorSecret',
+      '+passwordHash +twoFactorSecret +twoFactorRecoveryCodes',
     );
 
     if (!user) {
@@ -227,17 +318,36 @@ router.post(
       throw new AppError('2FA is not enabled for this account', 400);
     }
 
-    const isValid = authenticator.verify({
-      token,
-      secret: user.twoFactorSecret,
-    });
+    let authValid = false;
 
-    if (!isValid) {
+    if (token) {
+      authValid = authenticator.verify({
+        token,
+        secret: user.twoFactorSecret,
+      });
+    } else if (recoveryCode) {
+      for (let i = 0; i < user.twoFactorRecoveryCodes!.length; i++) {
+        const matches = await comparePassword(
+          recoveryCode,
+          user.twoFactorRecoveryCodes![i],
+        );
+        if (matches) {
+          user.twoFactorRecoveryCodes!.splice(i, 1);
+          await user.save();
+          authValid = true;
+          break;
+        }
+      }
+    }
+
+    if (!authValid) {
       throw new AppError('Invalid verification code', 401);
     }
 
+    await notifyIfNewDevice(user, req);
+
     const [{ accessToken }] = await Promise.all([
-      issueAuthSession(user._id.toString(), res),
+      issueAuthSession(user._id.toString(), res, req),
       ensureUserUsage(user._id.toString()),
     ]);
 
@@ -312,19 +422,42 @@ router.post(
         email_verified,
         passwordHash: null,
       });
+      if (email_verified) {
+        await sendEmailQueue.add('send-email', {
+          to: user.email,
+          subject: 'Your account is now active!',
+          html: getRegistrationCompletedTemplate(
+            `${process.env.FRONTEND_URL}/home`,
+            user.full_name || 'there',
+          ),
+        });
+      }
     } else {
       if (!user.google_id) {
+        const wasVerified = user.email_verified;
         user.google_id = sub;
         user.google_avatar_url = picture ?? null;
         user.auth_provider = 'google';
         user.email_verified = true;
 
         await user.save();
+        if (!wasVerified) {
+          await sendEmailQueue.add('send-email', {
+            to: user.email,
+            subject: 'Your account is now active!',
+            html: getRegistrationCompletedTemplate(
+              `${process.env.FRONTEND_URL}/home`,
+              user.full_name || 'there',
+            ),
+          });
+        }
       }
     }
 
+    await notifyIfNewDevice(user, req);
+
     const [{ accessToken }] = await Promise.all([
-      issueAuthSession(user._id.toString(), res),
+      issueAuthSession(user._id.toString(), res, req),
       ensureUserUsage(user._id.toString()),
     ]);
 
@@ -385,18 +518,41 @@ router.post(
         email_verified,
         passwordHash: null,
       });
+      if (email_verified) {
+        await sendEmailQueue.add('send-email', {
+          to: user.email,
+          subject: 'Your account is now active!',
+          html: getRegistrationCompletedTemplate(
+            `${process.env.FRONTEND_URL}/home`,
+            user.full_name || 'there',
+          ),
+        });
+      }
     } else {
       if (!user.google_id) {
+        const wasVerified = user.email_verified;
         user.google_id = sub;
         user.google_avatar_url = picture ?? null;
         user.auth_provider = 'google';
         user.email_verified = true;
         await user.save();
+        if (!wasVerified) {
+          await sendEmailQueue.add('send-email', {
+            to: user.email,
+            subject: 'Your account is now active!',
+            html: getRegistrationCompletedTemplate(
+              `${process.env.FRONTEND_URL}/home`,
+              user.full_name || 'there',
+            ),
+          });
+        }
       }
     }
 
+    await notifyIfNewDevice(user, req);
+
     const [{ accessToken }] = await Promise.all([
-      issueAuthSession(user._id.toString(), res),
+      issueAuthSession(user._id.toString(), res, req),
       ensureUserUsage(user._id.toString()),
     ]);
 
@@ -541,6 +697,18 @@ router.post(
     user.resetPasswordExpires = undefined;
 
     await user.save();
+
+    const changedAt = new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+      timeZone: 'UTC',
+    }).format(new Date()) + ' UTC';
+
+    await sendEmailQueue.add('send-email', {
+      to: user.email,
+      subject: 'Your password was changed',
+      html: getPasswordChangedTemplate(changedAt, user.full_name || 'there'),
+    });
 
     res.json({ message: 'Password successfully reset' });
   }),

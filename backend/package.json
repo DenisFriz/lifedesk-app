@@ -11,10 +11,13 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
+    "@getbrevo/brevo": "^2.5.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
@@ -43,15 +46,22 @@
     "stripe": "^16.0.0",
     "tsc-alias": "^1.8.17",
     "typescript": "^6.0.3",
+    "ua-parser-js": "^1.0.38",
     "uuid": "^9.0.1",
     "web-push": "^3.6.7",
     "zod": "^4.4.3"
   },
+  "overrides": {
+    "qs": "^6.14.1"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/ua-parser-js": "^0.7.39",
     "eslint": "^10.3.0",
     "prettier": "^3.8.3",
     "tsx": "^4.21.0",
-    "typescript-eslint": "^8.59.1"
+    "typescript-eslint": "^8.59.1",
+    "vite-tsconfig-paths": "^5.0.0",
+    "vitest": "^3.0.0"
   }
 }
