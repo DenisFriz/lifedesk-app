@@ -107,19 +107,23 @@ router.post(
 
     const displayName = user.full_name || 'there';
 
-    await Promise.all([
-      enqueueEmailVerificationEmail(user.email, displayName, verificationToken),
-      verificationReminderQueue.add(
-        'verification-reminder',
-        { userId: user._id.toString() },
-        {
-          jobId: verificationReminderJobId(user._id.toString()),
-          delay: 24 * 60 * 60 * 1000,
-          removeOnComplete: true,
-          removeOnFail: false,
-        },
-      ),
-    ]);
+    try {
+      await Promise.all([
+        enqueueEmailVerificationEmail(user.email, displayName, verificationToken),
+        verificationReminderQueue.add(
+          'verification-reminder',
+          { userId: user._id.toString() },
+          {
+            jobId: verificationReminderJobId(user._id.toString()),
+            delay: 24 * 60 * 60 * 1000,
+            removeOnComplete: true,
+            removeOnFail: false,
+          },
+        ),
+      ]);
+    } catch (err) {
+      console.error('Failed to enqueue post-registration emails:', err);
+    }
 
     const userResponse = sanitizeUser(user);
 

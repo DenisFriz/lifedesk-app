@@ -27,5 +27,5 @@ export const verificationReminderQueue = new Queue<VerificationReminderJobData>(
 );
 
 export function verificationReminderJobId(userId: string): string {
-  return `verification-reminder:${userId}`;
+  return `verification-reminder-${userId}`;
 }
