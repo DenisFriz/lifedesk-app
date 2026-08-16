@@ -5,6 +5,8 @@ import { UserUsage } from '@/models/UserUsage.js';
 import { Types } from 'mongoose';
 import jwt from 'jsonwebtoken';
 import { cloudinary } from '@/lib/cloudinary.js';
+import { extractCloudinaryInfo } from '@/utils/cloudinaryUrl.js';
+import { enqueueAccountDeletedEmail } from '@/utils/emailVerification.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -45,23 +47,6 @@ const CLOUDINARY_URL_FIELDS: Record<string, string> = {
   medicaldocument: 'file_url',
   progressphoto: 'image_url',
 };
-
-function extractCloudinaryInfo(
-  url: string,
-): { publicId: string; resourceType: 'image' | 'video' | 'raw' } | null {
-  try {
-    const match = url.match(/\/(image|video|raw)\/upload\/(?:v\d+\/)?(.+)/);
-    if (!match) return null;
-    const resourceType = match[1] as 'image' | 'video' | 'raw';
-    let publicId = match[2];
-    if (resourceType !== 'raw') {
-      publicId = publicId.replace(/\.[^/.]+$/, ''); // strip extension for image/video
-    }
-    return { publicId, resourceType };
-  } catch {
-    return null;
-  }
-}
 
 type ReauthTokenPayload = {
   type: 'reauth';
@@ -124,13 +109,16 @@ export async function deleteAccount(req: Request, res: Response) {
     // Always fetch fresh user
     const user = await User.findById(decoded.userId)
       .lean()
-      .select('_id id role');
+      .select('_id id role email full_name');
 
     if (!user) {
       return res.status(404).json({
         error: 'User not found',
       });
     }
+
+    const email = (user as any).email;
+    const fullName = (user as any).full_name || 'there';
 
     if (user.role === 'admin') {
       return res.status(403).json({
@@ -289,6 +277,8 @@ export async function deleteAccount(req: Request, res: Response) {
         error: 'Failed to complete account deletion. Please contact support.',
       });
     }
+
+    await enqueueAccountDeletedEmail(email, fullName);
 
     return res.json({
       success: true,

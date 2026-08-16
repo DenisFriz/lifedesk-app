@@ -129,13 +129,34 @@ export const backend = {
     subscription: () => apiFetch('GET', '/user/subscription'),
     setup2fa: () => apiFetch<{ qrCode: string; secret: string }>('POST', '/user/2fa/setup'),
     verify2fa: (token: string) =>
-      apiFetch<{ success: true; twoFactorEnabled: true }>('POST', '/user/2fa/verify', { token })
+      apiFetch<{ success: true; twoFactorEnabled: true }>('POST', '/user/2fa/verify', { token }),
+    changePassword: (currentPassword: string | undefined, newPassword: string) =>
+      apiFetch<{ success: true }>('POST', '/user/change-password', {
+        currentPassword,
+        newPassword
+      }),
+    changeEmail: (newEmail: string) =>
+      apiFetch<{ message: string }>('POST', '/user/change-email', { newEmail }),
+    confirmEmailChange: (token: string) =>
+      apiFetch<{ message: string }>('POST', '/user/change-email/confirm', { token }),
+    enableHealthConsent: () =>
+      apiFetch<{
+        success: true
+        healthConsentGiven: true
+        healthConsentDate: string
+        healthConsentVersion: string
+      }>('POST', '/user/health-consent/enable'),
+    withdrawHealthConsent: () =>
+      apiFetch<{ success: true; healthConsentGiven: false }>(
+        'POST',
+        '/user/health-consent/withdraw'
+      )
   },
   email: {
     sendEmailVerificationCode: () =>
       apiFetch<{ message: string }>('POST', '/email/send-email-verification-code'),
-    verifyEmailCode: (code: string) =>
-      apiFetch<{ message: string }>('POST', '/email/verify-email-code', { code })
+    verifyEmail: (token: string) =>
+      apiFetch<{ message: string }>('POST', '/email/verify-email', { token })
   },
   entities: entitiesProxy,
   functions: {

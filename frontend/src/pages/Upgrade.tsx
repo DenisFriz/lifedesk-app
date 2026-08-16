@@ -19,6 +19,7 @@ import { useSubscription } from '@/hooks/useSubscription'
 import { Helmet } from 'react-helmet-async'
 import { SEO } from '@/lib/seo'
 import { useAuth } from '@/lib/AuthContext'
+import { toast } from 'sonner'
 
 const FREE_FEATURES = [
   '10 Goals / 20 Tasks',
@@ -82,9 +83,7 @@ type Subscription = {
 }
 
 type BillingPortalResponse = {
-  data: {
-    url?: string
-  }
+  url: string
 }
 
 type CheckoutSessionResponse = {
@@ -165,17 +164,20 @@ export default function Upgrade() {
 
   const handleBillingPortal = async () => {
     setLoading('downgrade')
+    try {
+      const result = await backend.functions.invoke<BillingPortalResponse>(
+        'createBillingPortalSession',
+        {
+          return_url: `${window.location.origin}/profile`
+        }
+      )
 
-    const res = await backend.functions.invoke<BillingPortalResponse>(
-      'createBillingPortalSession',
-      {
-        return_url: `${window.location.origin}/profile`
+      if (result?.url) {
+        window.location.href = result.url
       }
-    )
-
-    if (res.data?.url) {
-      window.location.href = res.data.url
-    } else {
+    } catch (error: any) {
+      toast.error(error?.message || 'Unable to open billing portal')
+    } finally {
       setLoading(null)
     }
   }
@@ -536,7 +538,32 @@ export default function Upgrade() {
             </div>
           </div>
 
-          <p className="text-center text-sm text-slate-400 mt-8">Secure payment via Stripe.</p>
+          <p className="text-center text-sm text-slate-400 mt-8">
+            Secure payment via Stripe. Prices include applicable taxes where required. Subscriptions
+            renew automatically every month until cancelled. You can cancel at any time before the
+            next billing date.
+          </p>
+          <p className="text-center text-sm text-slate-400 mt-2">
+            <a
+              href="https://lifedesk.me/terms-of-service/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-slate-600 hover:underline"
+            >
+              Terms of Service
+            </a>
+            {' · '}
+            <a
+              href="https://lifedesk.me/privacy-policy/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-slate-600 hover:underline"
+            >
+              Privacy Policy
+            </a>
+            {' · '}
+            Right of Withdrawal
+          </p>
         </div>
 
         {/* Downgrade Warning Modal */}

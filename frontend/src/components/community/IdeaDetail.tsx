@@ -88,7 +88,9 @@ export default function IdeaDetail({
           <Badge className={`text-xs ${STATUS_STYLES[idea.status] || STATUS_STYLES.new}`}>
             {STATUS_OPTIONS.find(s => s.value === idea.status)?.label || 'New'}
           </Badge>
-          <span className="text-xs text-slate-400">by {idea.created_by?.split('@')[0]}</span>
+          <span className="text-xs text-slate-400">
+            by {idea.anonymous ? 'Anonymous' : idea.author_display_name || 'Anonymous'}
+          </span>
           {idea.createdAt && (
             <span className="text-xs text-slate-400">
               · {formatDistanceToNow(parseISO(idea.createdAt), { addSuffix: true })}

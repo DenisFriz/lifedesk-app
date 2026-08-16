@@ -4,8 +4,10 @@ import { Redis as IORedis } from 'ioredis';
 export interface SendEmailJobData {
   to: string | string[];
   from?: string;
-  subject: string;
-  html: string;
+  subject?: string;
+  html?: string;
+  templateId?: number;
+  params?: Record<string, string>;
 }
 
 const connection = new IORedis(

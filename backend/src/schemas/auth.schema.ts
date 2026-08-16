@@ -102,12 +102,19 @@ export const resetPasswordSchema = z.object({
     }),
 });
 
-export const loginTwoFactorSchema = z.object({
-  email: z.email({
-    error: 'Invalid email format',
-  }),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  token: z
-    .string()
-    .regex(/^\d{6}$/, 'Verification code must be a 6-digit number'),
-});
+export const loginTwoFactorSchema = z
+  .object({
+    email: z.email({
+      error: 'Invalid email format',
+    }),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    token: z
+      .string()
+      .regex(/^\d{6}$/, 'Verification code must be a 6-digit number')
+      .optional(),
+    recoveryCode: z.string().min(1).optional(),
+  })
+  .refine((data) => !!data.token !== !!data.recoveryCode, {
+    message: 'Provide either a verification code or a recovery code',
+    path: ['token'],
+  });

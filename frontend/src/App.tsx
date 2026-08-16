@@ -1,16 +1,19 @@
 import { Toaster } from '@/components/ui/toaster'
+import { Toaster as SonnerToaster } from '@/components/ui/sonner'
 import { QueryClientProvider, useQueryClient } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/lib/AuthContext'
 import UserNotRegisteredError from '@/components/UserNotRegisteredError'
 import OfflineSyncManager from '@/components/offline/OfflineSyncManager'
-import { HelmetProvider } from 'react-helmet-async'
+import { Helmet, HelmetProvider } from 'react-helmet-async'
 import { bootstrapSync } from '@/sync/bootstrapSync'
 
 import Layout from './Layout'
 import { appRoutes, authRoutes } from './routes'
 import Home from './pages/Home'
+import VerifyEmail from './pages/VerifyEmail'
+import ConfirmEmailChange from './pages/ConfirmEmailChange'
 import { ReactNode, useEffect, useRef } from 'react'
 import { UserLimitProvider } from './contexts/UserLimitContext'
 
@@ -96,18 +99,27 @@ function App() {
             }}
           >
             <Routes>
-              {/* PUBLIC ROUTES */}
+              {/* PUBLIC ROUTES (guest-only) */}
               {authRoutes.map(({ path, element: Page }) => (
                 <Route
                   key={path}
                   path={path}
                   element={
-                    <RequireGuest>
-                      <Page />
-                    </RequireGuest>
+                    <>
+                      <Helmet>
+                        <meta name="robots" content="noindex" />
+                      </Helmet>
+                      <RequireGuest>
+                        <Page />
+                      </RequireGuest>
+                    </>
                   }
                 />
               ))}
+
+              {/* PUBLIC — reachable while logged in or logged out */}
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
 
               {/* PROTECTED ROUTES */}
               <Route element={<RequireAuth />}>
@@ -125,6 +137,7 @@ function App() {
           </BrowserRouter>
 
           <Toaster />
+          <SonnerToaster />
           <OfflineSyncManager />
           <AuthSyncBridge />
         </AuthProvider>

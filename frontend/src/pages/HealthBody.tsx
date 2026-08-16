@@ -51,7 +51,7 @@ export default function HealthBody() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <ProblemSection category="health_body" onCreateTask={handleCreateTask} />
             <GoalSection category="health_body" onCreateTask={handleCreateTask} />
             <TaskSection category="health_body" initialTaskData={initialTaskData} />

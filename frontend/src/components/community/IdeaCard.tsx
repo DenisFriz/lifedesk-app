@@ -127,7 +127,7 @@ export default function IdeaCard({
               {idea.comments_count || 0}
             </span>
             <span className="text-xs text-slate-400">
-              by {idea.anonymous ? 'Anonymous' : idea.created_by?.split('@')[0]}
+              by {idea.anonymous ? 'Anonymous' : idea.author_display_name || 'Anonymous'}
             </span>
             {idea.createdAt && (
               <span className="text-xs text-slate-400">

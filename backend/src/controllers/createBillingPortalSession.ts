@@ -24,11 +24,19 @@ export async function createBillingPortalSession(
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const subscription = await Subscription.findOne({
-      user_email: req.user.email,
+    let subscription = await Subscription.findOne({
+      user_id: req.user._id,
     })
       .lean()
-      .select('stripe_customer_id');
+      .select('stripe_customer_id user_email');
+
+    if (!subscription) {
+      subscription = await Subscription.findOne({
+        user_email: req.user.email,
+      })
+        .lean()
+        .select('stripe_customer_id user_email');
+    }
 
     let customerId = subscription?.stripe_customer_id;
 
@@ -59,6 +67,23 @@ export async function createBillingPortalSession(
       return res.status(404).json({
         error: 'No Stripe customer found for this account.',
       });
+    }
+
+    // Persist recovered customer ID and refresh stale user_email when possible
+    if (subscription) {
+      const updates: Record<string, string> = {};
+      if (subscription.stripe_customer_id !== customerId) {
+        updates.stripe_customer_id = customerId;
+      }
+      if (subscription.user_email !== req.user.email) {
+        updates.user_email = req.user.email;
+      }
+      if (Object.keys(updates).length > 0) {
+        await Subscription.findOneAndUpdate(
+          { _id: subscription._id },
+          { $set: updates },
+        );
+      }
     }
 
     const session = await stripe.billingPortal.sessions.create({

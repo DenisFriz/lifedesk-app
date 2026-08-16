@@ -180,7 +180,7 @@ export default function AssetsCars() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <ul className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {vehicles?.map(asset => (
                 <CarAssetCard
                   key={asset.id}
@@ -189,7 +189,7 @@ export default function AssetsCars() {
                   onDelete={id => handleDeleteVehicle(id)}
                 />
               ))}
-            </div>
+            </ul>
           )}
         </div>
 

@@ -124,7 +124,7 @@ export default function MainTasks() {
               setActiveTab(value)
               localStorage.setItem('mainTasksActiveTab', value)
             }}
-            className="all-tasks-tabs space-y-6"
+            className="space-y-6 mb-8"
           >
             <div ref={headerRef} className="all-tasks-tab-container tab-container rounded-lg p-1">
               <div className="all-tasks-tabs-wrapper flex flex-wrap gap-1">

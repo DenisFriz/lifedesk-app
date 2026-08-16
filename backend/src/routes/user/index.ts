@@ -4,7 +4,7 @@ import { asyncHandler } from '@utils/asyncHandler.js';
 import { AppError } from '@errors/AppError.js';
 import { User, Subscription } from '@models/index.js';
 import { cloudinary } from '@lib/cloudinary.js';
-import { comparePassword } from '@lib/bcrypt.js';
+import { comparePassword, hashPassword } from '@lib/bcrypt.js';
 import { sanitizeUser } from '@utils/sanitizeUser.js';
 import { requireAuth } from '@middleware/auth.js';
 import { AuthenticatedRequest } from '@/@types/auth.js';
@@ -14,12 +14,29 @@ import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits.js';
 import { Types } from 'mongoose';
 import { validate } from '@/utils/validate.js';
 import { googleLoginSchema } from '@/schemas/auth.schema.js';
+import {
+  twoFactorVerifySchema,
+  changeEmailRequestSchema,
+  confirmEmailChangeSchema,
+  disable2FASchema,
+  generateRecoveryCodesSchema,
+  changePasswordSchema,
+} from '@/schemas/user.schema.js';
 import jwt from 'jsonwebtoken';
 import { authenticator } from 'otplib';
 import QRCode from 'qrcode';
-import { twoFactorVerifySchema } from '@/schemas/user.schema.js';
+import { HEALTH_CONSENT_VERSION } from '@/config/healthConsent.js';
+import { deleteAllHealthData } from '@/utils/deleteHealthData.js';
+import {
+  enqueueEmailChangeConfirmationEmail,
+  enqueueEmailChangeNoticeToOldAddressEmail,
+  enqueuePasswordChangedEmail,
+} from '@/utils/emailVerification.js';
+import crypto from 'crypto';
+import Stripe from 'stripe';
 
 const router = Router();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 authenticator.options = { window: 1 };
 
@@ -29,6 +46,8 @@ router.get(
   requireAuth,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const userResponse = sanitizeUser(req.user);
+    const passwordDoc = await User.findById(req.user._id).select('passwordHash').lean();
+    const hasPassword = !!passwordDoc?.passwordHash;
 
     res.json({
       id: userResponse._id,
@@ -37,11 +56,16 @@ router.get(
       profile_image: userResponse.profile_image_url,
       profile_image_public_id: userResponse.profile_image_public_id,
       google_avatar_url: userResponse.google_avatar_url,
+      auth_provider: userResponse.auth_provider,
+      hasPassword,
       subscription_tier: userResponse.subscription_tier,
       role: userResponse.role,
       email_verified: userResponse.email_verified,
       twoFactorEnabled: userResponse.twoFactorEnabled,
       is_deleted: userResponse.is_deleted,
+      healthConsentGiven: userResponse.healthConsentGiven,
+      healthConsentDate: userResponse.healthConsentDate,
+      healthConsentVersion: userResponse.healthConsentVersion,
     });
   }),
 );
@@ -51,9 +75,16 @@ router.get(
   '/subscription',
   requireAuth,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const sub = await Subscription.findOne({
-      user_email: req.user.email,
+    let sub = await Subscription.findOne({
+      user_id: req.user._id,
     }).lean();
+
+    if (!sub) {
+      sub = await Subscription.findOne({
+        user_email: req.user.email,
+      }).lean();
+    }
+
     res.json(sub || null);
   }),
 );
@@ -457,6 +488,318 @@ router.post(
     await user.save();
 
     res.json({ success: true, twoFactorEnabled: true });
+  }),
+);
+
+// HEALTH CONSENT ENABLE
+router.post(
+  '/health-consent/enable',
+  requireAuth,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    user.healthConsentGiven = true;
+    user.healthConsentDate = new Date();
+    user.healthConsentVersion = HEALTH_CONSENT_VERSION;
+    await user.save();
+
+    res.json({
+      success: true,
+      healthConsentGiven: user.healthConsentGiven,
+      healthConsentDate: user.healthConsentDate,
+      healthConsentVersion: user.healthConsentVersion,
+    });
+  }),
+);
+
+// HEALTH CONSENT WITHDRAW
+router.post(
+  '/health-consent/withdraw',
+  requireAuth,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    if (!user.healthConsentGiven) {
+      throw new AppError('Health consent has not been given', 400);
+    }
+
+    await deleteAllHealthData(req.user._id);
+
+    await User.updateOne(
+      { _id: req.user._id },
+      {
+        $set: {
+          healthConsentGiven: false,
+        },
+        $unset: {
+          healthConsentDate: '',
+          healthConsentVersion: '',
+        },
+      },
+    );
+
+    res.json({
+      success: true,
+      healthConsentGiven: false,
+    });
+  }),
+);
+
+// CHANGE EMAIL REQUEST
+router.post(
+  '/change-email',
+  requireAuth,
+  validate(changeEmailRequestSchema),
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { newEmail }: { newEmail: string } = req.body;
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    if (newEmail === user.email) {
+      throw new AppError('New email must be different', 400);
+    }
+
+    const existingUser = await User.findOne({
+      email: newEmail,
+      _id: { $ne: user._id },
+    });
+
+    if (existingUser) {
+      throw new AppError('Email already in use', 409);
+    }
+
+    const token = crypto.randomUUID();
+
+    user.pendingEmail = newEmail;
+    user.emailChangeToken = token;
+    user.emailChangeExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await user.save();
+
+    await Promise.all([
+      enqueueEmailChangeConfirmationEmail(
+        newEmail,
+        user.full_name || 'there',
+        token,
+      ),
+      enqueueEmailChangeNoticeToOldAddressEmail(
+        user.email,
+        user.full_name || 'there',
+      ),
+    ]);
+
+    res.json({ message: 'Confirmation email sent to new address' });
+  }),
+);
+
+// CONFIRM EMAIL CHANGE
+router.post(
+  '/change-email/confirm',
+  validate(confirmEmailChangeSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { token }: { token: string } = req.body;
+
+    const user = await User.findOne({
+      emailChangeToken: token,
+      emailChangeExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      throw new AppError('Invalid or expired confirmation link', 400);
+    }
+
+    const existingUser = await User.findOne({
+      email: user.pendingEmail,
+      _id: { $ne: user._id },
+    });
+
+    if (existingUser) {
+      user.pendingEmail = null;
+      user.emailChangeToken = null;
+      user.emailChangeExpires = null;
+      await user.save();
+      throw new AppError('That email address is no longer available', 409);
+    }
+
+    const newEmail = user.pendingEmail!;
+
+    user.email = newEmail;
+    user.pendingEmail = null;
+    user.emailChangeToken = null;
+    user.emailChangeExpires = null;
+    user.email_verified = true;
+
+    try {
+      await user.save();
+    } catch (err: any) {
+      if (err.code === 11000 && err.keyPattern?.email) {
+        throw new AppError('That email address is no longer available', 409);
+      }
+      throw err;
+    }
+
+    await Subscription.updateMany(
+      { user_id: user._id },
+      { $set: { user_email: newEmail } },
+    );
+
+    const subscriptionsWithCustomer = await Subscription.find({
+      user_id: user._id,
+      stripe_customer_id: { $ne: null },
+    })
+      .lean()
+      .select('stripe_customer_id');
+
+    const customerIds = [
+      ...new Set(
+        subscriptionsWithCustomer
+          .map((sub) => sub.stripe_customer_id)
+          .filter((id): id is string => !!id),
+      ),
+    ];
+
+    await Promise.all(
+      customerIds.map(async (customerId) => {
+        try {
+          await stripe.customers.update(customerId, { email: newEmail });
+        } catch (err: any) {
+          console.error(
+            'Failed to update Stripe customer email:',
+            err?.message || err,
+          );
+        }
+      }),
+    );
+
+    res.json({ message: 'Email address updated successfully' });
+  }),
+);
+
+// 2FA DISABLE
+router.post(
+  '/2fa/disable',
+  requireAuth,
+  validate(disable2FASchema),
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { password }: { password: string } = req.body;
+
+    const user = await User.findById(req.user._id).select('+passwordHash');
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    if (!user.twoFactorEnabled) {
+      throw new AppError('2FA is not enabled', 400);
+    }
+
+    const valid = await comparePassword(password, user.passwordHash || '');
+
+    if (!valid) {
+      throw new AppError('Invalid password', 401);
+    }
+
+    user.twoFactorEnabled = false;
+    user.twoFactorSecret = null;
+    user.twoFactorRecoveryCodes = [];
+    await user.save();
+
+    res.json({ success: true, twoFactorEnabled: false });
+  }),
+);
+
+// 2FA GENERATE RECOVERY CODES
+router.post(
+  '/2fa/recovery-codes/generate',
+  requireAuth,
+  validate(generateRecoveryCodesSchema),
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { password }: { password: string } = req.body;
+
+    const user = await User.findById(req.user._id).select(
+      '+passwordHash +twoFactorRecoveryCodes',
+    );
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    if (!user.twoFactorEnabled) {
+      throw new AppError('2FA must be enabled to generate recovery codes', 400);
+    }
+
+    const valid = await comparePassword(password, user.passwordHash || '');
+
+    if (!valid) {
+      throw new AppError('Invalid password', 401);
+    }
+
+    const codes = Array.from({ length: 10 }, () =>
+      crypto.randomBytes(5).toString('hex'),
+    );
+
+    const hashedCodes = await Promise.all(codes.map((code) => hashPassword(code)));
+
+    user.twoFactorRecoveryCodes = hashedCodes;
+    await user.save();
+
+    res.json({ recoveryCodes: codes });
+  }),
+);
+
+// CHANGE PASSWORD
+router.post(
+  '/change-password',
+  requireAuth,
+  validate(changePasswordSchema),
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { currentPassword, newPassword }: { currentPassword?: string; newPassword: string } = req.body;
+
+    const user = await User.findById(req.user._id).select('+passwordHash');
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    const hasExistingPassword = !!user.passwordHash;
+
+    if (hasExistingPassword) {
+      if (!currentPassword) {
+        throw new AppError('Current password is required', 400);
+      }
+
+      const valid = await comparePassword(currentPassword, user.passwordHash || '');
+
+      if (!valid) {
+        throw new AppError('Invalid password', 401);
+      }
+
+      if (currentPassword === newPassword) {
+        throw new AppError('New password must be different from current password', 400);
+      }
+    }
+
+    user.passwordHash = await hashPassword(newPassword);
+    await user.save();
+
+    await enqueuePasswordChangedEmail(
+      user.email,
+      user.full_name || 'there',
+    );
+
+    res.json({ success: true });
   }),
 );
 

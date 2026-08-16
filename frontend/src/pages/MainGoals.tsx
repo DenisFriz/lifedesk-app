@@ -129,7 +129,7 @@ export default function MainGoals() {
               setActiveTab(value)
               localStorage.setItem('mainGoalsActiveTab', value)
             }}
-            className="all-goals-tabs space-y-6"
+            className="all-goals-tabs space-y-6 mb-8"
           >
             <div className="all-goals-tab-container tab-container rounded-lg p-1">
               <div className="all-goals-tabs-wrapper flex flex-wrap gap-1">

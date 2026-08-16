@@ -123,7 +123,7 @@ export default function MainEvents() {
               setActiveTab(value)
               localStorage.setItem('mainEventsActiveTab', value)
             }}
-            className="space-y-6"
+            className="space-y-6 mb-8"
           >
             <div ref={headerRef} className="tab-container rounded-lg p-1">
               <div className="flex flex-wrap gap-1">

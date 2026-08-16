@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install every dependency (including devDependencies like tsc, tsc-alias, tsx)
-RUN npm ci
+RUN npm install --omit=optional
 
 # Copy source
 COPY tsconfig.json ./
@@ -26,13 +26,10 @@ WORKDIR /app
 
 # Copy manifests and install production deps ONLY
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev --omit=optional
 
 # Copy compiled output from builder
 COPY --from=builder /app/dist ./dist
-
-# Copy email templates
-COPY --from=builder /app/src/templates ./src/templates
 
 # Non-root user — Alpine ships with "node" (uid 1000) already created
 USER node

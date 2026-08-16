@@ -685,6 +685,7 @@ export interface CommunityIdeaRecord {
   likes_count: number
   comments_count: number
   anonymous: boolean
+  author_display_name?: string | null
   status: 'new' | 'under_review' | 'planned' | 'in_progress' | 'implemented'
   is_deleted: boolean
   deleted_at?: string | null

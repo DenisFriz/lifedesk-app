@@ -21,20 +21,28 @@ import {
   AlertTriangle,
   ShieldOff,
   MailCheck,
-  KeyRound
+  KeyRound,
+  FileText,
+  ScrollText,
+  Scale,
+  HeartPulse,
+  ExternalLink
 } from 'lucide-react'
 import DeleteAccountDialog from '@/components/account/DeleteAccountDialog'
+import WithdrawHealthConsentDialog from '@/components/account/WithdrawHealthConsentDialog'
+import ChangePasswordDialog from '@/components/account/ChangePasswordDialog'
+import ChangeEmailDialog from '@/components/account/ChangeEmailDialog'
 import { format } from 'date-fns'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useSubscription } from '@/hooks/useSubscription'
 import { Helmet } from 'react-helmet-async'
 import { useSound } from '@/contexts/SoundContext'
 import { Switch } from '@/components/ui/switch'
-import EmailVerificationModal from '@/components/EmailVerificationModal'
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal'
 import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload'
 import { useAuth } from '@/lib/AuthContext'
 import { useCommunityIdeasQuery } from '@/hooks/communityideas/useCommunityIdeasQuery'
+import { toast } from 'sonner'
 
 const tierConfig = {
   free: { icon: Zap, color: 'bg-slate-100 text-slate-700', label: 'Free' },
@@ -60,13 +68,15 @@ export default function Profile() {
   const [fullName, setFullName] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false)
-  const [verifyModalOpen, setVerifyModalOpen] = useState(false)
-  const [verifying, setVerifying] = useState(false)
+  const [sendingVerification, setSendingVerification] = useState(false)
   const [portalLoading, setPortalLoading] = useState(false)
   const [twoFactorModalOpen, setTwoFactorModalOpen] = useState(false)
   const [twoFactorQrCode, setTwoFactorQrCode] = useState<string | null>(null)
   const [twoFactorSecret, setTwoFactorSecret] = useState<string | null>(null)
   const [verifying2fa, setVerifying2fa] = useState(false)
+  const [withdrawConsentOpen, setWithdrawConsentOpen] = useState(false)
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
+  const [changeEmailOpen, setChangeEmailOpen] = useState(false)
 
   const [searchParams] = useSearchParams()
   const checkoutStatus = searchParams.get('checkout')
@@ -136,6 +146,8 @@ export default function Profile() {
       if (result?.url) {
         window.location.href = result.url
       }
+    } catch (error: any) {
+      toast.error(error?.message || 'Unable to open billing portal')
     } finally {
       setPortalLoading(false)
     }
@@ -188,26 +200,14 @@ export default function Profile() {
 
   const handleSendVerificationCode = async () => {
     try {
+      setSendingVerification(true)
       await backend.email.sendEmailVerificationCode()
-      setVerifyModalOpen(true)
-    } catch (error) {
+      toast.success('Verification email sent. Check your inbox.')
+    } catch (error: any) {
       console.error(error)
-    }
-  }
-
-  const handleVerifyCode = async (code: string) => {
-    try {
-      setVerifying(true)
-
-      await backend.email.verifyEmailCode(code)
-
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] })
-
-      setVerifyModalOpen(false)
-    } catch (error) {
-      console.error(error)
+      toast.error(error?.message || 'Failed to send verification email')
     } finally {
-      setVerifying(false)
+      setSendingVerification(false)
     }
   }
 
@@ -217,6 +217,13 @@ export default function Profile() {
       setTwoFactorQrCode(data.qrCode)
       setTwoFactorSecret(data.secret)
       setTwoFactorModalOpen(true)
+    }
+  })
+
+  const enableHealthConsentMutation = useMutation({
+    mutationFn: () => backend.user.enableHealthConsent(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] })
     }
   })
 
@@ -285,12 +292,6 @@ export default function Profile() {
       <Helmet>
         <title>Profile | LifeDesk</title>
       </Helmet>
-      <EmailVerificationModal
-        open={verifyModalOpen}
-        onClose={() => setVerifyModalOpen(false)}
-        loading={verifying}
-        onSubmit={handleVerifyCode}
-      />
       <TwoFactorSetupModal
         open={twoFactorModalOpen}
         onClose={() => setTwoFactorModalOpen(false)}
@@ -369,7 +370,17 @@ export default function Profile() {
                 </div>
                 <div>
                   <Label>Email</Label>
-                  <div className="mt-1 text-slate-600">{user?.email}</div>
+                  <div className="mt-1 flex items-center justify-between gap-3">
+                    <span className="text-slate-600 break-all">{user?.email}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={() => setChangeEmailOpen(true)}
+                    >
+                      Change Email
+                    </Button>
+                  </div>
                 </div>
                 <div>
                   <Label>Full Name</Label>
@@ -430,8 +441,12 @@ export default function Profile() {
                       </div>
                     </div>
                     {!user?.email_verified && (
-                      <Button size="sm" onClick={handleSendVerificationCode}>
-                        Verify Email
+                      <Button
+                        size="sm"
+                        onClick={handleSendVerificationCode}
+                        disabled={sendingVerification}
+                      >
+                        {sendingVerification ? 'Sending...' : 'Verify Email'}
                       </Button>
                     )}
                   </div>
@@ -471,6 +486,31 @@ export default function Profile() {
                         {setup2faMutation.isPending ? 'Loading...' : 'Enable 2FA'}
                       </Button>
                     )}
+                  </div>
+                </div>
+                <div>
+                  <Label>Password</Label>
+                  <div className="mt-1 flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 text-slate-600">
+                        <KeyRound className="w-4 h-4" />
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">
+                          {user?.hasPassword ? 'Password protection' : 'Set a Password'}
+                        </p>
+
+                        <p className="text-xs text-slate-500">
+                          {user?.hasPassword
+                            ? 'Update your password to keep your account secure'
+                            : 'Add a password so you can sign in with your email'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button size="sm" onClick={() => setChangePasswordOpen(true)}>
+                      {user?.hasPassword ? 'Change Password' : 'Set Password'}
+                    </Button>
                   </div>
                 </div>
                 {user?.role === 'admin' && (
@@ -625,7 +665,7 @@ export default function Profile() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={handleManageSubscription}
+                      onClick={() => (window.location.href = '/upgrade')}
                       disabled={portalLoading}
                       className="w-full sm:w-auto"
                     >
@@ -671,6 +711,146 @@ export default function Profile() {
                 <LogOut className="w-4 h-4 mr-2" />
                 Log Out
               </Button>
+            </div>
+
+            {/* Legal & Privacy, Health Data Consent, and Delete Account */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4">Legal & Privacy</h2>
+
+              <div className="space-y-3">
+                {[
+                  {
+                    label: 'Privacy Policy',
+                    href: 'https://lifedesk.me/privacy-policy/',
+                    icon: FileText
+                  },
+                  {
+                    label: 'Terms of Service',
+                    href: 'https://lifedesk.me/terms-of-service/',
+                    icon: ScrollText
+                  },
+                  { label: 'Legal Notice', href: 'https://lifedesk.me/legal-notice/', icon: Scale },
+                  {
+                    label: 'Consumer Health Data Privacy Policy',
+                    href: 'https://lifedesk.me/consumer-health-data-privacy-policy/',
+                    icon: HeartPulse
+                  }
+                ].map(({ label, href, icon: Icon }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3 hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 text-slate-600">
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-900">{label}</p>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-slate-400" />
+                  </a>
+                ))}
+              </div>
+
+              {/* <div className="border-t border-slate-100 pt-5 mt-5">
+                <h3 className="text-sm font-semibold text-slate-900 mb-3">Health Data Consent</h3>
+                <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                        user?.healthConsentGiven
+                          ? 'bg-green-100 text-green-600'
+                          : 'bg-amber-100 text-amber-600'
+                      }`}
+                    >
+                      <MailCheck className="w-4 h-4" />
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {user?.healthConsentGiven
+                          ? 'Health data processing: Enabled'
+                          : 'Health data processing: Disabled'}
+                      </p>
+
+                      <p className="text-xs text-slate-500">
+                        {user?.healthConsentGiven
+                          ? 'You have consented to health data processing'
+                          : 'Health data will not be processed until you enable it'}
+                      </p>
+                    </div>
+                  </div>
+                  {user?.healthConsentGiven ? (
+                    <Button
+                      size="sm"
+                      onClick={() => setWithdrawConsentOpen(true)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
+                      variant="outline"
+                    >
+                      Withdraw
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => enableHealthConsentMutation.mutate()}
+                      disabled={enableHealthConsentMutation.isPending}
+                    >
+                      {enableHealthConsentMutation.isPending ? 'Enabling...' : 'Enable Health'}
+                    </Button>
+                  )}
+                </div>
+
+                {user?.healthConsentGiven && (
+                  <div className="mt-4 space-y-3 text-sm text-slate-600">
+                    <p>
+                      You consented to the processing of your health data on{' '}
+                      <span className="font-medium text-slate-900">
+                        {format(new Date(user.healthConsentDate!), "MMM d, yyyy 'at' h:mm a")}
+                      </span>
+                      .
+                    </p>
+                    <p>
+                      Consent version:{' '}
+                      <span className="font-medium text-slate-900">
+                        {user.healthConsentVersion}
+                      </span>
+                    </p>
+                    <p>
+                      You may withdraw your consent at any time. Withdrawing consent will disable
+                      the Health area and permanently delete your stored health data. Your LifeDesk
+                      account and all non-health data will remain active.
+                    </p>
+                  </div>
+                )}
+
+                {!user?.healthConsentGiven && (
+                  <div className="mt-4 text-sm text-slate-600">
+                    <p>
+                      You have not enabled the LifeDesk Health features. Health data will not be
+                      collected or processed until you explicitly provide consent.
+                    </p>
+                  </div>
+                )}
+              </div> */}
+
+              {/* Delete Account subsection */}
+              <div className="border-t border-slate-100 pt-5 mt-5">
+                <h3 className="text-sm font-semibold text-slate-900 mb-3">Delete Account</h3>
+                <Button
+                  onClick={() => setDeleteAccountOpen(true)}
+                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-100 bg-white border border-red-200"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Account
+                </Button>
+                <p className="text-xs text-slate-500 mt-2">
+                  Deleting your LifeDesk account does not automatically cancel a subscription
+                  managed through Apple or Google. Please cancel the subscription in your App Store
+                  or Google Play subscription settings.
+                </p>
+              </div>
             </div>
 
             {/* My Ideas */}
@@ -801,21 +981,6 @@ export default function Profile() {
                 </Link>
               </div>
             )}
-
-            {/* Danger Zone */}
-            <div className="bg-red-50 rounded-xl border border-red-200 p-6">
-              <h2 className="text-lg font-semibold text-red-900 mb-4 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5" />
-                Danger Zone! Irreversible actions
-              </h2>
-              <Button
-                onClick={() => setDeleteAccountOpen(true)}
-                className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-100 bg-white border border-red-200"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Account
-              </Button>
-            </div>
           </div>
         </div>
 
@@ -824,6 +989,32 @@ export default function Profile() {
           onClose={() => setDeleteAccountOpen(false)}
           onSuccess={() => setDeleteAccountOpen(false)}
           userEmail={user?.email}
+        />
+        <WithdrawHealthConsentDialog
+          isOpen={withdrawConsentOpen}
+          onClose={() => setWithdrawConsentOpen(false)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+            setWithdrawConsentOpen(false)
+          }}
+        />
+        <ChangePasswordDialog
+          isOpen={changePasswordOpen}
+          onClose={() => setChangePasswordOpen(false)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+            setChangePasswordOpen(false)
+          }}
+          hasPassword={!!user?.hasPassword}
+        />
+        <ChangeEmailDialog
+          isOpen={changeEmailOpen}
+          onClose={() => setChangeEmailOpen(false)}
+          currentEmail={user?.email || ''}
+          onSuccess={() => {
+            toast.success('Confirmation email sent to your new address.')
+            setChangeEmailOpen(false)
+          }}
         />
       </div>
     </>

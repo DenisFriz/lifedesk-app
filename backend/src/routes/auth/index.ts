@@ -7,11 +7,7 @@ import { User } from '@models/index.js';
 import { comparePassword, hashPassword } from '@lib/bcrypt.js';
 import { sanitizeUser } from '@utils/sanitizeUser.js';
 
-import fs from 'fs';
-import path from 'path';
-
 import { OAuth2Client } from 'google-auth-library';
-import { UAParser } from 'ua-parser-js';
 import {
   createAccessToken,
   createRefreshToken,
@@ -35,12 +31,18 @@ import {
   resetPasswordSchema,
 } from '@/schemas/auth.schema.js';
 import z from 'zod';
-import { sendEmailQueue } from '@/queues/sendEmailQueue.js';
-import { getRegistrationCompletedTemplate } from '@/utils/emailTemplates.js';
 import {
   verificationReminderQueue,
   verificationReminderJobId,
 } from '@/queues/verificationReminderQueue.js';
+import {
+  createEmailVerificationToken,
+  getEmailVerificationExpires,
+  enqueueEmailVerificationEmail,
+  enqueuePasswordResetRequestEmail,
+  enqueuePasswordChangedEmail,
+  enqueueRegistrationCompletedEmail,
+} from '@/utils/emailVerification.js';
 
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
@@ -52,113 +54,6 @@ const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 authenticator.options = { window: 1 };
 
 type GoogleLoginDTO = z.infer<typeof googleLoginSchema>;
-
-let resetPasswordTemplate: string | null = null;
-
-function getResetPasswordTemplate(resetLink: string, name: string) {
-  if (!resetPasswordTemplate) {
-    const filePath = path.join(
-      process.cwd(),
-      'src/templates/reset-password.html',
-    );
-    resetPasswordTemplate = fs.readFileSync(filePath, 'utf-8');
-  }
-
-  let html = resetPasswordTemplate;
-  html = html.replaceAll('{{RESET_LINK}}', resetLink);
-  html = html.replaceAll('{{NAME}}', name);
-
-  return html;
-}
-
-let registrationSuccessTemplate: string | null = null;
-
-function getRegistrationSuccessTemplate(loginLink: string, name: string) {
-  if (!registrationSuccessTemplate) {
-    const filePath = path.join(
-      process.cwd(),
-      'src/templates/registration-success.html',
-    );
-    registrationSuccessTemplate = fs.readFileSync(filePath, 'utf-8');
-  }
-
-  let html = registrationSuccessTemplate;
-  html = html.replaceAll('{{LOGIN_LINK}}', loginLink);
-  html = html.replaceAll('{{NAME}}', name);
-
-  return html;
-}
-
-let passwordChangedTemplate: string | null = null;
-
-function getPasswordChangedTemplate(changedAt: string, name: string) {
-  if (!passwordChangedTemplate) {
-    const filePath = path.join(
-      process.cwd(),
-      'src/templates/password-changed.html',
-    );
-    passwordChangedTemplate = fs.readFileSync(filePath, 'utf-8');
-  }
-
-  let html = passwordChangedTemplate;
-  html = html.replaceAll('{{CHANGED_AT}}', changedAt);
-  html = html.replaceAll('{{NAME}}', name);
-  html = html.replaceAll('{{FRONTEND_URL}}', process.env.FRONTEND_URL || '');
-
-  return html;
-}
-
-let newLoginTemplate: string | null = null;
-
-function getNewLoginTemplate(
-  device: string,
-  ip: string,
-  loginAt: string,
-  name: string,
-) {
-  if (!newLoginTemplate) {
-    const filePath = path.join(process.cwd(), 'src/templates/new-login.html');
-    newLoginTemplate = fs.readFileSync(filePath, 'utf-8');
-  }
-
-  let html = newLoginTemplate;
-  html = html.replaceAll('{{DEVICE}}', device);
-  html = html.replaceAll('{{IP_ADDRESS}}', ip);
-  html = html.replaceAll('{{LOGIN_AT}}', loginAt);
-  html = html.replaceAll('{{NAME}}', name);
-  html = html.replaceAll('{{FRONTEND_URL}}', process.env.FRONTEND_URL || '');
-
-  return html;
-}
-
-async function notifyIfNewDevice(user: any, req: Request) {
-  const userAgent = req.headers['user-agent'] || 'Unknown device';
-
-  const knownDevice = await RefreshToken.findOne({
-    user_id: user._id,
-    user_agent: userAgent,
-  });
-
-  if (knownDevice) return;
-
-  const ip = req.ip || 'Unknown';
-  const parser = new UAParser(userAgent);
-  const { browser, os } = parser.getResult();
-  const device =
-    [browser.name, os.name].filter(Boolean).join(' on ') || 'Unknown device';
-
-  const loginAt = new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'long',
-    timeStyle: 'short',
-    timeZone: 'UTC',
-  }).format(new Date()) + ' UTC';
-
-  await sendEmailQueue.add('send-email', {
-    to: user.email,
-    subject: 'New login to your account',
-    html: getNewLoginTemplate(device, ip, loginAt, user.full_name || 'there'),
-  });
-}
 
 async function ensureUserUsage(userId: string) {
   const { UserUsage } = await import('@/models/UserUsage.js');
@@ -196,28 +91,24 @@ router.post(
     }
 
     const passwordHash = await hashPassword(password);
+    const verificationToken = createEmailVerificationToken();
 
     const user = new User({
       email,
       passwordHash,
       terms_accepted_at: new Date().toISOString(),
+      emailVerificationCode: verificationToken,
+      emailVerificationExpires: getEmailVerificationExpires(),
     });
 
     await Promise.all([user.save(), ensureUserUsage(user._id.toString())]);
 
     const { accessToken } = await issueAuthSession(user._id.toString(), res, req);
 
-    const loginLink = `${process.env.FRONTEND_URL}/login`;
+    const displayName = user.full_name || 'there';
 
     await Promise.all([
-      sendEmailQueue.add('send-email', {
-        to: user.email,
-        subject: 'Welcome — registration successful!',
-        html: getRegistrationSuccessTemplate(
-          loginLink,
-          user.full_name || 'there',
-        ),
-      }),
+      enqueueEmailVerificationEmail(user.email, displayName, verificationToken),
       verificationReminderQueue.add(
         'verification-reminder',
         { userId: user._id.toString() },
@@ -269,8 +160,6 @@ router.post(
       res.json({ requiresTwoFactor: true });
       return;
     }
-
-    await notifyIfNewDevice(user, req);
 
     const [{ accessToken }] = await Promise.all([
       issueAuthSession(user._id.toString(), res, req),
@@ -343,8 +232,6 @@ router.post(
     if (!authValid) {
       throw new AppError('Invalid verification code', 401);
     }
-
-    await notifyIfNewDevice(user, req);
 
     const [{ accessToken }] = await Promise.all([
       issueAuthSession(user._id.toString(), res, req),
@@ -423,14 +310,10 @@ router.post(
         passwordHash: null,
       });
       if (email_verified) {
-        await sendEmailQueue.add('send-email', {
-          to: user.email,
-          subject: 'Your account is now active!',
-          html: getRegistrationCompletedTemplate(
-            `${process.env.FRONTEND_URL}/home`,
-            user.full_name || 'there',
-          ),
-        });
+        await enqueueRegistrationCompletedEmail(
+          user.email,
+          user.full_name || 'there',
+        );
       }
     } else {
       if (!user.google_id) {
@@ -442,19 +325,13 @@ router.post(
 
         await user.save();
         if (!wasVerified) {
-          await sendEmailQueue.add('send-email', {
-            to: user.email,
-            subject: 'Your account is now active!',
-            html: getRegistrationCompletedTemplate(
-              `${process.env.FRONTEND_URL}/home`,
-              user.full_name || 'there',
-            ),
-          });
+          await enqueueRegistrationCompletedEmail(
+            user.email,
+            user.full_name || 'there',
+          );
         }
       }
     }
-
-    await notifyIfNewDevice(user, req);
 
     const [{ accessToken }] = await Promise.all([
       issueAuthSession(user._id.toString(), res, req),
@@ -519,14 +396,10 @@ router.post(
         passwordHash: null,
       });
       if (email_verified) {
-        await sendEmailQueue.add('send-email', {
-          to: user.email,
-          subject: 'Your account is now active!',
-          html: getRegistrationCompletedTemplate(
-            `${process.env.FRONTEND_URL}/home`,
-            user.full_name || 'there',
-          ),
-        });
+        await enqueueRegistrationCompletedEmail(
+          user.email,
+          user.full_name || 'there',
+        );
       }
     } else {
       if (!user.google_id) {
@@ -537,19 +410,13 @@ router.post(
         user.email_verified = true;
         await user.save();
         if (!wasVerified) {
-          await sendEmailQueue.add('send-email', {
-            to: user.email,
-            subject: 'Your account is now active!',
-            html: getRegistrationCompletedTemplate(
-              `${process.env.FRONTEND_URL}/home`,
-              user.full_name || 'there',
-            ),
-          });
+          await enqueueRegistrationCompletedEmail(
+            user.email,
+            user.full_name || 'there',
+          );
         }
       }
     }
-
-    await notifyIfNewDevice(user, req);
 
     const [{ accessToken }] = await Promise.all([
       issueAuthSession(user._id.toString(), res, req),
@@ -657,13 +524,11 @@ router.post(
 
     await user.save();
 
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
-
-    await sendEmailQueue.add('send-email', {
-      to: user.email,
-      subject: 'Reset your password',
-      html: getResetPasswordTemplate(resetLink, user.full_name || 'there'),
-    });
+    await enqueuePasswordResetRequestEmail(
+      user.email,
+      user.full_name || 'there',
+      token,
+    );
 
     res.json({ message: 'If user exists, email was sent' });
   }),
@@ -698,17 +563,10 @@ router.post(
 
     await user.save();
 
-    const changedAt = new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'long',
-      timeStyle: 'short',
-      timeZone: 'UTC',
-    }).format(new Date()) + ' UTC';
-
-    await sendEmailQueue.add('send-email', {
-      to: user.email,
-      subject: 'Your password was changed',
-      html: getPasswordChangedTemplate(changedAt, user.full_name || 'there'),
-    });
+    await enqueuePasswordChangedEmail(
+      user.email,
+      user.full_name || 'there',
+    );
 
     res.json({ message: 'Password successfully reset' });
   }),

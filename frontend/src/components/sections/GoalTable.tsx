@@ -673,7 +673,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
         description="Please choose a category for the new goal."
       />
 
-      <div className="goal-table-container bg-white rounded-xl overflow-hidden mb-6">
+      <div className="goal-table-container bg-white rounded-xl overflow-hidden mb-8">
         <Tabs value={table.currentTab} onValueChange={table.setCurrentTab}>
           <div className="goal-table-header flex flex-col lg:flex-row items-stretch lg:items-center gap-2 lg:gap-3 p-4">
             <TabsList className="bg-[#eaecf4] p-1 flex-1 lg:flex-none flex">

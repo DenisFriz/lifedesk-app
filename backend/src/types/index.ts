@@ -24,14 +24,22 @@ export interface IUser {
   email_verified: boolean;
   emailVerificationCode: string | null;
   emailVerificationExpires: Date | null;
+  verification_reminder_sent_at: Date | null;
   plaid_connections: IPlaidConnection[];
   terms_accepted_at: string | null;
   is_deleted: boolean;
   deleted_at: string | null;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+  pendingEmail?: string | null;
+  emailChangeToken?: string | null;
+  emailChangeExpires?: Date | null;
   twoFactorEnabled: boolean;
   twoFactorSecret: string | null;
+  twoFactorRecoveryCodes?: string[];
+  healthConsentGiven?: boolean;
+  healthConsentDate?: Date | null;
+  healthConsentVersion?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }

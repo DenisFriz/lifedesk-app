@@ -211,7 +211,7 @@ export default function Workouts() {
             </div>
           </div>
 
-          <div className="grid gap-4">
+          <div className="grid gap-4 mb-8">
             {filteredWorkouts.length === 0 ? (
               <Card>
                 <CardContent className="p-6 md:p-12 text-center">

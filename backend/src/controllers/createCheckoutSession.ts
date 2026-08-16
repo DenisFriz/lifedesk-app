@@ -41,11 +41,19 @@ export async function createCheckoutSession(
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const existingSubscription = await Subscription.findOne({
-      user_email: req.user.email,
+    let existingSubscription = await Subscription.findOne({
+      user_id: req.user._id,
     })
       .lean()
       .select('stripe_subscription_id stripe_customer_id id');
+
+    if (!existingSubscription) {
+      existingSubscription = await Subscription.findOne({
+        user_email: req.user.email,
+      })
+        .lean()
+        .select('stripe_subscription_id stripe_customer_id id');
+    }
 
     let stripeSubscriptionId =
       existingSubscription?.stripe_subscription_id || null;

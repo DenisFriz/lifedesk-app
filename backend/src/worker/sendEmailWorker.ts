@@ -1,25 +1,54 @@
 import { Worker } from 'bullmq';
 import { Redis as IORedis } from 'ioredis';
-import { Resend } from 'resend';
+import * as brevo from '@getbrevo/brevo';
+import type { SendEmailJobData } from '@queues/sendEmailQueue.js';
+
+export async function processSendEmailJob(
+  job: { data: SendEmailJobData },
+  apiInstance: brevo.TransactionalEmailsApi,
+): Promise<void> {
+  const { to, from, subject, html, templateId, params } = job.data;
+
+  const recipients = Array.isArray(to) ? to : [to];
+  const sendSmtpEmail = new brevo.SendSmtpEmail();
+  sendSmtpEmail.sender = {
+    email: from ?? process.env.BREVO_SENDER_EMAIL ?? 'noreply@lifedesk.app',
+  };
+  sendSmtpEmail.to = recipients.map((email) => ({ email }));
+
+  if (templateId != null) {
+    sendSmtpEmail.templateId = templateId;
+    if (params) {
+      sendSmtpEmail.params = params;
+    }
+  } else {
+    if (subject) {
+      sendSmtpEmail.subject = subject;
+    }
+    if (html) {
+      sendSmtpEmail.htmlContent = html;
+    }
+  }
+
+  try {
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : String(error);
+    throw new Error(`Brevo send failed: ${errorMessage}`);
+  }
+}
 
 export function createSendEmailWorker(connection: IORedis) {
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const apiInstance = new brevo.TransactionalEmailsApi();
+  apiInstance.setApiKey(
+    brevo.TransactionalEmailsApiApiKeys.apiKey,
+    process.env.BREVO_API_KEY ?? '',
+  );
 
   return new Worker(
     'send-email',
-    async (job) => {
-      const { to, from, subject, html } = job.data;
-      const { data, error } = await resend.emails.send({
-        from: from ?? 'no-reply@resend.dev',
-        to,
-        subject,
-        html,
-      });
-
-      if (error) {
-        throw new Error(`Resend send failed: ${error.name} - ${error.message}`);
-      }
-    },
+    (job) => processSendEmailJob(job, apiInstance),
     { connection },
   );
 }

@@ -3,29 +3,14 @@ import { asyncHandler } from '@utils/asyncHandler.js';
 import { AppError } from '@errors/AppError.js';
 import { User } from '@models/index.js';
 import { requireAuth } from '@middleware/auth.js';
-import { sendEmailQueue } from '@queues/sendEmailQueue.js';
-
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
-
-let verificationEmailTemplate: string | null = null;
-
-function getVerificationEmailTemplate(code: string, name: string) {
-  if (!verificationEmailTemplate) {
-    const filePath = path.join(
-      process.cwd(),
-      'src/templates/email-verification.html',
-    );
-    verificationEmailTemplate = fs.readFileSync(filePath, 'utf-8');
-  }
-
-  let html = verificationEmailTemplate;
-  html = html.replaceAll('{{CODE}}', code);
-  html = html.replaceAll('{{NAME}}', name);
-
-  return html;
-}
+import {
+  createEmailVerificationToken,
+  getEmailVerificationExpires,
+  enqueueEmailVerificationEmail,
+  enqueueRegistrationCompletedEmail,
+} from '@/utils/emailVerification.js';
+import { validate } from '@/utils/validate.js';
+import { verifyEmailTokenSchema } from '@/schemas/user.schema.js';
 
 const router = Router();
 
@@ -45,60 +30,59 @@ router.post(
       throw new AppError('Email already verified', 400);
     }
 
-    const code = crypto.randomInt(0, 1000000).toString().padStart(6, '0');
+    const token = createEmailVerificationToken();
 
     await User.updateOne(
       { _id: user._id },
       {
         $set: {
-          emailVerificationCode: code,
-          emailVerificationExpires: new Date(Date.now() + 1000 * 60 * 10),
+          emailVerificationCode: token,
+          emailVerificationExpires: getEmailVerificationExpires(),
         },
       },
     );
 
-    await sendEmailQueue.add('send-email', {
-      to: user.email,
-      subject: 'Verify your email',
-      html: getVerificationEmailTemplate(code, user.full_name || 'there'),
-    });
+    await enqueueEmailVerificationEmail(
+      user.email,
+      user.full_name || 'there',
+      token,
+    );
 
     res.json({
-      message: 'Verification code sent',
+      message: 'Verification email sent',
     });
   }),
 );
 
 router.post(
-  '/verify-email-code',
-  requireAuth,
+  '/verify-email',
+  validate(verifyEmailTokenSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const { code }: { code: string } = req.body;
+    const { token }: { token: string } = req.body;
 
-    const user = await User.findById(req.user._id);
+    const user = await User.findOne({
+      emailVerificationCode: token,
+      emailVerificationExpires: { $gt: new Date() },
+    });
 
     if (!user) {
-      throw new AppError('User not found', 404);
+      throw new AppError('Invalid or expired verification link', 400);
     }
 
-    if (!user.emailVerificationCode) {
-      throw new AppError('No verification code requested', 400);
-    }
-
-    if (
-      user.emailVerificationCode !== code ||
-      !user.emailVerificationExpires ||
-      user.emailVerificationExpires < new Date()
-    ) {
-      throw new AppError('Invalid or expired code', 400);
+    if (user.email_verified) {
+      throw new AppError('Email already verified', 400);
     }
 
     user.email_verified = true;
-
     user.emailVerificationCode = null;
     user.emailVerificationExpires = null;
 
     await user.save();
+
+    await enqueueRegistrationCompletedEmail(
+      user.email,
+      user.full_name || 'there',
+    );
 
     res.json({
       message: 'Email successfully verified',

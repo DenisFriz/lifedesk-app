@@ -486,7 +486,7 @@ export default function Overview() {
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
+          <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="overview-assets-title text-lg font-semibold text-slate-900">
                 Physical Assets Summary

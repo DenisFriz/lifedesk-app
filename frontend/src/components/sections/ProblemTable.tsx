@@ -233,7 +233,7 @@ export default function ProblemTable({ category }: ProblemTableProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200">
+    <div className="bg-white rounded-xl border border-slate-200 mb-8">
       <div className="flex flex-col min-[480px]:flex-row items-center justify-between p-4 border-b border-slate-200">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold text-slate-900">Health Tracking</h2>

@@ -7,8 +7,12 @@ export const sanitizeUser = (user: Record<string, any>) => {
   delete userObj.resetPasswordExpires;
   delete userObj.emailVerificationCode;
   delete userObj.emailVerificationExpires;
+  delete userObj.pendingEmail;
+  delete userObj.emailChangeToken;
+  delete userObj.emailChangeExpires;
   delete userObj.plaid_connections;
   delete userObj.twoFactorSecret;
+  delete userObj.twoFactorRecoveryCodes;
 
   return userObj;
 };

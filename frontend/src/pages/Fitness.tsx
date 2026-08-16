@@ -88,7 +88,7 @@ export default function Fitness() {
 
           <FitnessTimelineChart />
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="fitness-stat-workouts text-sm font-medium text-slate-600 flex items-center gap-2">

@@ -4,6 +4,7 @@ import { Redis as IORedis } from 'ioredis';
 import { connectDB } from '@/db/connection.js';
 import { createSendEmailWorker } from './sendEmailWorker.js';
 import { createSendReminderWorker } from './sendReminderWorker.js';
+import { createSendVerificationReminderWorker } from './sendVerificationReminderWorker.js';
 
 const app = express();
 const PORT = 8000;
@@ -37,6 +38,7 @@ async function startWorkers() {
 
   const emailWorker = createSendEmailWorker(connection);
   const reminderWorker = createSendReminderWorker(connection);
+  const verificationReminderWorker = createSendVerificationReminderWorker(connection);
 
   emailWorker.on('completed', (job) =>
     console.log(`[worker] send-email job ${job.id} completed`),
@@ -50,6 +52,13 @@ async function startWorkers() {
   );
   reminderWorker.on('failed', (job, err) =>
     console.error(`[worker] send-reminder job ${job?.id} failed:`, err),
+  );
+
+  verificationReminderWorker.on('completed', (job) =>
+    console.log(`[worker] verification-reminder job ${job.id} completed`),
+  );
+  verificationReminderWorker.on('failed', (job, err) =>
+    console.error(`[worker] verification-reminder job ${job?.id} failed:`, err),
   );
 }
 

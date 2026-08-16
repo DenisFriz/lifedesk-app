@@ -7,11 +7,16 @@ export interface User {
   profile_image?: string | null
   profile_image_public_id?: string | null
   google_avatar_url?: string
+  auth_provider?: 'local' | 'google'
+  hasPassword?: boolean
   subscription_tier: 'free' | 'plus' | 'pro'
   role: string
   email_verified: boolean
   twoFactorEnabled: boolean
   is_deleted?: boolean
+  healthConsentGiven?: boolean
+  healthConsentDate?: string | null
+  healthConsentVersion?: string | null
 }
 
 export interface AuthError {

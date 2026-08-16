@@ -1,5 +1,5 @@
 import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits.js';
-import { modelMap } from '@/models/index.js';
+import { modelMap, User } from '@/models/index.js';
 import { UsageKey, UserUsage } from '@/models/UserUsage.js';
 import {
   Router,
@@ -70,6 +70,12 @@ const entityToLimitKey: Record<string, string> = {
   client: 'clients',
 };
 
+const PUBLIC_ENTITIES = new Set([
+  'communityidea',
+  'communitycomment',
+  'communityvote',
+]);
+
 function sanitizeInput(data: any): Record<string, any> {
   if (!data || typeof data !== 'object') {
     return {};
@@ -98,6 +104,29 @@ function sanitizeInput(data: any): Record<string, any> {
   return sanitized;
 }
 
+async function resolveCommunityIdeaAuthors(records: any[]): Promise<any[]> {
+  const creatorIds = records
+    .filter((r) => !r.anonymous && r.created_by)
+    .map((r) => r.created_by);
+
+  if (creatorIds.length === 0) {
+    return records.map((r) => ({ ...r, author_display_name: null }));
+  }
+
+  const users = await User.find({ _id: { $in: creatorIds } })
+    .select('full_name')
+    .lean();
+
+  const nameById = new Map(users.map((u) => [String(u._id), u.full_name]));
+
+  return records.map((r) => ({
+    ...r,
+    author_display_name: r.anonymous
+      ? null
+      : (nameById.get(String(r.created_by)) ?? null),
+  }));
+}
+
 router.param(
   'entity',
   (req: Request, res: Response, next: NextFunction, entity: string) => {
@@ -118,9 +147,21 @@ router.param(
 router.get('/:entity', async (req: Request, res: Response) => {
   try {
     const Model = req.model;
-    const records = await Model.find({ created_by: req.user._id }).lean();
+    const entityParam = req.params.entity;
+    const entity = Array.isArray(entityParam) ? entityParam[0] : entityParam;
+    const modelKey = entity.toLowerCase();
 
-    res.json(records);
+    const query = PUBLIC_ENTITIES.has(modelKey)
+      ? {}
+      : { created_by: req.user._id };
+
+    const records = await Model.find(query).lean();
+    const enriched =
+      modelKey === 'communityidea'
+        ? await resolveCommunityIdeaAuthors(records)
+        : records;
+
+    res.json(enriched);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
 
@@ -131,15 +172,22 @@ router.get('/:entity', async (req: Request, res: Response) => {
 router.post('/:entity/filter', async (req: Request, res: Response) => {
   try {
     const Model = req.model;
+    const entityParam = req.params.entity;
+    const entity = Array.isArray(entityParam) ? entityParam[0] : entityParam;
+    const modelKey = entity.toLowerCase();
 
     const conditions = {
       ...sanitizeInput(req.body),
-      created_by: req.user!._id,
+      ...(PUBLIC_ENTITIES.has(modelKey) ? {} : { created_by: req.user!._id }),
     };
 
     const records = await Model.find(conditions).lean();
+    const enriched =
+      modelKey === 'communityidea'
+        ? await resolveCommunityIdeaAuthors(records)
+        : records;
 
-    res.json(records);
+    res.json(enriched);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
 
@@ -151,6 +199,9 @@ router.get('/:entity/:id', async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
     const Model = req.model;
+    const entityParam = req.params.entity;
+    const entity = Array.isArray(entityParam) ? entityParam[0] : entityParam;
+    const modelKey = entity.toLowerCase();
 
     const record = await Model.findOne({ id }).lean();
 
@@ -158,11 +209,19 @@ router.get('/:entity/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Not found' });
     }
 
-    if ((record as any).created_by !== req.user!._id) {
+    if (
+      !PUBLIC_ENTITIES.has(modelKey) &&
+      (record as any).created_by !== req.user!._id
+    ) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    res.json(record);
+    const [enriched] =
+      modelKey === 'communityidea'
+        ? await resolveCommunityIdeaAuthors([record])
+        : [record];
+
+    res.json(enriched);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
 

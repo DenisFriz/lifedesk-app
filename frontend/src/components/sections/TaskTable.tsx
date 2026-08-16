@@ -420,12 +420,12 @@ export default function TaskTable({
         description="Please choose a category for the new task."
       />
 
-      <div className="task-table-container bg-white rounded-xl overflow-hidden mb-6">
+      <div className="bg-white rounded-xl overflow-hidden mb-8">
         <Tabs
           value={statusFilter}
           onValueChange={v => setStatusFilter(v as 'active' | 'done' | 'archived')}
         >
-          <div className="task-table-header flex flex-col lg:flex-row items-stretch lg:items-center gap-2 lg:gap-3 p-4">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2 lg:gap-3 p-4">
             <TabsList className="bg-[#eaecf4] p-1 flex-1 lg:flex-none flex">
               <TabsTrigger
                 value="active"

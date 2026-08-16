@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import type { Response, CookieOptions } from 'express';
+import type { Response, CookieOptions, Request } from 'express';
 import { RefreshToken } from '@/models/RefreshToken.js';
 import { createAccessToken, createRefreshToken } from '@/utils/token.utils.js';
 
@@ -14,7 +14,11 @@ export function getRefreshCookieOptions(): CookieOptions {
   };
 }
 
-export async function issueAuthSession(userId: string, res: Response) {
+export async function issueAuthSession(
+  userId: string,
+  res: Response,
+  req?: Request,
+) {
   const accessToken = createAccessToken(userId);
 
   const { token: refreshToken } = createRefreshToken(userId);
@@ -29,6 +33,8 @@ export async function issueAuthSession(userId: string, res: Response) {
     token_hash: refreshTokenHash,
     expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     revoked: false,
+    user_agent: req?.headers['user-agent'],
+    ip: req?.ip,
   });
 
   res.cookie('refreshToken', refreshToken, {

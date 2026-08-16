@@ -127,7 +127,7 @@ export default function CarAssetCard({ asset, onEdit, onDelete }: CarAssetCardPr
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-slate-200 hover:shadow-lg transition-shadow overflow-hidden">
+      <li className="bg-white rounded-xl border border-slate-200 hover:shadow-lg transition-shadow overflow-hidden">
         {/* Image carousel */}
         {images.length > 0 && (
           <div className="relative h-44 bg-slate-100 group">
@@ -288,7 +288,7 @@ export default function CarAssetCard({ asset, onEdit, onDelete }: CarAssetCardPr
             </div>
           )}
         </div>
-      </div>
+      </li>
 
       {lightbox && (
         <Lightbox

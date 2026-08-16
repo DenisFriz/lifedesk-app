@@ -614,7 +614,7 @@ export default function Transactions() {
             </div>
           )}
 
-          <div className="space-y-6">
+          <div className="space-y-6 mb-8">
             <div className="bg-white rounded-lg border border-slate-200 p-4 mb-4">
               <div className="flex flex-col min-[640px]:flex-row items-center gap-3">
                 <div className="relative flex-1 w-full">
