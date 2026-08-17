@@ -6,6 +6,7 @@ import { cloudinary } from '@/lib/cloudinary.js';
 const router = Router();
 
 const ALLOWED_FOLDERS = ['uploads', 'temp'] as const;
+const MAX_UPLOAD_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 const apiSecret = process.env.CLOUDINARY_API_SECRET;
 const apiKey = process.env.CLOUDINARY_API_KEY;
@@ -17,6 +18,16 @@ router.post('/signature', async (req: Request, res: Response) => {
       return res
         .status(500)
         .json({ message: 'Cloudinary env vars not configured' });
+    }
+
+    const { fileSize } = req.body ?? {};
+    if (typeof fileSize !== 'number' || !Number.isFinite(fileSize) || fileSize <= 0) {
+      return res.status(400).json({ message: 'Missing or invalid fileSize' });
+    }
+    if (fileSize > MAX_UPLOAD_FILE_SIZE_BYTES) {
+      return res.status(400).json({
+        message: `File size must be ${MAX_UPLOAD_FILE_SIZE_BYTES / (1024 * 1024)}MB or less`,
+      });
     }
 
     const rawFolder = req.body?.folder ?? 'uploads';

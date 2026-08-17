@@ -40,6 +40,9 @@ export default function EstateAssetCard({ asset, onEdit, onDelete }) {
       </div>
 
       <h3 className="font-semibold text-slate-900 mb-1">{asset.title}</h3>
+      {asset.description && (
+        <p className="text-sm text-slate-600 mb-2 line-clamp-2">{asset.description}</p>
+      )}
       {asset.address && <p className="text-sm text-slate-500 mb-2">📍 {asset.address}</p>}
 
       <div className="flex flex-wrap gap-2 mb-3">

@@ -21,11 +21,11 @@ import { useUserLimit } from '@/contexts/UserLimitContext'
 import { useAuth } from '@/lib/AuthContext'
 
 const MAX_REPAIR_IMAGES = 5
-const MAX_IMAGE_SIZE_MB = 5
+const MAX_IMAGE_SIZE_MB = 10
 
 const empty = {
   title: '',
-  description: '',
+  notes: '',
   category: 'vehicle',
   make: '',
   model: '',
@@ -60,7 +60,7 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
     if (asset) {
       setF({
         title: asset.title || '',
-        description: asset.description || '',
+        notes: asset.notes || '',
         category: 'vehicle',
         make: asset.make || '',
         model: asset.model || '',
@@ -73,10 +73,16 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
         mileage: asset.mileage || '',
         purchase_price: asset.purchase_price || '',
         current_value: asset.current_value || '',
-        purchase_date: asset.purchase_date || '',
-        insurance_expiry: asset.insurance_expiry || '',
-        inspection_expiry: asset.inspection_expiry || '',
-        repairs: (asset.repairs || []).map(r => ({ ...r, images: r.images || [] })),
+        purchase_date: asset.purchase_date ? String(asset.purchase_date).slice(0, 10) : '',
+        insurance_expiry: asset.insurance_expiry ? String(asset.insurance_expiry).slice(0, 10) : '',
+        inspection_expiry: asset.inspection_expiry
+          ? String(asset.inspection_expiry).slice(0, 10)
+          : '',
+        repairs: (asset.repairs || []).map(r => ({
+          ...r,
+          date: r.date ? String(r.date).slice(0, 10) : '',
+          images: r.images || []
+        })),
         images: asset.images || []
       })
     } else {
@@ -212,8 +218,8 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
   }
 
   const { data } = useUserLimit()
-  const photoLimit = data?.limits?.vehicle_photos || 5
-  const repairLimit = data?.limits.vehicle_repairs || 1
+  const photoLimit = data?.limits?.vehicle_photos ?? 5
+  const repairLimit = data?.limits?.vehicle_repairs ?? 1
 
   const { user } = useAuth()
   const isFree = user.subscription_tier === 'free'
@@ -690,12 +696,12 @@ export default function CarAssetForm({ open, onClose, onSubmit, asset, isLoading
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Notes</Label>
+              <Label htmlFor="notes">Notes</Label>
               <Textarea
-                id="description"
-                name="description"
-                value={f.description}
-                onChange={e => set('description', e.target.value)}
+                id="notes"
+                name="notes"
+                value={f.notes}
+                onChange={e => set('notes', e.target.value)}
                 placeholder="Any additional notes..."
                 className="min-h-[60px]"
               />

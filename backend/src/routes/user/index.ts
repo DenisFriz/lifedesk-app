@@ -196,6 +196,7 @@ router.get(
       events: userUsed.events ?? 0,
       vehicle: userUsed.vehicle ?? 0,
       vehicle_photos: userUsed.vehicle_photos ?? 0,
+      vehicle_repairs: 0,
       estate: userUsed.estate ?? 0,
       problems: userUsed.problems ?? 0,
       otherAsset: userUsed.otherAsset ?? 0,

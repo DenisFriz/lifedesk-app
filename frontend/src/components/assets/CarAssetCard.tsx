@@ -245,7 +245,9 @@ export default function CarAssetCard({ asset, onEdit, onDelete }: CarAssetCardPr
                               {Number(r.cost).toLocaleString()} €
                             </span>
                           ) : null}
-                          {r.date ? <span className="text-slate-400">{r.date}</span> : null}
+                          {r.date ? (
+                            <span className="text-slate-400">{String(r.date).slice(0, 10)}</span>
+                          ) : null}
                         </div>
                       </div>
                       {/* Repair-specific images */}
@@ -284,7 +286,7 @@ export default function CarAssetCard({ asset, onEdit, onDelete }: CarAssetCardPr
           {asset.notes && (
             <div className="mt-3 pt-3 border-t border-slate-100">
               <p className="text-xs text-slate-500 mb-1">Notes</p>
-              <p className="text-sm text-slate-700">{asset.notes}</p>
+              <p className="text-sm text-slate-700 line-clamp-2">{asset.notes}</p>
             </div>
           )}
         </div>

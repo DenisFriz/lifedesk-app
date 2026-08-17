@@ -13,8 +13,11 @@ export interface CloudinaryUploadResult {
   public_id: string
 }
 
-export async function getSignature(folder?: 'uploads' | 'temp'): Promise<SignatureData> {
-  const res = await api.post<SignatureData>('/cloudinary/signature', { folder })
+export async function getSignature(
+  folder?: 'uploads' | 'temp',
+  fileSize?: number
+): Promise<SignatureData> {
+  const res = await api.post<SignatureData>('/cloudinary/signature', { folder, fileSize })
   return res.data
 }
 

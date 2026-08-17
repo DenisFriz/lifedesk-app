@@ -20,7 +20,7 @@ export function useCloudinaryUpload(): UseCloudinaryUploadReturn {
     setError(null)
 
     try {
-      const signedData = await getSignature(folder)
+      const signedData = await getSignature(folder, file.size)
       const result = await uploadToCloudinary(file, signedData)
       return result
     } catch (err: any) {
