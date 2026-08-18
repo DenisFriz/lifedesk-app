@@ -30,7 +30,8 @@ const STATUS_TABS = [
   { value: 'under_review', label: 'Under Review' },
   { value: 'planned', label: 'Planned' },
   { value: 'in_progress', label: 'In Progress' },
-  { value: 'implemented', label: '✅ Implemented' }
+  { value: 'implemented', label: '✅ Implemented' },
+  { value: 'rejected', label: 'Rejected' }
 ] as const
 
 const CATEGORY_OPTIONS = [
@@ -152,21 +153,19 @@ export default function CommunityHub() {
         // Remove vote
         const vote = myVotes.find(v => v.idea_id === idea.id)
         if (vote) await backend.entities.CommunityVote.delete(vote.id)
-        await handleUpdateCommunityIdea({
-          id: idea.id,
-          data: { likes_count: Math.max(0, (idea.likes_count || 0) - 1) }
+        await backend.entities.CommunityIdea.update(idea.id, {
+          likes_count: Math.max(0, (idea.likes_count || 0) - 1)
         })
       } else {
         // Add vote
         await backend.entities.CommunityVote.create({ idea_id: idea.id, user_email: user.email })
-        await handleUpdateCommunityIdea({
-          id: idea.id,
-          data: { likes_count: (idea.likes_count || 0) + 1 }
+        await backend.entities.CommunityIdea.update(idea.id, {
+          likes_count: (idea.likes_count || 0) + 1
         })
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['community_ideas'] })
+      queryClient.invalidateQueries({ queryKey: ['communityideas'] })
       queryClient.invalidateQueries({ queryKey: ['community_votes', user?.email] })
     }
   })
@@ -174,18 +173,19 @@ export default function CommunityHub() {
   // Comment
   const commentMutation = useMutation({
     mutationFn: async (content: string) => {
+      const currentIdea = ideas.find(i => i.id === selectedIdea.id) || selectedIdea
       await backend.entities.CommunityComment.create({
         idea_id: selectedIdea.id,
         content,
         author_display_name: user.full_name
       })
       await backend.entities.CommunityIdea.update(selectedIdea.id, {
-        comments_count: (selectedIdea.comments_count || 0) + 1
+        comments_count: (currentIdea.comments_count || 0) + 1
       })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['community_comments', selectedIdea?.id] })
-      queryClient.invalidateQueries({ queryKey: ['community_ideas'] })
+      queryClient.invalidateQueries({ queryKey: ['communityideas'] })
     }
   })
 
@@ -225,31 +225,35 @@ export default function CommunityHub() {
       await backend.entities.CommunityIdea.update(idea.id, { status })
       // If changing to "implemented", notify creator and all voters
       if (status === 'implemented') {
-        const votes = await backend.entities.CommunityVote.filter({ idea_id: idea.id })
-        const voterEmails = new Set(votes.map(v => v.user_email))
-        const isCreator = email => email === idea.created_by
+        try {
+          const votes = await backend.entities.CommunityVote.filter({ idea_id: idea.id })
+          const voterEmails = new Set(votes.map(v => v.user_email))
+          const isCreator = email => email === idea.created_by
 
-        // Build unique recipients (excluding the admin performing the action)
-        const allRecipients = new Set([idea.created_by, ...voterEmails])
-        allRecipients.delete(user?.email)
+          // Build unique recipients (excluding the admin performing the action)
+          const allRecipients = new Set([idea.created_by, ...voterEmails])
+          allRecipients.delete(user?.email)
 
-        await Promise.all(
-          [...allRecipients].map(email => {
-            const message = isCreator(email)
-              ? `Your idea "${idea.title}" has been implemented! 🎉`
-              : `An idea you liked — "${idea.title}" — has been implemented! 🎉`
-            return backend.entities.CommunityNotification.create({
-              user_email: email,
-              idea_id: idea.id,
-              idea_title: idea.title,
-              message,
-              read: false
+          await Promise.all(
+            [...allRecipients].map(email => {
+              const message = isCreator(email)
+                ? `Your idea "${idea.title}" has been implemented! 🎉`
+                : `An idea you liked — "${idea.title}" — has been implemented! 🎉`
+              return backend.entities.CommunityNotification.create({
+                user_email: email,
+                idea_id: idea.id,
+                idea_title: idea.title,
+                message,
+                read: false
+              })
             })
-          })
-        )
+          )
+        } catch (e) {
+          console.error('Failed to send implementation notifications:', e)
+        }
       }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['community_ideas'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['communityideas'] })
   })
 
   // Filter + sort

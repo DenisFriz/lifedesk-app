@@ -177,6 +177,12 @@ export default function IdeaDetail({
                 placeholder="Add a comment..."
                 value={comment}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setComment(e.target.value)}
+                onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    e.currentTarget.form?.requestSubmit()
+                  }
+                }}
                 rows={2}
                 className="resize-none text-sm"
               />

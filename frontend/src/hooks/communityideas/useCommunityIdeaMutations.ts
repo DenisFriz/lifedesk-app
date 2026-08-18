@@ -5,6 +5,7 @@ import {
   CreateCommunityIdeaInput
 } from '@/repositories/community-idea.repository'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { backend } from '@/api/backend'
 
 export function useCommunityIdeaMutations() {
   const queryClient = useQueryClient()
@@ -33,7 +34,7 @@ export function useCommunityIdeaMutations() {
     networkMode: 'always',
     mutationFn: id => {
       playSound('delete')
-      return communityIdeaRepository.delete(id)
+      return backend.entities.CommunityIdea.delete(id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['communityideas'] })

@@ -535,10 +535,11 @@ router.delete('/:entity/:id', async (req: Request, res: Response) => {
     const modelKey = entity.toLowerCase();
     const Model = req.model;
 
-    const record = await Model.findOne({
-      _id: id,
-      created_by: userId,
-    }).lean();
+    const isAdminModeratable = PUBLIC_ENTITIES.has(modelKey) && req.user.role === 'admin';
+
+    const record = await Model.findOne(
+      isAdminModeratable ? { _id: id } : { _id: id, created_by: userId }
+    ).lean();
 
     if (!record) {
       return res.status(404).json({
