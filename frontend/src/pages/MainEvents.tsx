@@ -10,6 +10,7 @@ import {
 import { ChevronDown, Clock } from 'lucide-react'
 import { Helmet } from 'react-helmet-async'
 import { useEntityTabs } from '@/hooks/useEntityTabs'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
 
 type FilterType = 'all' | 'important' | 'category' | 'business'
 
@@ -91,6 +92,8 @@ export default function MainEvents() {
       storageKey: 'mainEventsActiveTab'
     })
 
+  const { data: businesses = [] } = useBusinessesQuery()
+
   return (
     <>
       <Helmet>
@@ -143,6 +146,22 @@ export default function MainEvents() {
                     {tab.label}
                   </button>
                 ))}
+                {businesses.map(business => (
+                  <button
+                    key={business.id}
+                    onClick={() => {
+                      setActiveTab(business.id)
+                      localStorage.setItem('mainEventsActiveTab', business.id)
+                    }}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      activeTab === business.id
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'bg-transparent text-[#475569] hover:bg-white/50'
+                    }`}
+                  >
+                    {business.name}
+                  </button>
+                ))}
                 {overflowTabs.length > 0 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -181,6 +200,13 @@ export default function MainEvents() {
               tab =>
                 activeTab === tab.value && (
                   <EventTable key={tab.value} filterType={tab.filterType} category={tab.category} />
+                )
+            )}
+
+            {businesses.map(
+              business =>
+                activeTab === business.id && (
+                  <EventTable key={business.id} filterType="business" businessId={business.id} />
                 )
             )}
           </Tabs>

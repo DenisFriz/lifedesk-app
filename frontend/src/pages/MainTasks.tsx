@@ -10,6 +10,7 @@ import {
 import { ChevronDown, ListTodo } from 'lucide-react'
 import { Helmet } from 'react-helmet-async'
 import { useEntityTabs } from '@/hooks/useEntityTabs'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
 
 type FilterType = 'all' | 'important' | 'category' | 'business'
 
@@ -91,6 +92,8 @@ export default function MainTasks() {
       storageKey: 'mainTasksActiveTab'
     })
 
+  const { data: businesses = [] } = useBusinessesQuery()
+
   return (
     <>
       <Helmet>
@@ -144,6 +147,22 @@ export default function MainTasks() {
                     {tab.label}
                   </button>
                 ))}
+                {businesses.map(business => (
+                  <button
+                    key={business.id}
+                    onClick={() => {
+                      setActiveTab(business.id)
+                      localStorage.setItem('mainTasksActiveTab', business.id)
+                    }}
+                    className={`all-tasks-tab-button px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      activeTab === business.id
+                        ? 'bg-white text-slate-900 shadow-sm all-tasks-tab-active'
+                        : 'bg-transparent text-[#475569] hover:bg-white/50'
+                    }`}
+                  >
+                    {business.name}
+                  </button>
+                ))}
                 {overflowTabs.length > 0 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -190,6 +209,19 @@ export default function MainTasks() {
                     className={`all-tasks-content-${tab.value}`}
                   >
                     <TaskTable filterType={tab.filterType} category={tab.category} />
+                  </TabsContent>
+                )
+            )}
+
+            {businesses.map(
+              business =>
+                activeTab === business.id && (
+                  <TabsContent
+                    key={business.id}
+                    value={business.id}
+                    className={`all-tasks-content-${business.id}`}
+                  >
+                    <TaskTable filterType="business" businessId={business.id} />
                   </TabsContent>
                 )
             )}

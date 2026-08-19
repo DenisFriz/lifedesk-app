@@ -8,23 +8,7 @@ export function useGoalMutations() {
 
   const updateMutation = useMutation<any, any, { id: string; data: Record<string, any> }>({
     networkMode: 'always',
-    mutationFn: ({ id, data }) => goalRepository.update(id, data),
-    onMutate: async ({ id, data }) => {
-      await queryClient.cancelQueries({ queryKey: ['goals'] })
-      const previousGoals = queryClient.getQueryData(['goals'])
-      queryClient.setQueryData(['goals'], (oldGoals: any) => {
-        if (!oldGoals) return oldGoals
-        return oldGoals.map((goal: any) =>
-          goal.id === id || goal.serverId === id ? { ...goal, ...data } : goal
-        )
-      })
-      return { previousGoals }
-    },
-    onError: (err, variables, context: any) => {
-      if (context?.previousGoals) {
-        queryClient.setQueryData(['goals'], context.previousGoals)
-      }
-    }
+    mutationFn: ({ id, data }) => goalRepository.update(id, data)
   })
 
   const createMutation = useMutation<any, any, GoalCreateInput>({
@@ -32,30 +16,9 @@ export function useGoalMutations() {
     mutationFn: async (data: GoalCreateInput) => {
       return goalRepository.create(data)
     },
-    onMutate: async data => {
-      await queryClient.cancelQueries({ queryKey: ['goals'] })
-      const previousGoals = queryClient.getQueryData<any[]>(['goals']) ?? []
-      queryClient.setQueryData(
-        ['goals'],
-        [
-          {
-            ...data,
-            id: `optimistic-${Date.now()}`,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            is_deleted: false
-          },
-          ...previousGoals
-        ]
-      )
-      return { previousGoals }
-    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] })
       queryClient.invalidateQueries({ queryKey: ['usage'] })
-    },
-    onError: (err, variables, context: any) => {
-      if (context?.previousGoals) queryClient.setQueryData(['goals'], context.previousGoals)
     }
   })
 
@@ -64,20 +27,6 @@ export function useGoalMutations() {
     mutationFn: async id => {
       playSound('delete')
       return goalRepository.delete(id)
-    },
-    onMutate: async id => {
-      await queryClient.cancelQueries({ queryKey: ['goals'] })
-      const previousGoals = queryClient.getQueryData(['goals'])
-      queryClient.setQueryData(['goals'], (oldGoals: any) => {
-        if (!oldGoals) return oldGoals
-        return oldGoals.filter((g: any) => g._id !== id && g.id !== id)
-      })
-      return { previousGoals }
-    },
-    onError: (err, id, context: any) => {
-      if (context?.previousGoals) {
-        queryClient.setQueryData(['goals'], context.previousGoals)
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] })
@@ -115,22 +64,8 @@ export function useGoalMutations() {
       }
       await goalRepository.bulkUpdate(ids, data)
     },
-    onMutate: async ({ ids, data }) => {
-      await queryClient.cancelQueries({ queryKey: ['goals'] })
-      const previousGoals = queryClient.getQueryData(['goals'])
-      queryClient.setQueryData(['goals'], (oldGoals: any) => {
-        if (!oldGoals) return oldGoals
-        return oldGoals.map((goal: any) => (ids.includes(goal._id) ? { ...goal, ...data } : goal))
-      })
-      return { previousGoals }
-    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] })
-    },
-    onError: (err, variables, context: any) => {
-      if (context?.previousGoals) {
-        queryClient.setQueryData(['goals'], context.previousGoals)
-      }
     }
   })
 

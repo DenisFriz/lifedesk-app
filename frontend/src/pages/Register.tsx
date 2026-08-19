@@ -1,7 +1,7 @@
 import { useState, useMemo, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '@/api/apiClient'
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, Star } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { Helmet } from 'react-helmet-async'
 import { SEO } from '@/lib/seo'
@@ -133,7 +133,7 @@ export default function Register() {
           <div className="bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl overflow-hidden border-0">
             <div className="h-1 bg-gradient-to-r from-slate-200 via-slate-300 to-slate-200" />
 
-            <div className="p-8 sm:p-10 md:pt-12 md:pb-10 md:px-10">
+            <div className="p-4 sm:p-10 md:pt-12 md:pb-10 md:px-10">
               <button
                 type="button"
                 onClick={() => navigate('/login')}
@@ -357,6 +357,20 @@ export default function Register() {
                 </button>
               </form>
             </div>
+          </div>
+          <div className="mt-6 text-center space-y-1.5">
+            <p className="text-xs sm:text-sm text-slate-400">
+              Free forever · No credit card required
+            </p>
+            <div className="flex items-center justify-center gap-1.5">
+              <div className="flex items-center gap-0.5 text-slate-900">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-slate-900 text-slate-900" />
+                ))}
+              </div>
+              <span className="text-sm font-semibold text-slate-900">4.8/5</span>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-400">Verified customer feedback</p>
           </div>
         </div>
       </div>
