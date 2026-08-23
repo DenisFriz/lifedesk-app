@@ -99,8 +99,16 @@ export default function EventTable({ category, businessId, filterType }: EventTa
   if (filterType === 'important') {
     filteredEvents = allEvents.filter(e => e.important)
   } else if (filterType === 'business') {
+    const tabBusiness = businesses.find(
+      b => String(b.id) === String(businessId) || String(b.serverId) === String(businessId)
+    )
+    const tabIds = new Set(
+      [businessId, tabBusiness?.id, tabBusiness?.serverId].filter(Boolean).map(String)
+    )
     filteredEvents = allEvents.filter(
-      e => e.category === 'business' && e.business_id === businessId
+      e =>
+        (e.business_id != null && tabIds.has(String(e.business_id))) ||
+        [...tabIds].some(id => e.category === `business-${id}`)
     )
   } else if (filterType === 'category') {
     filteredEvents = allEvents.filter(e => e.category === category)
@@ -766,11 +774,15 @@ export default function EventTable({ category, businessId, filterType }: EventTa
                                                 value={table.editValue}
                                                 onValueChange={value => {
                                                   table.setEditValue(value)
-                                                  const updateData = { category: value } as Record<
-                                                    string,
-                                                    any
-                                                  >
-                                                  if (value !== 'business') {
+                                                  const updateData: Record<string, any> = {}
+                                                  if (value.startsWith('business-')) {
+                                                    updateData.category = 'business'
+                                                    updateData.business_id = value.replace(
+                                                      'business-',
+                                                      ''
+                                                    )
+                                                  } else {
+                                                    updateData.category = value
                                                     updateData.business_id = null
                                                   }
                                                   handleUpdateEvent({

@@ -33,7 +33,10 @@ export const eventRepository = {
     const event = {
       ...data,
       id: optimisticId,
+      serverId: null,
       description: '',
+      reminders: data.reminders ?? [],
+      important: data.important ?? false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       is_deleted: false

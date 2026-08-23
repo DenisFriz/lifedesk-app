@@ -134,6 +134,7 @@ export async function processSyncQueue(queryClient?: QueryClient): Promise<void>
               ...existing,
               ...serverFields,
               id: _serverId,
+              serverId: _serverId,
               _optimistic: undefined
             })
 
@@ -163,10 +164,14 @@ export async function processSyncQueue(queryClient?: QueryClient): Promise<void>
             const rawId = id || serverId
             const realId = resolvedIds.get(rawId) ?? (await db.idMap.get(rawId))?.realId ?? rawId
 
-            if (!isOptimisticId(realId)) {
-              await entity.update(realId, data)
-              queryClient.invalidateQueries({ queryKey: [item.entityName] })
+            if (isOptimisticId(realId)) {
+              // Create has not resolved yet — keep pending and retry later
+              await db.syncQueue.update(item.localId!, { status: 'pending' })
+              continue
             }
+
+            await entity.update(realId, data)
+            queryClient.invalidateQueries({ queryKey: [item.entityName] })
           }
 
           // =========================
@@ -177,9 +182,13 @@ export async function processSyncQueue(queryClient?: QueryClient): Promise<void>
 
             const realId = resolvedIds.get(id) ?? (await db.idMap.get(id))?.realId ?? id
 
-            if (!isOptimisticId(realId)) {
-              await entity.delete(realId)
+            if (isOptimisticId(realId)) {
+              // Create has not resolved yet — keep pending and retry later
+              await db.syncQueue.update(item.localId!, { status: 'pending' })
+              continue
             }
+
+            await entity.delete(realId)
 
             const store = (db as any)[item.entityName]
             await store.delete(id).catch(() => {})
@@ -200,6 +209,7 @@ export async function processSyncQueue(queryClient?: QueryClient): Promise<void>
             }
             queryClient?.invalidateQueries({ queryKey: [item.entityName] })
           } else {
+            console.error(`[syncQueue] ${item.operation} failed for ${item.entityName}:`, error)
             await db.syncQueue.update(item.localId!, { status: 'pending' })
           }
         }

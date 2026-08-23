@@ -84,6 +84,7 @@ export function normalizeTask(serverTask: any): TaskRecord {
 export function normalizeEvent(serverEvent: any): EventRecord {
   return {
     id: serverEvent._id,
+    serverId: serverEvent._id,
     created_by: serverEvent.created_by,
     title: serverEvent.title,
     description: serverEvent.description ?? null,

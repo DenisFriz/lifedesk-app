@@ -14,7 +14,9 @@ export function useEventMutations() {
       await queryClient.cancelQueries({ queryKey: ['events'] })
       const previousEvents = queryClient.getQueryData(['events'])
       queryClient.setQueryData(['events'], (old: any) =>
-        old.map((event: any) => (event.id === id ? { ...event, ...data } : event))
+        old?.map((event: any) =>
+          event.id === id || event.serverId === id ? { ...event, ...data } : event
+        )
       )
       return { previousEvents }
     },
@@ -26,7 +28,11 @@ export function useEventMutations() {
         queryClient.invalidateQueries({ queryKey: ['events'] })
       } else {
         queryClient.setQueryData(['events'], (old: any) =>
-          old ? old.map((event: any) => (event.id === id ? updatedEvent : event)) : old
+          old
+            ? old.map((event: any) =>
+                event.id === id || event.serverId === id ? updatedEvent : event
+              )
+            : old
         )
       }
     }
@@ -37,30 +43,9 @@ export function useEventMutations() {
     mutationFn: async (data: EventRecord) => {
       return eventRepository.create(data)
     },
-    onMutate: async data => {
-      await queryClient.cancelQueries({ queryKey: ['events'] })
-      const previousEvents = queryClient.getQueryData<any[]>(['events']) ?? []
-      queryClient.setQueryData(
-        ['events'],
-        [
-          {
-            ...data,
-            id: `optimistic-${Date.now()}`,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            is_deleted: false
-          },
-          ...previousEvents
-        ]
-      )
-      return { previousEvents }
-    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] })
       queryClient.invalidateQueries({ queryKey: ['usage'] })
-    },
-    onError: (err, variables, context: any) => {
-      if (context?.previousEvents) queryClient.setQueryData(['events'], context.previousEvents)
     }
   })
 
