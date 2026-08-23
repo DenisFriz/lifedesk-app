@@ -22,6 +22,7 @@ import { format } from 'date-fns'
 import { PERSONAL_CATEGORIES, BUSINESS_CATEGORIES, INCOME_CATEGORIES } from './categories'
 import { backend } from '@/api/backend'
 import { useQuery } from '@tanstack/react-query'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
 
 interface IncomeFormData {
   title: string
@@ -65,10 +66,7 @@ export default function IncomeForm({
     start_date: format(new Date(), 'yyyy-MM-dd')
   })
 
-  const { data: businesses = [] } = useQuery<any[]>({
-    queryKey: ['businesses'],
-    queryFn: () => backend.entities.Business.list('order')
-  })
+  const { data: businesses = [] } = useBusinessesQuery()
 
   const { data: offlineAccounts = [] } = useQuery<any[]>({
     queryKey: ['offline-accounts'],

@@ -50,17 +50,11 @@ import { useIncomeMutations } from '@/hooks/incomes/useIncomeMutations'
 import { CreateIncomeInput } from '@/repositories/income.repository'
 import { ExpenseRecord, IncomeRecord } from '@/db'
 import { useIncomesQuery } from '@/hooks/incomes/useIncomesQuery'
-import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
+import { useBusinessById } from '@/hooks/businesses/useBusinessById'
 import { useExpensesQuery } from '@/hooks/expenses/useExpensesQuery'
 import { useExpenseMutations } from '@/hooks/expenses/useExpenseMutations'
 import { CreateExpenseInput } from '@/repositories/expense.repository'
 import { useUserLimit } from '@/contexts/UserLimitContext'
-
-type Business = {
-  id: string
-  name: string
-  categories?: string[]
-}
 
 export default function Transactions() {
   const location = useLocation()
@@ -81,19 +75,7 @@ export default function Transactions() {
     return () => observer.disconnect()
   }, [])
 
-  const { data: business } = useQuery<Business | null>({
-    queryKey: ['business', businessId],
-    queryFn: async (): Promise<Business | null> => {
-      if (!businessId) return null
-
-      const res = (await backend.entities.Business.filter({
-        id: businessId
-      })) as Business[]
-
-      return res?.[0] ?? null
-    },
-    enabled: !!businessId
-  })
+  const { business, businesses = [] } = useBusinessById(businessId)
 
   const [showImport, setShowImport] = useState(false)
   const [addToBudgetTransaction, setAddToBudgetTransaction] = useState(null)
@@ -256,8 +238,6 @@ export default function Transactions() {
       setShowExpenseForm(false)
     }
   }
-
-  const { data: businesses = [] } = useBusinessesQuery()
 
   const getDateRange = () => {
     const now = new Date()

@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { backend } from '@/api/backend'
-import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -40,7 +39,7 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import RecurringIncomeForm from '@/components/finances/RecurringIncomeForm'
 import RecurringExpenseForm from '@/components/finances/RecurringExpenseForm'
 import { formatCurrency, formatDateMedium } from '@/components/utils/formatters'
@@ -54,6 +53,7 @@ import { useRecurringExpenseMutations } from '@/hooks/recurringexpenses/useRecur
 import { CreateRecurringExpenseInput } from '@/repositories/recurring-exprense.repository'
 import { RecurringExpenseRecord, RecurringIncomeRecord } from '@/db'
 import { useUserLimit } from '@/contexts/UserLimitContext'
+import { useBusinessById } from '@/hooks/businesses/useBusinessById'
 
 type Frequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly'
 
@@ -69,7 +69,8 @@ const COLORS = [
 ] as const
 
 export default function Budget() {
-  const urlParams = new URLSearchParams(window.location.search)
+  const location = useLocation()
+  const urlParams = new URLSearchParams(location.search)
   const businessId = urlParams.get('businessId')
   const [isScrolled, setIsScrolled] = useState(false)
   const headerRef = useRef<HTMLDivElement>(null)
@@ -86,12 +87,7 @@ export default function Budget() {
     return () => observer.disconnect()
   }, [])
 
-  const { data: business } = useQuery({
-    queryKey: ['business', businessId],
-    queryFn: () =>
-      businessId ? backend.entities.Business.filter({ id: businessId }).then(b => b[0]) : null,
-    enabled: !!businessId
-  })
+  const { business, businesses = [] } = useBusinessById(businessId)
   const [showIncomeForm, setShowIncomeForm] = useState(false)
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [editingItem, setEditingItem] = useState<any>(null)
@@ -136,11 +132,6 @@ export default function Budget() {
     setActiveTab(value)
     localStorage.setItem('budgetActiveTab', value)
   }
-
-  const { data: businesses = [] } = useQuery({
-    queryKey: ['businesses'],
-    queryFn: () => backend.entities.Business.list('order')
-  })
 
   const { data: recurringIncome = [] } = useRecurringIncomesQuery({ businessId })
 

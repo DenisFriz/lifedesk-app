@@ -6,12 +6,7 @@ import { Briefcase, DollarSign, Users, TrendingUp } from 'lucide-react'
 import { Briefcase as BriefcaseIcon } from 'lucide-react'
 import { formatCurrency, formatNumber } from '@/components/utils/formatters'
 import { Helmet } from 'react-helmet-async'
-
-type Business = {
-  id: string
-  name: string
-  description?: string
-}
+import { useBusinessById } from '@/hooks/businesses/useBusinessById'
 
 type Project = {
   id: string
@@ -60,19 +55,7 @@ export default function BusinessOverview() {
     return () => observer.disconnect()
   }, [])
 
-  const { data: business } = useQuery<Business | null>({
-    queryKey: ['business', businessId],
-    queryFn: async (): Promise<Business | null> => {
-      if (!businessId) return null
-
-      const businesses = (await backend.entities.Business.filter({
-        is_deleted: false
-      })) as Business[]
-
-      return businesses.find(b => b.id === businessId) ?? null
-    },
-    enabled: !!businessId
-  })
+  const { business } = useBusinessById(businessId)
 
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ['projects', businessId],

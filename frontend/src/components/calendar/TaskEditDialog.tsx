@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react'
-import { backend } from '@/api/backend'
-import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,6 +15,7 @@ import RecurrenceField from './RecurrenceField'
 import DeleteRecurringDialog from './DeleteRecurringDialog'
 import { useTaskMutations } from '@/hooks/tasks/useTaskMutations'
 import { useGoalsQuery } from '@/hooks/goals/useGoalsQuery'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
 
 type Business = {
   id: string
@@ -26,7 +25,6 @@ type Business = {
 export default function TaskEditDialog({ task, open, onOpenChange }) {
   const [formData, setFormData] = useState(task || {})
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const queryClient = useQueryClient()
 
   useEffect(() => {
     if (task) {
@@ -34,13 +32,7 @@ export default function TaskEditDialog({ task, open, onOpenChange }) {
     }
   }, [task])
 
-  const { data: businesses = [] } = useQuery<Business[]>({
-    queryKey: ['businesses'],
-    queryFn: async () => {
-      const data = (await backend.entities.Business.list('order')) as Business[]
-      return data as Business[]
-    }
-  })
+  const { data: businesses = [] } = useBusinessesQuery()
 
   const { data: goals = [] } = useGoalsQuery()
 
@@ -88,10 +80,11 @@ export default function TaskEditDialog({ task, open, onOpenChange }) {
         excludedDates.push(dateToExclude)
 
         // Only update the excluded_dates field, don't change any other recurrence settings
-        backend.entities.Task.update(task.id, { excluded_dates: excludedDates }).then(() => {
-          queryClient.invalidateQueries({ queryKey: ['tasks'] })
-          onOpenChange(false)
-        })
+        updateMutation
+          .mutateAsync({ id: task.id, data: { excluded_dates: excludedDates } })
+          .then(() => {
+            onOpenChange(false)
+          })
       } else {
         onOpenChange(false)
       }

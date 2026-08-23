@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react'
-import { backend } from '@/api/backend'
-import { useQuery } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +13,7 @@ import {
 import { Trash2 } from 'lucide-react'
 import RecurrenceField from './RecurrenceField'
 import { useGoalMutations } from '@/hooks/goals/useGoalMutations'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
 
 type Business = {
   id: string
@@ -58,13 +57,7 @@ export default function GoalCreateForm({ date, time, open, onOpenChange, initial
     }
   }, [initialData, date, time])
 
-  const { data: businesses = [] } = useQuery<Business[]>({
-    queryKey: ['businesses'],
-    queryFn: async () => {
-      const data = await backend.entities.Business.list('order')
-      return data as Business[]
-    }
-  })
+  const { data: businesses = [] } = useBusinessesQuery()
 
   const { createMutation } = useGoalMutations()
 

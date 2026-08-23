@@ -1,15 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { backend } from '@/api/backend'
-import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
 import { ListTodo } from 'lucide-react'
 import TaskTable from '@/components/sections/TaskTable'
 import { Helmet } from 'react-helmet-async'
-
-type Business = {
-  id: string
-  name: string
-}
+import { useBusinessById } from '@/hooks/businesses/useBusinessById'
 
 export default function BusinessTasks() {
   const location = useLocation()
@@ -30,17 +24,7 @@ export default function BusinessTasks() {
     return () => observer.disconnect()
   }, [])
 
-  const { data: business } = useQuery<Business | null>({
-    queryKey: ['business', businessId],
-    queryFn: async (): Promise<Business | null> => {
-      if (!businessId) return null
-
-      const res = (await backend.entities.Business.filter({ id: businessId })) as Business[]
-
-      return res[0] ?? null
-    },
-    enabled: !!businessId
-  })
+  const { business } = useBusinessById(businessId)
 
   return (
     <>

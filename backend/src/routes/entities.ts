@@ -176,10 +176,21 @@ router.post('/:entity/filter', async (req: Request, res: Response) => {
     const entity = Array.isArray(entityParam) ? entityParam[0] : entityParam;
     const modelKey = entity.toLowerCase();
 
-    const conditions = {
+    const conditions: Record<string, any> = {
       ...sanitizeInput(req.body),
       ...(PUBLIC_ENTITIES.has(modelKey) ? {} : { created_by: req.user!._id }),
     };
+
+    // sanitizeInput strips `id` / `_id` (create/update safety). For filter,
+    // map client `id` onto Mongo `_id` so lookups by id work.
+    const rawId = req.body?.id;
+    if (rawId != null && rawId !== '') {
+      const idStr = String(rawId);
+      if (!Types.ObjectId.isValid(idStr)) {
+        return res.json([]);
+      }
+      conditions._id = idStr;
+    }
 
     const records = await Model.find(conditions).lean();
     const enriched =

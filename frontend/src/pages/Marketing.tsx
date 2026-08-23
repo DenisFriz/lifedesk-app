@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { backend } from '@/api/backend'
-import { useQuery } from '@tanstack/react-query'
 import { Megaphone, Target, BarChart2, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import StrategyList from '@/components/marketing/StrategyList'
 import CampaignList from '@/components/marketing/CampaignList'
 import ContentViews from '@/components/marketing/ContentViews'
 import { Helmet } from 'react-helmet-async'
+import { useBusinessById } from '@/hooks/businesses/useBusinessById'
 
 const TABS = [
   { id: 'strategy', label: 'Strategy', icon: Target, desc: 'High-level marketing direction' },
@@ -20,28 +19,13 @@ const TABS = [
   }
 ] as const
 
-type Business = {
-  id: string
-  name: string
-}
-
 export default function Marketing() {
   const location = useLocation()
   const urlParams = new URLSearchParams(location.search)
   const businessId = urlParams.get('businessId')
   const [activeTab, setActiveTab] = useState('strategy')
 
-  const { data: business } = useQuery<Business | null>({
-    queryKey: ['business', businessId],
-    queryFn: async (): Promise<Business | null> => {
-      if (!businessId) return null
-
-      const res = await backend.entities.Business.filter({ id: businessId })
-
-      return (res?.[0] as Business) ?? null
-    },
-    enabled: !!businessId
-  })
+  const { business } = useBusinessById(businessId)
 
   const activeTabInfo = TABS.find(t => t.id === activeTab)
 

@@ -27,6 +27,7 @@ import { formatCurrency } from '@/components/utils/formatters'
 import { subMonths, subYears, startOfDay, endOfDay } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { Helmet } from 'react-helmet-async'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
 
 const COLORS = [
   '#6366f1',
@@ -79,11 +80,6 @@ type Expense = {
   title?: string
 }
 
-type Business = {
-  id: string | number
-  name: string
-}
-
 export default function Analytics() {
   const [period, setPeriod] = useState('this_month')
   const [drillCategory, setDrillCategory] = useState(null)
@@ -98,10 +94,7 @@ export default function Analytics() {
     queryFn: () => backend.entities.Expense.list('-date') as Promise<Expense[]>
   })
 
-  const { data: businesses = [] } = useQuery<Business[]>({
-    queryKey: ['businesses'],
-    queryFn: () => backend.entities.Business.list('order') as Promise<Business[]>
-  })
+  const { data: businesses = [] } = useBusinessesQuery()
 
   const { start, end } = useDateRange(period)
 

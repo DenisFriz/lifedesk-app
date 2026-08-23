@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react'
-import { backend } from '@/api/backend'
-import { useQuery } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +13,7 @@ import {
 import { Trash2 } from 'lucide-react'
 import RecurrenceField from './RecurrenceField'
 import { useEventMutations } from '@/hooks/events/useEventMutations'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
 
 type Business = {
   id: string
@@ -60,10 +59,7 @@ export default function EventCreateForm({ date, time, open, onOpenChange, initia
     }
   }, [initialData, date, time])
 
-  const { data: businesses = [] } = useQuery<Business[]>({
-    queryKey: ['businesses'],
-    queryFn: () => backend.entities.Business.list('order') as Promise<Business[]>
-  })
+  const { data: businesses = [] } = useBusinessesQuery()
 
   const { createMutation } = useEventMutations()
 

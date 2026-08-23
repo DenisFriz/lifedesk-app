@@ -25,8 +25,7 @@ import {
   BUSINESS_EXPENSE_CATEGORIES,
   EXPENSE_CATEGORIES
 } from './categories'
-import { backend } from '@/api/backend'
-import { useQuery } from '@tanstack/react-query'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
 
 export default function RecurringExpenseForm({
   open,
@@ -41,10 +40,7 @@ export default function RecurringExpenseForm({
   expense?: any
   isLoading?: boolean
 }) {
-  const { data: businesses = [] } = useQuery({
-    queryKey: ['businesses'],
-    queryFn: () => backend.entities.Business.list('order')
-  })
+  const { data: businesses = [] } = useBusinessesQuery()
   const [formData, setFormData] = useState({
     title: '',
     amount: '',

@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react'
-import { backend } from '@/api/backend'
-import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,6 +14,7 @@ import { Trash2, Star } from 'lucide-react'
 import RecurrenceField from './RecurrenceField'
 import DeleteRecurringDialog from './DeleteRecurringDialog'
 import { useEventMutations } from '@/hooks/events/useEventMutations'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
 
 type Business = {
   id: string
@@ -25,7 +24,6 @@ type Business = {
 export default function EventEditDialog({ event, open, onOpenChange }) {
   const [formData, setFormData] = useState(event || {})
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const queryClient = useQueryClient()
 
   useEffect(() => {
     if (event) {
@@ -33,10 +31,7 @@ export default function EventEditDialog({ event, open, onOpenChange }) {
     }
   }, [event])
 
-  const { data: businesses = [] } = useQuery<Business[]>({
-    queryKey: ['businesses'],
-    queryFn: () => backend.entities.Business.list('order') as Promise<Business[]>
-  })
+  const { data: businesses = [] } = useBusinessesQuery()
 
   const { updateMutation, deleteMutation } = useEventMutations()
 
@@ -82,10 +77,11 @@ export default function EventEditDialog({ event, open, onOpenChange }) {
         excludedDates.push(dateToExclude)
 
         // Only update the excluded_dates field, don't change any other recurrence settings
-        backend.entities.Event.update(event.id, { excluded_dates: excludedDates }).then(() => {
-          queryClient.invalidateQueries({ queryKey: ['events'] })
-          onOpenChange(false)
-        })
+        updateMutation
+          .mutateAsync({ id: event.id, data: { excluded_dates: excludedDates } })
+          .then(() => {
+            onOpenChange(false)
+          })
       } else {
         onOpenChange(false)
       }

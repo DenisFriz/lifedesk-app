@@ -1,15 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { backend } from '@/api/backend'
-import { useQuery } from '@tanstack/react-query'
 import { Handshake } from 'lucide-react'
 import ClientTable from '@/components/sections/ClientTable'
 import { Helmet } from 'react-helmet-async'
-
-type Business = {
-  id: string
-  name: string
-}
+import { useBusinessById } from '@/hooks/businesses/useBusinessById'
 
 export default function Clients() {
   const location = useLocation()
@@ -30,16 +24,7 @@ export default function Clients() {
     return () => observer.disconnect()
   }, [])
 
-  const { data: business } = useQuery<Business | null>({
-    queryKey: ['business', businessId],
-    queryFn: () =>
-      businessId
-        ? (backend.entities.Business.filter({ id: businessId }).then(
-            b => b[0]
-          ) as Promise<Business | null>)
-        : null,
-    enabled: !!businessId
-  })
+  const { business } = useBusinessById(businessId)
 
   return (
     <>

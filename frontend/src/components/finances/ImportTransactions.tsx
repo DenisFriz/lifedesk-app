@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { backend } from '@/api/backend'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
@@ -15,6 +15,7 @@ import { Upload, FileText, CheckCircle, AlertCircle, Briefcase, Lock } from 'luc
 import { categorizeTransaction, saveTransactionRule } from './transactionCategorizer'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/lib/AuthContext'
+import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
 
 export default function ImportTransactions({
   open,
@@ -37,10 +38,7 @@ export default function ImportTransactions({
   const [saveRules, setSaveRules] = useState(true)
   const queryClient = useQueryClient()
 
-  const { data: businesses = [] } = useQuery({
-    queryKey: ['businesses'],
-    queryFn: () => backend.entities.Business.list('order')
-  })
+  const { data: businesses = [] } = useBusinessesQuery()
 
   const handleFileChange = e => {
     setFile(e.target.files[0])

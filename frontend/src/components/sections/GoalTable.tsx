@@ -6,7 +6,6 @@ import UsageLimitGate from '@/components/subscription/UsageLimitGate'
 import UpgradeLimitModal from '@/components/subscription/UpgradeLimitModal'
 import { useTaskMutations } from '@/hooks/tasks/useTaskMutations'
 import { taskRepository } from '@/repositories/task.repository'
-import { goalRepository } from '@/repositories/goal.repository'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -206,7 +205,9 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
     filteredGoals = allGoals.filter(g => g.important)
   } else if (filterType === 'business') {
     filteredGoals = allGoals.filter(
-      g => g.business_id != null && String(g.business_id) === String(businessId)
+      g =>
+        (g.business_id != null && String(g.business_id) === String(businessId)) ||
+        g.category === `business-${businessId}`
     )
   } else if (filterType === 'category') {
     filteredGoals = allGoals.filter(g => g.category === category)
@@ -1030,11 +1031,15 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                                 value={table.editValue}
                                                 onValueChange={value => {
                                                   table.setEditValue(value)
-                                                  const updateData = { category: value } as Record<
-                                                    string,
-                                                    any
-                                                  >
-                                                  if (value !== 'business') {
+                                                  const updateData: Record<string, any> = {}
+                                                  if (value.startsWith('business-')) {
+                                                    updateData.category = 'business'
+                                                    updateData.business_id = value.replace(
+                                                      'business-',
+                                                      ''
+                                                    )
+                                                  } else {
+                                                    updateData.category = value
                                                     updateData.business_id = null
                                                   }
                                                   handleUpdateGoal({
