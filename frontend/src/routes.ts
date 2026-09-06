@@ -90,6 +90,7 @@ interface AppRoute {
   path: string
   name: string
   element: ComponentType
+  requiresHealthConsent?: boolean
 }
 
 export const appRoutes: AppRoute[] = [
@@ -103,14 +104,19 @@ export const appRoutes: AppRoute[] = [
   { path: '/assets-other', name: 'AssetsOther', element: AssetsOther },
   { path: '/assets-tasks', name: 'AssetsTasks', element: AssetsTasks },
 
-  { path: '/body-goals', name: 'BodyGoals', element: BodyGoals },
+  { path: '/body-goals', name: 'BodyGoals', element: BodyGoals, requiresHealthConsent: true },
   {
     path: '/body-measurements',
     name: 'BodyMeasurements',
     element: BodyMeasurements
   },
-  { path: '/body-problems', name: 'BodyProblems', element: BodyProblems },
-  { path: '/body-tasks', name: 'BodyTasks', element: BodyTasks },
+  {
+    path: '/body-problems',
+    name: 'BodyProblems',
+    element: BodyProblems,
+    requiresHealthConsent: true
+  },
+  { path: '/body-tasks', name: 'BodyTasks', element: BodyTasks, requiresHealthConsent: true },
 
   { path: '/budget', name: 'Budget', element: Budget },
   { path: '/business-budget', name: 'BusinessBudget', element: Budget },
@@ -139,11 +145,12 @@ export const appRoutes: AppRoute[] = [
   { path: '/fitness-goals', name: 'FitnessGoals', element: FitnessGoals },
   { path: '/fitness-tasks', name: 'FitnessTasks', element: FitnessTasks },
 
-  { path: '/health-body', name: 'HealthBody', element: HealthBody },
+  { path: '/health-body', name: 'HealthBody', element: HealthBody, requiresHealthConsent: true },
   {
     path: '/health-documents',
     name: 'HealthDocuments',
-    element: HealthDocuments
+    element: HealthDocuments,
+    requiresHealthConsent: true
   },
   { path: '/health-mind', name: 'HealthMind', element: HealthMind },
 

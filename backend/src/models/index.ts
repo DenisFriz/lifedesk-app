@@ -34,6 +34,7 @@ export { RelationShip } from './RelationShip.js';
 export { CommunityVote } from './CommunityVote.js';
 export { CalculationHistory } from './CalculationHistory.js';
 export { PushSubscription } from './PushSubscription.js';
+export { HealthConsentEvent } from './HealthConsentEvent.js';
 
 import mongoose from 'mongoose';
 import { User } from './User.js';

@@ -16,6 +16,7 @@ import VerifyEmail from './pages/VerifyEmail'
 import ConfirmEmailChange from './pages/ConfirmEmailChange'
 import { ReactNode, useEffect, useRef } from 'react'
 import { UserLimitProvider } from './contexts/UserLimitContext'
+import HealthConsentGate from '@/components/health/HealthConsentGate'
 
 function AuthSyncBridge() {
   const { isAuthenticated, isLoadingAuth } = useAuth()
@@ -128,8 +129,20 @@ function App() {
                   <Route path="/" element={<Home />} />
 
                   {/* OTHER APP ROUTES */}
-                  {appRoutes.map(({ path, element: Page }) => (
-                    <Route key={path} path={path} element={<Page />} />
+                  {appRoutes.map(({ path, element: Page, requiresHealthConsent }) => (
+                    <Route
+                      key={path}
+                      path={path}
+                      element={
+                        requiresHealthConsent ? (
+                          <HealthConsentGate>
+                            <Page />
+                          </HealthConsentGate>
+                        ) : (
+                          <Page />
+                        )
+                      }
+                    />
                   ))}
                 </Route>
               </Route>

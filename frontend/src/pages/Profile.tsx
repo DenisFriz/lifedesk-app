@@ -754,7 +754,7 @@ export default function Profile() {
                 ))}
               </div>
 
-              {/* <div className="border-t border-slate-100 pt-5 mt-5">
+              <div className="border-t border-slate-100 pt-5 mt-5">
                 <h3 className="text-sm font-semibold text-slate-900 mb-3">Health Data Consent</h3>
                 <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
                   <div className="flex items-center gap-3">
@@ -833,7 +833,7 @@ export default function Profile() {
                     </p>
                   </div>
                 )}
-              </div> */}
+              </div>
 
               {/* Delete Account subsection */}
               <div className="border-t border-slate-100 pt-5 mt-5">

@@ -473,11 +473,19 @@ function MedicalDocumentUploadDialog({ open, onOpenChange }) {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
           <p className="font-medium mb-1">Data Privacy Notice</p>
           <p>
-            Medical documents contain sensitive personal information. You remain responsible for
-            ensuring compliance with applicable privacy laws. While we employ standard security
-            measures, we cannot guarantee 100% protection. Data may be stored on servers located in
-            the United States and could be subject to applicable regulations.
+            Medical documents may contain sensitive health information. Upload only documents
+            relating to you or documents that you are authorized to store. <br />
+            The document will be processed to store and display it in your private LifeDesk Health
+            area. You can delete it at any time.
           </p>
+          <a
+            href="https://lifedesk.me/health-data-privacy-policy/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-2 font-semibold text-blue-800 underline underline-offset-2 hover:text-blue-900 hover:no-underline transition-colors"
+          >
+            How LifeDesk protects your health data
+          </a>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

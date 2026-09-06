@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { backend } from '@/api/backend'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, Loader2, X } from 'lucide-react'
+import { purgeLocalHealthData } from '@/db/purgeHealthData'
 
 interface WithdrawHealthConsentDialogProps {
   isOpen: boolean
@@ -15,7 +17,8 @@ export default function WithdrawHealthConsentDialog({
   onSuccess
 }: WithdrawHealthConsentDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string>('')
+  const [error, setError] = useState('')
+  const queryClient = useQueryClient()
 
   const handleWithdraw = async () => {
     setIsLoading(true)
@@ -23,6 +26,8 @@ export default function WithdrawHealthConsentDialog({
 
     try {
       await backend.user.withdrawHealthConsent()
+      await purgeLocalHealthData()
+      queryClient.invalidateQueries()
       onSuccess()
     } catch (err) {
       console.error('Withdrawal error:', err)

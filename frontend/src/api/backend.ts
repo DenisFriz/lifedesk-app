@@ -146,11 +146,7 @@ export const backend = {
         healthConsentDate: string
         healthConsentVersion: string
       }>('POST', '/user/health-consent/enable'),
-    withdrawHealthConsent: () =>
-      apiFetch<{ success: true; healthConsentGiven: false }>(
-        'POST',
-        '/user/health-consent/withdraw'
-      )
+    withdrawHealthConsent: () => apiFetch<void>('POST', '/user/health-consent/withdraw')
   },
   email: {
     sendEmailVerificationCode: () =>

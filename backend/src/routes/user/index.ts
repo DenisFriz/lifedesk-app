@@ -27,6 +27,7 @@ import { authenticator } from 'otplib';
 import QRCode from 'qrcode';
 import { HEALTH_CONSENT_VERSION } from '@/config/healthConsent.js';
 import { deleteAllHealthData } from '@/utils/deleteHealthData.js';
+import { recordConsentEvent, getConsentStatus } from '@/utils/consentEvents.js';
 import {
   enqueueEmailChangeConfirmationEmail,
   enqueueEmailChangeNoticeToOldAddressEmail,
@@ -46,7 +47,9 @@ router.get(
   requireAuth,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const userResponse = sanitizeUser(req.user);
-    const passwordDoc = await User.findById(req.user._id).select('passwordHash').lean();
+    const passwordDoc = await User.findById(req.user._id)
+      .select('passwordHash')
+      .lean();
     const hasPassword = !!passwordDoc?.passwordHash;
 
     res.json({
@@ -479,7 +482,10 @@ router.post(
       throw new AppError('Run 2FA setup first', 400);
     }
 
-    const isValid = authenticator.verify({ token, secret: user.twoFactorSecret });
+    const isValid = authenticator.verify({
+      token,
+      secret: user.twoFactorSecret,
+    });
 
     if (!isValid) {
       throw new AppError('Invalid verification code', 401);
@@ -507,6 +513,8 @@ router.post(
     user.healthConsentDate = new Date();
     user.healthConsentVersion = HEALTH_CONSENT_VERSION;
     await user.save();
+
+    await recordConsentEvent(req.user._id, 'granted', req);
 
     res.json({
       success: true,
@@ -547,9 +555,45 @@ router.post(
       },
     );
 
+    await recordConsentEvent(req.user._id, 'withdrawn', req);
+
+    res.sendStatus(200);
+  }),
+);
+
+// HEALTH CONSENT HISTORY
+router.get(
+  '/health-consent/history',
+  requireAuth,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { HealthConsentEvent } = await import('@/models/index.js');
+
+    const events = await HealthConsentEvent.find({ user_id: req.user._id })
+      .sort({ occurred_at: -1 })
+      .limit(10)
+      .lean();
+
+    const status = await getConsentStatus(req.user._id);
+
+    const formattedEvents = events.map((event) => ({
+      consent_event_id: event._id.toString(),
+      user_id: event.user_id.toString(),
+      consent_type: event.consent_type,
+      consent_scope: event.consent_scope,
+      event_type: event.event_type,
+      occurred_at: event.occurred_at,
+      consent_text_version: event.consent_text_version,
+      consent_text_hash: event.consent_text_hash,
+      privacy_policy_version: event.privacy_policy_version,
+      consumer_health_policy_version: event.consumer_health_policy_version,
+      language: event.language,
+      consent_source: event.consent_source,
+      created_at: event.created_at,
+    }));
+
     res.json({
-      success: true,
-      healthConsentGiven: false,
+      status,
+      events: formattedEvents,
     });
   }),
 );
@@ -751,7 +795,9 @@ router.post(
       crypto.randomBytes(5).toString('hex'),
     );
 
-    const hashedCodes = await Promise.all(codes.map((code) => hashPassword(code)));
+    const hashedCodes = await Promise.all(
+      codes.map((code) => hashPassword(code)),
+    );
 
     user.twoFactorRecoveryCodes = hashedCodes;
     await user.save();
@@ -766,7 +812,10 @@ router.post(
   requireAuth,
   validate(changePasswordSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const { currentPassword, newPassword }: { currentPassword?: string; newPassword: string } = req.body;
+    const {
+      currentPassword,
+      newPassword,
+    }: { currentPassword?: string; newPassword: string } = req.body;
 
     const user = await User.findById(req.user._id).select('+passwordHash');
 
@@ -781,24 +830,27 @@ router.post(
         throw new AppError('Current password is required', 400);
       }
 
-      const valid = await comparePassword(currentPassword, user.passwordHash || '');
+      const valid = await comparePassword(
+        currentPassword,
+        user.passwordHash || '',
+      );
 
       if (!valid) {
         throw new AppError('Invalid password', 401);
       }
 
       if (currentPassword === newPassword) {
-        throw new AppError('New password must be different from current password', 400);
+        throw new AppError(
+          'New password must be different from current password',
+          400,
+        );
       }
     }
 
     user.passwordHash = await hashPassword(newPassword);
     await user.save();
 
-    await enqueuePasswordChangedEmail(
-      user.email,
-      user.full_name || 'there',
-    );
+    await enqueuePasswordChangedEmail(user.email, user.full_name || 'there');
 
     res.json({ success: true });
   }),
