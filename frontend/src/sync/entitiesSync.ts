@@ -25,7 +25,8 @@ export const ENTITIES = [
   'MarketingStrategy',
   'MarketingCampaign',
   'MarketingContent',
-  'OfflineAccount'
+  'OfflineAccount',
+  'Note'
 ] as const
 
 const entityMap: Record<(typeof ENTITIES)[number], string> = {
@@ -52,7 +53,8 @@ const entityMap: Record<(typeof ENTITIES)[number], string> = {
   MarketingStrategy: 'marketingstrategies',
   MarketingCampaign: 'marketingcampaigns',
   MarketingContent: 'marketingcontents',
-  OfflineAccount: 'offlineaccounts'
+  OfflineAccount: 'offlineaccounts',
+  Note: 'notes'
 }
 
 export async function pullEntitiesFromServer() {

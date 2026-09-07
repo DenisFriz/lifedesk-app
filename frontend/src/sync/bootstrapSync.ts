@@ -28,7 +28,8 @@ const entityMap = {
   MarketingStrategy: 'marketingstrategies',
   MarketingCampaign: 'marketingcampaigns',
   MarketingContent: 'marketingcontents',
-  OfflineAccount: 'offlineaccounts'
+  OfflineAccount: 'offlineaccounts',
+  Note: 'notes'
 } as const
 
 export async function bootstrapSync(queryClient?: QueryClient): Promise<void> {
