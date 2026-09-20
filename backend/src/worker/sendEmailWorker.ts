@@ -12,7 +12,7 @@ export async function processSendEmailJob(
   const recipients = Array.isArray(to) ? to : [to];
   const sendSmtpEmail = new brevo.SendSmtpEmail();
   sendSmtpEmail.sender = {
-    email: from ?? process.env.BREVO_SENDER_EMAIL ?? 'noreply@lifedesk.app',
+    email: from ?? process.env.BREVO_SENDER_EMAIL ?? 'noreply@lifedesk.me',
   };
   sendSmtpEmail.to = recipients.map((email) => ({ email }));
 
@@ -33,8 +33,11 @@ export async function processSendEmailJob(
   try {
     await apiInstance.sendTransacEmail(sendSmtpEmail);
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : String(error);
+    if (error && typeof error === 'object' && 'statusCode' in error) {
+      const httpErr = error as { statusCode?: number; body?: unknown; message: string };
+      throw new Error(`Brevo send failed: HTTP ${httpErr.statusCode} - ${JSON.stringify(httpErr.body)}`);
+    }
+    const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(`Brevo send failed: ${errorMessage}`);
   }
 }

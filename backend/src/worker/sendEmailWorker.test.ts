@@ -137,7 +137,7 @@ describe('sendEmailWorker', () => {
 
       const callArgs = mockApiInstance.sendTransacEmail.mock.calls[0]?.[0];
       expect(callArgs?.sender.email).toBe(
-        process.env.BREVO_SENDER_EMAIL ?? 'noreply@lifedesk.app',
+        process.env.BREVO_SENDER_EMAIL ?? 'noreply@lifedesk.me',
       );
     });
 

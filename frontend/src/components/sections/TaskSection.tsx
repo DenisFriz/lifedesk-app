@@ -18,6 +18,7 @@ import { useTasksQuery } from '@/hooks/tasks/useTasksQuery'
 import { useTaskMutations } from '@/hooks/tasks/useTaskMutations'
 import { useGoalsQuery } from '@/hooks/goals/useGoalsQuery'
 import { useProblemsQuery } from '@/hooks/problems/useProblemsQuery'
+import { stripHtml } from '@/components/utils/formatters'
 
 const priorityColors = {
   high: 'bg-rose-50 text-rose-700 border-rose-200',
@@ -155,7 +156,7 @@ export default function TaskSection({ category, initialTaskData }: TaskSectionPr
                       {task.title}
                     </h3>
                     {task.description && (
-                      <p className="text-sm text-slate-600 mb-2">{task.description}</p>
+                      <p className="text-sm text-slate-600 mb-2">{stripHtml(task.description)}</p>
                     )}
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge

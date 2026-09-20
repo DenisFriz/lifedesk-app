@@ -48,10 +48,11 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import confetti from 'canvas-confetti'
-import { formatDateMedium } from '@/components/utils/formatters'
+import { formatDateMedium, stripHtml } from '@/components/utils/formatters'
 import GoalTaskRow from './GoalTaskRow'
 import { TablePagination } from '../TablePagination'
 import { CategorySelectDialog } from '../CategorySelectDialog'
+import GoalDescriptionModal from './GoalDescriptionModal'
 import { useSound } from '@/contexts/SoundContext'
 import { useUserLimit } from '@/contexts/UserLimitContext'
 import { useGoalMutations } from '@/hooks/goals/useGoalMutations'
@@ -165,6 +166,7 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
   const [expandedRelatedTasks, setExpandedRelatedTasks] = useState({})
   const [hoveredTargetDate, setHoveredTargetDate] = useState(null)
   const [taskPages, setTaskPages] = useState<Record<string, number>>({})
+  const [descriptionGoal, setDescriptionGoal] = useState<GoalRecord | null>(null)
 
   const { playSound } = useSound()
 
@@ -394,7 +396,6 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
       const knownSuffixes = [
         '-target_date-time',
         '-target_date',
-        '-description',
         '-category',
         '-due_date',
         '-title'
@@ -656,6 +657,9 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
 
   const getGoalId = (goal: GoalRecord): string => String(goal.serverId || goal.id || '')
 
+  const getDescriptionPreview = (description?: string | null): string =>
+    stripHtml(description).slice(0, 50)
+
   const tabs = [
     { value: 'active', label: 'Active' },
     { value: 'archived', label: 'Archived' }
@@ -672,6 +676,12 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
         onSelect={handleCategorySelect}
         title="Choose a category"
         description="Please choose a category for the new goal."
+      />
+
+      <GoalDescriptionModal
+        goal={descriptionGoal}
+        open={!!descriptionGoal}
+        onOpenChange={open => !open && setDescriptionGoal(null)}
       />
 
       <div className="goal-table-container bg-white rounded-xl overflow-hidden mb-8">
@@ -989,35 +999,16 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
                                             table.compactView ? 'py-1' : 'py-3'
                                           )}
                                         >
-                                          <Textarea
-                                            id={`goal-description-${goalId}`}
-                                            value={
-                                              table.editingField === `${goalId}-description`
-                                                ? table.editValue
-                                                : goal.description || ''
-                                            }
-                                            onChange={e => {
-                                              table.setEditValue(e.target.value)
-                                              table.setEditingField(`${goalId}-description`)
-                                            }}
-                                            onBlur={() => {
-                                              if (table.editingField === `${goalId}-description`) {
-                                                handleBlur(goalId, 'description')
-                                              }
-                                            }}
-                                            onFocus={() =>
-                                              startEdit(goalId, 'description', goal.description)
-                                            }
-                                            onKeyDown={e => handleKeyDown(e, goalId, 'description')}
-                                            placeholder="Add description..."
-                                            maxLength={5000}
+                                          <div
+                                            onClick={() => setDescriptionGoal(goal)}
                                             className={cn(
-                                              'w-full resize-none border-0 shadow-none px-2 py-1 text-sm text-slate-600 focus-visible:ring-1 focus-visible:ring-indigo-500 bg-transparent hover:bg-slate-100 focus:bg-white',
-                                              table.compactView
-                                                ? 'h-8 min-h-0 line-clamp-1 overflow-hidden'
-                                                : 'min-h-[60px]'
+                                              'cursor-pointer text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded',
+                                              table.compactView ? 'line-clamp-1' : ''
                                             )}
-                                          />
+                                          >
+                                            {getDescriptionPreview(goal.description) ||
+                                              'Add description...'}
+                                          </div>
                                         </td>
                                         {(filterType === 'all' || filterType === 'important') && (
                                           <td
@@ -1900,28 +1891,13 @@ export default function GoalTable({ category, businessId, filterType }: GoalTabl
 
                                     {expandedGoals[goalId] && (
                                       <>
-                                        <Textarea
-                                          value={
-                                            table.editingField === `${goalId}-description`
-                                              ? table.editValue
-                                              : goal.description || ''
-                                          }
-                                          onChange={e => {
-                                            table.setEditValue(e.target.value)
-                                            table.setEditingField(`${goalId}-description`)
-                                          }}
-                                          onBlur={() => {
-                                            if (table.editingField === `${goalId}-description`) {
-                                              handleBlur(goalId, 'description')
-                                            }
-                                          }}
-                                          onFocus={() =>
-                                            startEdit(goalId, 'description', goal.description)
-                                          }
-                                          placeholder="Add description..."
-                                          maxLength={5000}
-                                          className="goal-card-description border-0 shadow-none px-0 py-0 min-h-[60px] resize-none text-sm text-slate-600 focus-visible:ring-0 bg-transparent"
-                                        />
+                                        <div
+                                          onClick={() => setDescriptionGoal(goal)}
+                                          className="goal-card-description cursor-pointer px-0 py-0 text-sm text-slate-600 hover:bg-slate-100 rounded p-2"
+                                        >
+                                          {getDescriptionPreview(goal.description) ||
+                                            'Add description...'}
+                                        </div>
 
                                         <div className="goal-card-meta grid grid-cols-2 gap-2 text-sm">
                                           {(filterType === 'all' || filterType === 'important') && (

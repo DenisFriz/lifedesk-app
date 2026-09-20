@@ -6,7 +6,6 @@ import UsageLimitGate from '@/components/subscription/UsageLimitGate'
 import UpgradeLimitModal from '@/components/subscription/UpgradeLimitModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
@@ -45,9 +44,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { formatDateMedium } from '@/components/utils/formatters'
+import { formatDateMedium, stripHtml } from '@/components/utils/formatters'
 import { TablePagination } from '../TablePagination'
 import { CategorySelectDialog } from '../CategorySelectDialog'
+import TaskDescriptionModal from './TaskDescriptionModal'
 import { useSound } from '@/contexts/SoundContext'
 import { useUserLimit } from '@/contexts/UserLimitContext'
 import { useTaskMutations } from '@/hooks/tasks/useTaskMutations'
@@ -91,6 +91,7 @@ export default function TaskTable({
   const [selectOpen, setSelectOpen] = useState<boolean>(false)
   const [selectedTasks, setSelectedTasks] = useState<string[]>([])
   const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({})
+  const [descriptionTask, setDescriptionTask] = useState<TaskRecord | null>(null)
 
   const [hoveredDueDate, setHoveredDueDate] = useState<string | null>(null)
   const queryClient = useQueryClient()
@@ -407,6 +408,9 @@ export default function TaskTable({
 
   const getTaskId = (task: TaskRecord): string => String(task.serverId || task.id || '')
 
+  const getDescriptionPreview = (description?: string | null): string =>
+    stripHtml(description).slice(0, 50)
+
   return (
     <>
       <UpgradeLimitModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} />
@@ -418,6 +422,12 @@ export default function TaskTable({
         onSelect={handleCategorySelect}
         title="Choose a category"
         description="Please choose a category for the new task."
+      />
+
+      <TaskDescriptionModal
+        task={descriptionTask}
+        open={!!descriptionTask}
+        onOpenChange={open => !open && setDescriptionTask(null)}
       />
 
       <div className="bg-white rounded-xl overflow-hidden mb-8">
@@ -733,26 +743,16 @@ export default function TaskTable({
                                           table.compactView ? 'py-1' : 'py-3'
                                         )}
                                       >
-                                        <Textarea
-                                          id={`task-description-${taskId}`}
-                                          value={getTaskValue(
-                                            taskId,
-                                            'description',
-                                            task.description
-                                          )}
-                                          onChange={e =>
-                                            handleTaskChange(taskId, 'description', e.target.value)
-                                          }
-                                          onBlur={() => handleTaskBlur(task, 'description')}
-                                          placeholder="Add description..."
-                                          maxLength={5000}
+                                        <div
+                                          onClick={() => setDescriptionTask(task)}
                                           className={cn(
-                                            'border-0 shadow-none px-2 py-1 resize-none text-sm text-slate-600 focus-visible:ring-1 focus-visible:ring-indigo-500 bg-transparent hover:bg-slate-100 focus:bg-white',
-                                            table.compactView
-                                              ? 'h-8 min-h-0 line-clamp-1 overflow-hidden'
-                                              : 'min-h-[60px]'
+                                            'cursor-pointer text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded',
+                                            table.compactView ? 'line-clamp-1' : ''
                                           )}
-                                        />
+                                        >
+                                          {getDescriptionPreview(task.description) ||
+                                            'Add description...'}
+                                        </div>
                                       </td>
                                       {(filterType === 'all' || filterType === 'important') && (
                                         <td
@@ -1350,20 +1350,13 @@ export default function TaskTable({
 
                                     {expandedTasks[taskId] && (
                                       <>
-                                        <Textarea
-                                          value={getTaskValue(
-                                            taskId,
-                                            'description',
-                                            task.description
-                                          )}
-                                          onChange={e =>
-                                            handleTaskChange(taskId, 'description', e.target.value)
-                                          }
-                                          onBlur={() => handleTaskBlur(task, 'description')}
-                                          placeholder="Add description..."
-                                          maxLength={5000}
-                                          className="task-card-description border-0 shadow-none px-0 py-0 min-h-[60px] resize-none text-sm text-slate-600 focus-visible:ring-0 bg-transparent"
-                                        />
+                                        <div
+                                          onClick={() => setDescriptionTask(task)}
+                                          className="task-card-description cursor-pointer px-0 py-0 text-sm text-slate-600 hover:bg-slate-100 rounded p-2"
+                                        >
+                                          {getDescriptionPreview(task.description) ||
+                                            'Add description...'}
+                                        </div>
 
                                         <div className="task-card-meta grid grid-cols-2 gap-2 text-sm">
                                           {(filterType === 'all' || filterType === 'important') && (

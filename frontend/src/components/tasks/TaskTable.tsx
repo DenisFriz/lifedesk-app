@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { stripHtml } from '@/components/utils/formatters'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -166,7 +167,9 @@ export default function TaskTable({
                       {task.title}
                     </p>
                     {task.description && (
-                      <p className="text-sm text-slate-500 line-clamp-1">{task.description}</p>
+                      <p className="text-sm text-slate-500 line-clamp-1">
+                        {stripHtml(task.description)}
+                      </p>
                     )}
                   </div>
                 </TableCell>

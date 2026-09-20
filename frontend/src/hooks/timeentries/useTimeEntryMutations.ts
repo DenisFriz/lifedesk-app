@@ -8,6 +8,7 @@ export function useTimeEntryMutations() {
   const { playSound } = useSound()
 
   const updateMutation = useMutation({
+    networkMode: 'always',
     mutationFn: ({ id, data }: { id: string; data: Partial<TimeEntryRecord> }) =>
       timeEntryRepository.update(id, data),
     onSuccess: () => {

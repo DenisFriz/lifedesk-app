@@ -14,6 +14,7 @@ import GoalForm from './GoalForm'
 import { useGoalsQuery } from '@/hooks/goals/useGoalsQuery'
 import { useGoalMutations } from '@/hooks/goals/useGoalMutations'
 import { GoalCreateInput } from '@/repositories/goal.repository'
+import { stripHtml } from '@/components/utils/formatters'
 
 interface GoalSectionProps {
   category: string
@@ -136,7 +137,9 @@ export default function GoalSection({ category, onCreateTask }: GoalSectionProps
                     <h3 className="font-medium text-slate-900">{goal.title}</h3>
                   </div>
                   {goal.description && (
-                    <p className="text-sm text-slate-600 mb-2 ml-7">{goal.description}</p>
+                    <p className="text-sm text-slate-600 mb-2 ml-7">
+                      {stripHtml(goal.description)}
+                    </p>
                   )}
                   <div className="flex items-center gap-2 flex-wrap ml-7">
                     {goal.target_date && (

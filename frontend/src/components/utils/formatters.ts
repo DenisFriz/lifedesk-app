@@ -105,3 +105,11 @@ export const formatMonthYear = (date: string | Date | null | undefined): string 
     month: 'long'
   }).format(dateObj)
 }
+
+export const stripHtml = (html: string | null | undefined): string => {
+  if (!html) return ''
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}

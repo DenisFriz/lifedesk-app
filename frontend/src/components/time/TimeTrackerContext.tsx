@@ -67,7 +67,8 @@ export const TimeTrackerProvider = ({ children }: TimeTrackerProviderProps) => {
     queryFn: async () => {
       const entry = await db.timeentries.filter(e => e.is_running && !e.is_deleted).first()
       return entry || null
-    }
+    },
+    networkMode: 'always'
   })
 
   // Initialize timer from running entry
@@ -115,27 +116,32 @@ export const TimeTrackerProvider = ({ children }: TimeTrackerProviderProps) => {
   }, [])
 
   const stopTimerMutation = useMutation({
+    networkMode: 'always',
     mutationFn: async (_entryId: string) => {
       const now = new Date()
       const endTime = format(now, 'HH:mm:ss')
 
-      // Re-read from IndexedDB to avoid a stale-cache race where the optimistic
-      // record was already replaced by sync before the user hit Stop.
-      const entry = await db.timeentries.filter(e => e.is_running && !e.is_deleted).first()
-      if (!entry) throw new Error('No running entry found')
+      // Find all running entries (defensive against multiple concurrent running entries)
+      const runningEntries = await db.timeentries
+        .filter(e => e.is_running && !e.is_deleted)
+        .toArray()
+      if (runningEntries.length === 0) throw new Error('No running entry found')
 
-      const startTime = new Date(`${entry.date}T${entry.start_time}`)
-      const durationMs = now.getTime() - startTime.getTime()
-      const newDurationSeconds = Math.round(durationMs / 1000)
-      const newDuration = newDurationSeconds
-      const previousDuration = entry.duration || 0
-      const totalDuration = previousDuration + newDuration
+      // Stop all running entries
+      for (const entry of runningEntries) {
+        const startTime = new Date(`${entry.date}T${entry.start_time}`)
+        const durationMs = now.getTime() - startTime.getTime()
+        const newDurationSeconds = Math.round(durationMs / 1000)
+        const newDuration = newDurationSeconds
+        const previousDuration = entry.duration || 0
+        const totalDuration = previousDuration + newDuration
 
-      return timeEntryRepository.update(entry.id, {
-        end_time: endTime,
-        duration: totalDuration,
-        is_running: false
-      })
+        await timeEntryRepository.update(entry.id, {
+          end_time: endTime,
+          duration: totalDuration,
+          is_running: false
+        })
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['runningTimeEntry'] })

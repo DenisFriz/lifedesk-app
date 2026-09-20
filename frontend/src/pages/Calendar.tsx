@@ -36,6 +36,7 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
+import { stripHtml } from '@/components/utils/formatters'
 import {
   format,
   startOfMonth,
@@ -2015,7 +2016,9 @@ export default function Calendar() {
                                       )}
                                       <div className="font-semibold mb-1">{task.title}</div>
                                       {task.description && (
-                                        <div className="text-sm opacity-80">{task.description}</div>
+                                        <div className="text-sm opacity-80">
+                                          {stripHtml(task.description)}
+                                        </div>
                                       )}
                                       <div className="flex items-center gap-3 mt-2 text-xs opacity-70">
                                         <span className="capitalize">
@@ -2061,7 +2064,9 @@ export default function Calendar() {
                                       )}
                                       <div className="font-semibold mb-1">{goal.title}</div>
                                       {goal.description && (
-                                        <div className="text-sm opacity-80">{goal.description}</div>
+                                        <div className="text-sm opacity-80">
+                                          {stripHtml(goal.description)}
+                                        </div>
                                       )}
                                       <div className="text-xs opacity-70 mt-2 capitalize">
                                         {goal.category?.replace('_', ' ')}
@@ -2111,7 +2116,7 @@ export default function Calendar() {
                                       )}
                                       {event.description && (
                                         <div className="text-sm opacity-80">
-                                          {event.description}
+                                          {stripHtml(event.description)}
                                         </div>
                                       )}
                                       <div className="text-xs opacity-70 mt-2 capitalize">

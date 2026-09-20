@@ -4,7 +4,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/lib/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
@@ -41,11 +40,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { formatDateMedium } from '@/components/utils/formatters'
+import { formatDateMedium, stripHtml } from '@/components/utils/formatters'
 import UsageLimitGate from '@/components/subscription/UsageLimitGate'
 import UpgradeLimitModal from '@/components/subscription/UpgradeLimitModal'
 import { TablePagination } from '../TablePagination'
 import { CategorySelectDialog } from '../CategorySelectDialog'
+import EventDescriptionModal from './EventDescriptionModal'
 import { useSound } from '@/contexts/SoundContext'
 import { useUserLimit } from '@/contexts/UserLimitContext'
 import { useEventMutations } from '@/hooks/events/useEventMutations'
@@ -69,11 +69,11 @@ export default function EventTable({ category, businessId, filterType }: EventTa
   const [showReminders, setShowReminders] = useState({})
   const [reminderValues, setReminderValues] = useState({})
   const [selectOpen, setSelectOpen] = useState(false)
-  const [expandedDescriptions, setExpandedDescriptions] = useState({})
   const [selectedEvents, setSelectedEvents] = useState([])
   const [expandedEvents, setExpandedEvents] = useState({})
   const [hoveredStartDate, setHoveredStartDate] = useState(null)
   const [hoveredEndDate, setHoveredEndDate] = useState(null)
+  const [descriptionEvent, setDescriptionEvent] = useState<EventRecord | null>(null)
   const queryClient = useQueryClient()
 
   const { playSound } = useSound()
@@ -397,6 +397,9 @@ export default function EventTable({ category, businessId, filterType }: EventTa
 
   const getEventId = (event: EventRecord): string => String(event.serverId || event.id || '')
 
+  const getDescriptionPreview = (description?: string | null): string =>
+    stripHtml(description).slice(0, 50)
+
   return (
     <>
       <UpgradeLimitModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} />
@@ -408,6 +411,12 @@ export default function EventTable({ category, businessId, filterType }: EventTa
         onSelect={handleCategorySelect}
         title="Choose a category"
         description="Please choose a category for the new event."
+      />
+
+      <EventDescriptionModal
+        event={descriptionEvent}
+        open={!!descriptionEvent}
+        onOpenChange={open => !open && setDescriptionEvent(null)}
       />
 
       <div className="bg-white rounded-xl overflow-hidden mb-6">
@@ -701,66 +710,16 @@ export default function EventTable({ category, businessId, filterType }: EventTa
                                             table.compactView ? 'py-1' : 'py-3'
                                           )}
                                         >
-                                          {table.editingField === `${eventId}-description` ? (
-                                            <Textarea
-                                              value={table.editValue}
-                                              onChange={e => table.setEditValue(e.target.value)}
-                                              onBlur={() => handleBlur(eventId, 'description')}
-                                              onKeyDown={e =>
-                                                handleKeyDown(e, eventId, 'description')
-                                              }
-                                              maxLength={5000}
-                                              autoFocus
-                                              className={cn(
-                                                'w-full resize-none -mx-2 -my-1',
-                                                table.compactView
-                                                  ? 'h-8 min-h-0 line-clamp-1 overflow-hidden'
-                                                  : 'min-h-[60px]'
-                                              )}
-                                              style={{ width: 'calc(100% + 16px)' }}
-                                            />
-                                          ) : (
-                                            <div>
-                                              <div
-                                                onClick={() =>
-                                                  startEdit(
-                                                    eventId,
-                                                    'description',
-                                                    event.description
-                                                  )
-                                                }
-                                                className={cn(
-                                                  'cursor-text text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded',
-                                                  table.compactView
-                                                    ? 'h-8 line-clamp-1'
-                                                    : 'min-h-[60px]',
-                                                  !table.compactView &&
-                                                    !expandedDescriptions[eventId] &&
-                                                    'line-clamp-2 overflow-hidden'
-                                                )}
-                                              >
-                                                {event.description || 'Click to add description...'}
-                                              </div>
-                                              {!table.compactView &&
-                                                event.description &&
-                                                event.description.length > 100 && (
-                                                  <button
-                                                    onClick={e => {
-                                                      e.stopPropagation()
-                                                      setExpandedDescriptions(prev => ({
-                                                        ...prev,
-                                                        [eventId]: !prev[eventId]
-                                                      }))
-                                                    }}
-                                                    className="text-xs text-indigo-600 hover:text-indigo-700 px-2"
-                                                  >
-                                                    {expandedDescriptions[eventId]
-                                                      ? 'Show less'
-                                                      : 'More'}
-                                                  </button>
-                                                )}
-                                            </div>
-                                          )}
+                                          <div
+                                            onClick={() => setDescriptionEvent(event)}
+                                            className={cn(
+                                              'cursor-pointer text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded',
+                                              table.compactView ? 'line-clamp-1' : ''
+                                            )}
+                                          >
+                                            {getDescriptionPreview(event.description) ||
+                                              'Click to add description...'}
+                                          </div>
                                         </td>
                                         {(filterType === 'all' || filterType === 'important') && (
                                           <td
@@ -1443,28 +1402,13 @@ export default function EventTable({ category, businessId, filterType }: EventTa
                                       {expandedEvents[eventId] && (
                                         <>
                                           {/* Description */}
-                                          <Textarea
-                                            value={
-                                              table.editingField === `${eventId}-description`
-                                                ? table.editValue
-                                                : event.description || ''
-                                            }
-                                            onChange={e => {
-                                              table.setEditValue(e.target.value)
-                                              table.setEditingField(`${eventId}-description`)
-                                            }}
-                                            onBlur={() => {
-                                              if (table.editingField === `${eventId}-description`) {
-                                                handleBlur(eventId, 'description')
-                                              }
-                                            }}
-                                            onFocus={() =>
-                                              startEdit(eventId, 'description', event.description)
-                                            }
-                                            placeholder="Add description..."
-                                            maxLength={5000}
-                                            className="border-0 shadow-none px-0 py-0 min-h-[60px] resize-none text-sm text-slate-600 focus-visible:ring-0 bg-transparent"
-                                          />
+                                          <div
+                                            onClick={() => setDescriptionEvent(event)}
+                                            className="event-card-description cursor-pointer px-0 py-0 text-sm text-slate-600 hover:bg-slate-100 rounded p-2"
+                                          >
+                                            {getDescriptionPreview(event.description) ||
+                                              'Click to add description...'}
+                                          </div>
 
                                           {/* Meta Info Grid */}
                                           <div className="grid grid-cols-2 gap-2 text-sm">

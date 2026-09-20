@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { format } from 'date-fns'
 import { backend } from '@/api/backend'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useBusinessesQuery } from '@/hooks/businesses/useBusinessesQuery'
+import { useClientsQuery } from '@/hooks/clients/useClientsQuery'
+import { useProjectsQuery } from '@/hooks/projects/useProjectsQuery'
 import {
   Select,
   SelectContent,
@@ -97,15 +99,9 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
 
   const isOverLimit = !canCreate('timeEntries')
 
-  const { data: clients = [] } = useQuery({
-    queryKey: ['clients'],
-    queryFn: () => backend.entities.Client.list('-updated_date')
-  })
+  const { data: clients = [] } = useClientsQuery()
 
-  const { data: projects = [] } = useQuery({
-    queryKey: ['projects'],
-    queryFn: () => backend.entities.Project.list('-updated_date')
-  })
+  const { data: projects = [] } = useProjectsQuery()
 
   const { data: businesses = [] } = useBusinessesQuery()
 
@@ -160,7 +156,11 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
   }
 
   const resumeEntryMutation = useMutation({
-    mutationFn: (entry: any) => {
+    mutationFn: async (entry: any) => {
+      // Stop any other currently-running entry before resuming this one
+      if (runningEntry && runningEntry.id !== entry.id && runningEntry.serverId !== entry.id) {
+        await stopTimerMutation.mutateAsync(runningEntry.id)
+      }
       const now = new Date()
       return handleUpdateTimeEntry({
         id: entry.serverId || entry.id,
@@ -170,12 +170,7 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
           end_time: null,
           is_running: true
         }
-      }) /*  backend.entities.TimeEntry.update(entry.serverId || entry.id, {
-        date: format(now, 'yyyy-MM-dd'),
-        start_time: format(now, 'HH:mm:ss'),
-        end_time: null,
-        is_running: true
-      }) */
+      })
     },
     onSuccess: (_, entry) => {
       queryClient.invalidateQueries({ queryKey: ['runningTimeEntry'] })
@@ -211,7 +206,7 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
 
     originalFaviconRef.current = existingLink
       ? existingLink.href
-      : 'https://data.lifedesk.me/images/lifedesk-task-finance-health-business-manager-favicon.webp?v=4'
+      : 'https://app.lifedesk.me/favicon.ico'
 
     // Capture clean title without any timer prefix
     const currentTitle = document.title
@@ -235,27 +230,24 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
 
   // Update browser tab title and favicon when timer is running
   useEffect(() => {
-    if (runningEntry && !isPaused) {
+    if (runningEntry && !isPaused && !isStoppingRef.current) {
       // Always use the stored clean title
       document.title = `⏱️ ${formatTime(elapsedTime)} - ${originalTitleRef.current}`
 
       // Change favicon to green dot
-      const link = (document.querySelector("link[rel*='icon']") ||
-        document.createElement('link')) as HTMLLinkElement
-      link.type = 'image/x-icon'
-      link.rel = 'shortcut icon'
-      link.href =
+      applyFavicon(
         'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%2310b981"/></svg>'
-      document.getElementsByTagName('head')[0].appendChild(link)
+      )
     } else {
       document.title = originalTitleRef.current
 
       // Reset favicon
       if (originalFaviconRef.current) {
-        const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement | null
-        if (link) {
-          link.href = originalFaviconRef.current
-        }
+        applyFavicon(originalFaviconRef.current)
+      }
+      // Clear stopping flag once we've confirmed no entry is running
+      if (!runningEntry) {
+        isStoppingRef.current = false
       }
     }
   }, [runningEntry, isPaused, elapsedTime])
@@ -264,6 +256,15 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
     const now = new Date()
     const timeString = format(now, 'HH:mm:ss')
     const dateString = format(now, 'yyyy-MM-dd')
+
+    // Clear stopping flag to allow the effect to run normally on fresh start
+    isStoppingRef.current = false
+
+    // Set favicon and title immediately on click
+    document.title = `⏱️ ${formatTime(0)} - ${originalTitleRef.current}`
+    applyFavicon(
+      'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%2310b981"/></svg>'
+    )
 
     localStorage.setItem('lastUsedClient', selectedClient)
     localStorage.setItem('lastUsedProject', selectedProject)
@@ -288,6 +289,15 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
   const handleStop = (): void => {
     if (!runningEntry) return
 
+    // Set flag to prevent the effect from re-asserting the running state
+    isStoppingRef.current = true
+
+    // Reset favicon and title immediately on click
+    document.title = originalTitleRef.current
+    if (originalFaviconRef.current) {
+      applyFavicon(originalFaviconRef.current)
+    }
+
     stopTimerMutation.mutate(runningEntry.id)
     setDescription('')
     setNotes('')
@@ -306,6 +316,17 @@ export default function TimeTrackerPanel({ collapsed, isOpen, setIsOpen }: TimeT
     const secs = seconds % 60
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
+
+  const applyFavicon = (href: string) => {
+    const link = (document.querySelector("link[rel*='icon']") ||
+      document.createElement('link')) as HTMLLinkElement
+    link.type = 'image/x-icon'
+    link.rel = 'shortcut icon'
+    link.href = href
+    document.getElementsByTagName('head')[0].appendChild(link)
+  }
+
+  const isStoppingRef = useRef(false)
 
   // Get available sections (same as notes tabs)
   const getOrderedCategories = (): Section[] => {
